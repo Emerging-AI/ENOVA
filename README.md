@@ -43,7 +43,7 @@ curl -X POST http://localhost:9199/generate \
 
 - Enova directly pass vllm config to vllm backend through command line params
 ```bash
-enova pilot run --model THUDM/chatglm3-6b --host 0.0.0.0 --port 9199 --tensor_parallel_size 1 --trust_remote_code=True --vllm_mode=openai
+enova pilot run --model THUDM/chatglm3-6b --host 0.0.0.0 --port 9199 --tensor_parallel_size 1 --trust_remote_code=True --vllm_mode=openai --hf_proxy=http://192.168.3.2:7892
 ```
 
 ### Use proxy
