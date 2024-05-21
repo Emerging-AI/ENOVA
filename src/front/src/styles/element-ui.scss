@@ -1,0 +1,209 @@
+.el-button {
+  @apply px-4;
+
+  &--primary {
+    &.is-link {
+      @apply text-secondary text-sm #{!important};
+
+      &.is-disabled {
+        @apply text-disabled #{!important};
+      }
+    }
+  }
+}
+
+.el-radio {
+  &.is-checked {
+    .el-radio__inner {
+      &::after {
+        @apply size-1.5;
+      }
+    }
+  }
+}
+
+.el-checkbox {
+  &__input {
+    .el-checkbox__inner {
+      @apply rounded;
+    }
+  }
+}
+
+.el-select {
+  &-dropdown {
+    &__list {
+      @apply py-1.5 px-0.5 #{!important};
+    }
+  }
+}
+
+.el-dropdown-menu__item {
+  &.is-active {
+    @apply text-primary bg-gray1;
+  }
+}
+
+.el-date-table {
+  td {
+
+    &.today span {
+      @apply text-primary border border-primary rounded;
+    }
+
+    &.current:not(.disabled) span {
+      @apply bg-primary rounded;
+    }
+
+    &.available:hover {
+      @apply text-primary;
+    }
+  }
+}
+
+.el-date-editor.el-date-editor--datetimerange {
+  .el-range-input {
+    @apply min-w-36;
+  }
+}
+
+.el-date-range-picker {
+  &__editor.el-input--small .el-input__inner {
+    @apply h-6 leading-6;
+  }
+
+  .el-picker-panel__shortcut {
+    @apply pl-2;
+  }
+}
+
+.el-table.enova-table {
+  .el-table {
+    &__header {
+      @apply shadow-tableShadow;
+      th.el-table__cell {
+        @apply py-0 px-4;
+
+        .cell {
+          @apply py-3 px-0 ;
+        }
+      }
+
+      .caret-wrapper {
+        @apply shrink-0;
+      }
+    }
+  }
+  .el-table__column-filter-trigger {
+    @apply ml-2 mb-1.5 leading-3 align-text-top;
+
+    .el-icon {
+      @apply size-3 bg-filter-icon bg-contain translate-y-0.5 scale-110;
+
+      svg {
+        @apply hidden;
+      }
+    }
+  }
+
+  &--border .el-table__cell {
+    @apply border-none;
+  }
+
+  td.el-table__cell {
+    @apply py-3 px-4;
+
+    .cell {
+      @apply p-0 text-sm text-primary;
+    }
+  }
+}
+
+.el-pagination {
+  @apply flex justify-end items-center;
+  &__sizes {
+    @apply flex-1;
+  }
+  .el-pager {
+    .number {
+      @apply font-normal text-sm text-regular;
+    }
+    .is-active {
+      @apply bg-gray3 rounded-sm text-primary font-semibold;
+    }
+  }
+}
+
+.enova-tabs {
+  .el-tabs {
+    &__header {
+      @apply m-0;
+    }
+
+    &__content {
+      @apply pb-7 h-[calc(100%-60px)];
+    }
+
+    &__nav {
+      @apply m-0 ml-5 mt-5;
+    }
+
+    &__item {
+      @apply font-normal text-[#4E5969] px-4;
+
+      &.is-active {
+        @apply font-semibold text-primary;
+      }
+    }
+  }
+}
+
+.el-collapse {
+  @apply border-none bottom-0 #{!important};
+
+  &-item {
+    @apply m-5;
+
+    &__wrap {
+      @apply border-b-0 #{!important};
+    }
+
+    &__header {
+      @apply flex-row-reverse;
+
+      .collapse-title {
+        @apply flex-1 text-left text-sm text-black1 font-semibold;
+      }
+    }
+
+    &__arrow {
+      @apply flex items-center justify-center w-8 m-0 #{!important};
+    }
+
+    &__content {
+      @apply bg-[#FAFAFA] pb-0 #{!important};
+
+      .container {
+        .el-col {
+          @apply mb-4;
+        }
+      }
+    }
+  }
+}
+
+.el-descriptions {
+  &__cell {
+    @apply py-2 px-4 bg-transparent #{!important};
+
+    &.el-descriptions {
+      &__label {
+        @apply font-normal text-sm text-[#5C7598] #{!important};
+      }
+
+      &__content {
+        @apply text-black1 #{!important};
+      }
+    }
+  }
+}

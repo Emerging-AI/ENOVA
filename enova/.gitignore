@@ -1,0 +1,2 @@
+web_statics/*
+!web_statics/.gitkeep

@@ -1,0 +1,13 @@
+FROM centos:centos7
+
+WORKDIR /data
+
+# TODO: add jdk and jmeter form url
+ADD ./docker/jdk-8u401-linux-x64.tar.gz /usr/local/
+ADD ./docker/apache-jmeter-5.6.3.tgz /opt/
+
+RUN mv /usr/local/jdk1.8.0_401 /usr/local/jdk && \
+    mv /opt/apache-jmeter-5.6.3 /opt/apache-jmeter
+
+ENV JAVA_HOME=/usr/local/jdk \
+    PATH=/usr/local/jdk/bin:/opt/apache-jmeter/bin:$PATH

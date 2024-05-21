@@ -1,0 +1,16 @@
+@forward 'element-plus/theme-chalk/src/common/var.scss' with (
+  $colors: (
+    'primary': (
+      'base': #303133,
+    ),
+  ),
+  $table: (
+    'header-bg-color': #EBEDF0,
+    'header-text-color': #606266
+  ),
+  $collapse: (
+    'header-height': 36px,
+    'header-bg-color': #F0F2F5
+  )
+
+);

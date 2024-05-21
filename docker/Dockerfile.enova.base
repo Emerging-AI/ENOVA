@@ -1,0 +1,18 @@
+# image enova:base
+FROM nvcr.io/nvidia/pytorch:24.03-py3
+
+RUN apt update && apt install -y \
+    net-tools \
+    ocl-icd-libopencl1 \
+    opencl-headers \
+    clinfo
+
+RUN mkdir -p /etc/OpenCL/vendors && \
+    echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd && \
+    mkdir -p /opt/enova
+
+COPY ./requirements-docker.txt /opt/enova/requirements.txt
+
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple && \
+    pip install build && \
+    pip install -r /opt/enova/requirements.txt

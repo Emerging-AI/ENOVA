@@ -1,0 +1,21 @@
+repos:
+- repo: https://github.com/pycqa/flake8
+  rev: 3.9.2
+  hooks:
+    - id: black
+      args:
+      - --max-line-length=150
+      - --max-complexity=60
+
+repos:
+- repo: https://github.com/psf/black
+  rev: stable  # Use the specific revision or tag you want to pin to
+  hooks:
+    - id: black
+      args:
+      - --line-length=150
+
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.0.1
+  hooks:
+    - id: check-merge-conflict

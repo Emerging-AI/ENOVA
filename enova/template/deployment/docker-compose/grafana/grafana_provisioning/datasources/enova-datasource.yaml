@@ -1,0 +1,26 @@
+apiVersion: 1
+
+datasources:
+- name: Enova-Prometheus
+  type: prometheus
+  uid: prometheus
+  url: http://prometheus:9090
+  isDefault: true
+  access: proxy
+  editable: true
+  orgId: 1
+
+- name: Enova-Tempo
+  type: tempo
+  uid: tempo
+  url: http://tempo:3200
+  isDefault: false
+  access: proxy
+  orgId: 1
+  editable: true
+  jsonData:
+    httpMethod: GET
+    serviceMap:
+      datasourceUid: prometheus
+
+

@@ -1,0 +1,67 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+  otlp/spanmetrics:
+    protocols:
+      grpc:
+        endpoint: localhost:12345
+
+
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlp:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  otlp/spanmetrics:
+    endpoint: "localhost:4317"
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    # prometheusremotewrite:
+    #   endpoint: "http://prometheus:9090/api/v1/write"
+
+processors:
+  batch:
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  spanmetrics:
+    metrics_exporter: otlp/spanmetrics
+    dimensions:
+    - name: batch_size
+      # - name: parameters
+  attributes/http:
+    actions:
+      - action: delete
+        key: "http.server_name"
+      - action: delete
+        key: "http.host"
+
+extensions:
+  health_check:
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [spanmetrics, batch]
+      exporters: [otlp]
+    metrics/spanmetrics:
+      receivers: [otlp/spanmetrics]
+      exporters: [otlp/spanmetrics]
+    metrics:
+      receivers: [otlp]
+      processors: [attributes/http, batch]
+      exporters: [debug, prometheus]
+    # logs:
+    #   receivers: [otlp]
+    #   processors: [batch]
+    #   exporters: [debug]

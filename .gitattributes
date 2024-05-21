@@ -1,0 +1,4 @@
+*whl filter=lfs diff=lfs merge=lfs -text
+docker-compose-* filter=lfs diff=lfs merge=lfs -text
+*tgz filter=lfs diff=lfs merge=lfs -text
+*tar.gz filter=lfs diff=lfs merge=lfs -text
