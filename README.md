@@ -108,8 +108,9 @@ Use Shell:
 curl -X POST http://localhost:9199/generate \
 -d '{
 "prompt": "San Francisco is a",
+"max_tokens": 1024,
 "temperature": 0.9,
-"top_p": 0.9,
+"top_p": 0.9
 }'
 ```
 
