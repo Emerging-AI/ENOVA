@@ -1,6 +1,5 @@
 import asyncio
 import dataclasses
-import errno
 import inspect
 import json
 import os
@@ -454,75 +453,6 @@ class WebuiProxyNginx:
             raise NotImplementedError()
 
 
-class Pilot:
-    def run(
-        self,
-        serving_host=CONFIG.serving["host"],
-        serving_port=CONFIG.serving["port"],
-        backend=CONFIG.serving["backend"],
-        webui_host=CONFIG.webui["host"],
-        webui_port=CONFIG.webui["port"],
-        exporter_endpoint=CONFIG.llmo["eai_exporter_endpoint"],
-        exporter_service_name=CONFIG.llmo["eai_exporter_service_name"],
-        enova_app_host=CONFIG.enova_app["host"],
-        enova_app_port=CONFIG.enova_app["port"],
-        **kwargs,
-    ):
-        """combine mon webui and enode
-        1. fisrt mon enovaalgo app enova-pilot, if they are not running
-        2. use app api to deploy enode. only one enode can deploy
-        """
-
-        args_helper = CliCommandArgumentHelper(self, sys._getframe())
-        CONFIG.update_config(args_helper.args_map)
-
-        from enova.api.app_api import EnovaAppApi
-
-        EnovaPurePilot().run(
-            serving_host=serving_host,
-            serving_port=serving_port,
-            backend=backend,
-            webui_host=webui_host,
-            webui_port=webui_port,
-            exporter_endpoint=exporter_endpoint,
-            exporter_service_name=exporter_service_name,
-            enova_app_host=enova_app_host,
-            enova_app_port=enova_app_port,
-            **kwargs,
-        )
-
-        # check enova_app heathz
-        e = None
-        for i in range(CONFIG.cli["default_app_healthz_check_count"]):
-            try:
-                healthz_res = cli_loop.run_until_complete(EnovaAppApi.healthz(params={}))
-                assert healthz_res["status"] == "running"
-                e = None
-                break
-            except Exception as h_e:
-                e = h_e
-                time.sleep(1)
-        if e is not None:
-            raise e
-
-        params = {"instance_name": kwargs.get("name") or "enova-enode", "model": kwargs["model"]}
-        enode_ret = cli_loop.run_until_complete(EnovaAppApi.enode.create(params=params))
-        LOGGER.info(f"pilot run enode result: {enode_ret}")
-
-    def stop(self, instance_id, service=None, *args, **kwargs):
-        from enova.api.app_api import EnovaAppApi
-
-        try:
-            delete_ret = cli_loop.run_until_complete(EnovaAppApi.enode.delete(params={"instance_id": instance_id}))
-            LOGGER.info(f"enode delete ret: {delete_ret}")
-        except Exception as e:
-            LOGGER.warning(f"enode delete error: {str(e)}")
-        # magic number, stop 2 sec that pilot can delete enode asynchronously
-        time.sleep(2)
-        if service == "all":
-            EnovaPurePilot().stop()
-
-
 class EnovaPurePilot:
     @cached_property
     def enova_app(self):
@@ -547,12 +477,7 @@ class EnovaPurePilot:
         args_helper = CliCommandArgumentHelper(self, sys._getframe())
         CONFIG.update_config(args_helper.args_map)
 
-        # TODO: check status
-        svc_name_svc_map = {
-            self.enova_app._svc_name: self.enova_app,
-            self.nginx._svc_name: self.nginx,
-        }
-
+        # TODO: check container's status
         try:
             self.nginx.run()
         except Exception as e:
@@ -945,7 +870,7 @@ class EnovaApp:
             self._stop_compose()
 
 
-class PilotV2:
+class Pilot:
     def run(
         self,
         serving_host=CONFIG.serving["host"],
@@ -1029,8 +954,7 @@ class EnovaCliV1:
         self.app = EnovaApp()
         self.injector = TrafficInjector()
 
-        # self.pilot = Pilot()  # one click
-        self.pilot = PilotV2()
+        self.pilot = Pilot()
 
 
 def main():
