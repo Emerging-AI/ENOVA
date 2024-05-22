@@ -335,14 +335,6 @@ class Webui:
 
 
 class Enode:
-    def __init__(self, is_run_by_compose=False) -> None:
-        self.docker_services = ["enova-enode", "nginx"]  # start up by order
-        self._docker_compose = DockerComposeHeler()
-        self._is_run_by_compose = is_run_by_compose
-
-    def _run_by_compose(self):
-        pass
-
     def run(
         self,
         model,
@@ -358,17 +350,14 @@ class Enode:
         args_helper = CliCommandArgumentHelper(self, sys._getframe())
         CONFIG.update_config(args_helper.args_map)
 
-        if self._is_run_by_compose:
-            self._run_by_compose()
-        else:
-            from enova.llmo import start as llmo_start
+        from enova.llmo import start as llmo_start
 
-            CONFIG.update_config({backend: kwargs})
-            # CONFIG.print_config()
-            llmo_start(otlp_exporter_endpoint=exporter_endpoint, service_name=exporter_service_name)
-            if include_webui:
-                Webui().run(run_background=True)
-            EnodeHandler(host, port, model, backend).start()
+        CONFIG.update_config({backend: kwargs})
+        # CONFIG.print_config()
+        llmo_start(otlp_exporter_endpoint=exporter_endpoint, service_name=exporter_service_name)
+        if include_webui:
+            Webui().run(run_background=True)
+        EnodeHandler(host, port, model, backend).start()
 
 
 class EnodeProxyNginx:
@@ -922,7 +911,45 @@ class Pilot:
             "model": kwargs["model"],
         }
         enode_ret = cli_loop.run_until_complete(EnovaAppApi.enode.create(params=app_params))
-        LOGGER.info(f"pilot run enode result: {enode_ret}")
+
+        LOGGER.info(f"pilot create enode result: {enode_ret}")
+
+        time.sleep(3)
+
+        # TODO: handle enova-pilot's errors
+        instance_id = enode_ret["instance_id"]
+        get_params = {"instance_id": instance_id}
+        enode_info = cli_loop.run_until_complete(EnovaAppApi.enode.get(params=get_params))
+        LOGGER.info(f"enode_info: {enode_info}")
+
+        # TODO:
+        container_infos = (
+            enode_info.get("extra", {})
+            .get("get_deploy_ret", {})
+            .get("ret", {})
+            .get("result", {})
+            .get("container_infos")
+        )
+        LOGGER.info(f"container_infos: {container_infos}")
+
+        if not container_infos:
+            LOGGER.error(f"container deployed by '{instance_id}' is not exised")
+            return
+
+        container_info = container_infos[0]
+
+        container_id = container_info.get("ContainerId")
+        if not container_id:
+            LOGGER.error(f"container info of instance '{instance_id}' get failed ")
+            return
+
+        LOGGER.info(f"enode container id: {container_id}")
+
+        # show logs of enode startup, enode not run in compose
+        command = ["docker", "logs", "-f", container_id]
+        cmd_str = " ".join(command)
+        LOGGER.debug("Command: {}".format(cmd_str))
+        subprocess.run(command)
 
     def stop(self, instance_id, service=None, *args, **kwargs):
         from enova.api.app_api import EnovaAppApi
