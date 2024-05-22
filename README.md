@@ -1,7 +1,7 @@
 # ENOVA 
 
 <a href=''><img src='https://img.shields.io/badge/Paper-PDF-red'></a>
-[![Code License](https://img.shields.io/badge/Code%20License-Apache-green.svg)]()
+[![Code License](https://img.shields.io/badge/Code%20License-Apache-green.svg)](https://github.com/Emerging-AI/ENOVA?tab=Apache-2.0-1-ov-file)
 
 
 ENOVA is an open-source llm deployment, monitoring, injection and auto-scaling service.
@@ -64,13 +64,13 @@ enova -h
 1. Start an all-in-one LLM server with deployment, monitoring, injection and auto-scaling service: 
 
 ```bash
-enova pilot run --model nvidia/Llama3-ChatQA-1.5-8B
+enova pilot run --model THUDM/chatglm3-6b
 ```
 
 Use proxy to download LLMs:
 
 ```bash
-enova pilot run --model nvidia/Llama3-ChatQA-1.5-8B --hf_proxy xxx
+enova pilot run --model THUDM/chatglm3-6b --hf_proxy xxx
 ```
 
 > [!NOTE]
@@ -128,7 +128,7 @@ ENOVA also provides support for single modules.
 The LLM deployment service facilitates the deployment of LLMs and provides a stable API for accessing LLMs. 
 
 ```bash
-enova enode run --model nvidia/Llama3-ChatQA-1.5-8B
+enova enode run --model THUDM/chatglm3-6b
 ```
 
 > [!NOTE]
@@ -137,7 +137,7 @@ enova enode run --model nvidia/Llama3-ChatQA-1.5-8B
 > OpenAI API and Generate API are both supported. 
 > vllm config can be specified using command-line parameters like:
 ```bash
-enova pilot run --model nvidia/Llama3-ChatQA-1.5-8B --host 127.0.0.1 --port 9199
+enova pilot run --model THUDM/chatglm3-6b --host 127.0.0.1 --port 9199
 ```
 
 
