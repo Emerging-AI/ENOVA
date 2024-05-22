@@ -86,6 +86,7 @@ definitions:
       backend:
         type: string
       backendConfig: {}
+      backend_extra_config: {}
       envs:
         items:
           $ref: '#/definitions/enova_internal_meta.Env'

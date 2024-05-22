@@ -177,6 +177,10 @@ const docTemplate = `{
                     "type": "object",
                     "additionalProperties": true
                 },
+                "backend_extra_config": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
                 "envs": {
                     "type": "array",
                     "items": {

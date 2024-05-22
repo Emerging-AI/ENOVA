@@ -117,6 +117,7 @@ func (r DockerDeployResource) Post(c *gin.Context) {
 			ExporterServiceName: exporterServiceName,
 			ModelConfig:         dockerDeployRequest.ModelConfig,
 			BackendConfig:       &vllmConfig,
+			BackendExtraConfig:  dockerDeployRequest.BackendExtraConfig,
 			Replica:             dockerDeployRequest.Replica,
 			Envs:                dockerDeployRequest.Envs,
 			Gpus:                "all",

@@ -250,7 +250,10 @@ func (d *DockerResourceClient) CreateSingleEnode(spec meta.TaskSpec, containerNa
 			}
 
 		}
-
+	}
+	// Add extra enode params
+	for k, v := range spec.BackendExtraConfig {
+		cmd = append(cmd, []string{fmt.Sprintf("--%s", k), fmt.Sprintf("%v", v)}...)
 	}
 	params := docker.CreateContainerParams{
 		ImageName:     config.GetEConfig().Enode.Image,
