@@ -84,6 +84,7 @@ func CreateHostConfig(params CreateContainerParams) *container.HostConfig {
 		Binds:        params.Volumes,
 		NetworkMode:  container.NetworkMode(params.NetworkName),
 		PortBindings: portBindings,
+		IpcMode:      "host",
 	}
 
 	// TODO: add specific gpu
