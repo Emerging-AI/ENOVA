@@ -134,7 +134,7 @@ enova enode run --model THUDM/chatglm3-6b
 > OpenAI API and Generate API are both supported. 
 > vllm config can be specified using command-line parameters like:
 ```bash
-enova pilot run --model THUDM/chatglm3-6b --host 127.0.0.1 --port 9199
+enova enode run --model THUDM/chatglm3-6b --host 127.0.0.1 --port 9199
 ```
 
 
