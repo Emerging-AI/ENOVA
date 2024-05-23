@@ -1,7 +1,7 @@
 # ENOVA 
 
 <a href=''><img src='https://img.shields.io/badge/Paper-PDF-red'></a>
-[![Code License](https://img.shields.io/badge/Code%20License-Apache-green.svg)]()
+[![Code License](https://img.shields.io/badge/Code%20License-Apache-green.svg)](https://github.com/Emerging-AI/ENOVA?tab=Apache-2.0-1-ov-file)
 
 
 ENOVA is an open-source llm deployment, monitoring, injection and auto-scaling service.
@@ -43,14 +43,10 @@ and [Python](https://docs.anaconda.com/free/anaconda/install/index.html) Environ
 conda create -n enova_env python=3.10
 conda activate enova_env
 
-# Install ENOVA 
-git lfs install
-
-git clone https://github.com/Emerging-AI/ENOVA
-cd ENOVA
-
-pip install llmo/enova-instrumentation-llmo/dist/enova_instrumentation_llmo-0.0.1-py3-none-any.whl
-pip install dist/enova-0.0.1-py3-none-any.whl
+# Install ENOVA
+# Source: https://pypi.python.org/simple/
+pip install enova_instrumentation_llmo
+pip install enova
 ```
 
 3. To verify the installation, run:
@@ -64,13 +60,13 @@ enova -h
 1. Start an all-in-one LLM server with deployment, monitoring, injection and auto-scaling service: 
 
 ```bash
-enova pilot run --model nvidia/Llama3-ChatQA-1.5-8B
+enova pilot run --model mistralai/Mistral-7B-Instruct-v0.1
 ```
 
 Use proxy to download LLMs:
 
 ```bash
-enova pilot run --model nvidia/Llama3-ChatQA-1.5-8B --hf_proxy xxx
+enova pilot run --model mistralai/Mistral-7B-Instruct-v0.1 --hf_proxy xxx
 ```
 
 > [!NOTE]
@@ -108,8 +104,9 @@ Use Shell:
 curl -X POST http://localhost:9199/generate \
 -d '{
 "prompt": "San Francisco is a",
+"max_tokens": 1024,
 "temperature": 0.9,
-"top_p": 0.9,
+"top_p": 0.9
 }'
 ```
 
@@ -128,7 +125,7 @@ ENOVA also provides support for single modules.
 The LLM deployment service facilitates the deployment of LLMs and provides a stable API for accessing LLMs. 
 
 ```bash
-enova enode run --model nvidia/Llama3-ChatQA-1.5-8B
+enova enode run --model mistralai/Mistral-7B-Instruct-v0.1
 ```
 
 > [!NOTE]
@@ -137,7 +134,7 @@ enova enode run --model nvidia/Llama3-ChatQA-1.5-8B
 > OpenAI API and Generate API are both supported. 
 > vllm config can be specified using command-line parameters like:
 ```bash
-enova pilot run --model nvidia/Llama3-ChatQA-1.5-8B --host 127.0.0.1 --port 9199
+enova enode run --model mistralai/Mistral-7B-Instruct-v0.1 --host 127.0.0.1 --port 9199
 ```
 
 

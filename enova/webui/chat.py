@@ -4,7 +4,7 @@ import os
 import requests
 import streamlit as st
 
-st.title("🤖enova AI webui")
+st.title("🤖ENOVA AI WebUI")
 
 MAX_TURNS = 20
 MAX_BOXES = MAX_TURNS * 2
