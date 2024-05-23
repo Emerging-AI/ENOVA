@@ -43,14 +43,10 @@ and [Python](https://docs.anaconda.com/free/anaconda/install/index.html) Environ
 conda create -n enova_env python=3.10
 conda activate enova_env
 
-# Install ENOVA 
-git lfs install
-
-git clone https://github.com/Emerging-AI/ENOVA
-cd ENOVA
-
-pip install llmo/enova-instrumentation-llmo/dist/enova_instrumentation_llmo-0.0.1-py3-none-any.whl
-pip install dist/enova-0.0.1-py3-none-any.whl
+# Install ENOVA
+# Source: https://pypi.python.org/simple/
+pip install enova_instrumentation_llmo
+pip install enova
 ```
 
 3. To verify the installation, run:
