@@ -21,6 +21,7 @@ from enova.common.utils import camel_to_snake, datetime2timestamp, get_enova_pat
 from enova.enode.hf import HFText2TextEnode
 from enova.serving.apiserver import EApiServer
 
+
 cli_new_loop = asyncio.new_event_loop()
 asyncio.set_event_loop(cli_new_loop)
 cli_loop = asyncio.get_event_loop()
@@ -874,6 +875,12 @@ class Pilot:
         hf_proxy=None,
         **kwargs,
     ):
+        """
+        pilot run
+
+        :param serving_host: llm serving host
+
+        """
         args_helper = CliCommandArgumentHelper(self, sys._getframe())
         CONFIG.update_config(args_helper.args_map)
 
