@@ -800,6 +800,7 @@ class EnovaApp:
             if "model" in user_args.keys() and user_args["model"]:
                 model_dir = user_args["model"]
                 if check_local_model_dir(model_dir):
+                    model_dir = os.path.abspath(model_dir)
                     environment_lst.append(f"EMERGINGAI_ENOVA_APP_HOST_MODEL_DIR={model_dir}")
                     volumes_lst.append(f"{model_dir}:{CONFIG.enova_app['model_dir']}")
                     LOGGER.info(f"use local model: {model_dir}")
