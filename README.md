@@ -60,13 +60,13 @@ enova -h
 1. Start an all-in-one LLM server with deployment, monitoring, injection and auto-scaling service: 
 
 ```bash
-enova pilot run --model THUDM/chatglm3-6b
+enova pilot run --model mistralai/Mistral-7B-Instruct-v0.1
 ```
 
 Use proxy to download LLMs:
 
 ```bash
-enova pilot run --model THUDM/chatglm3-6b --hf_proxy xxx
+enova pilot run --model mistralai/Mistral-7B-Instruct-v0.1 --hf_proxy xxx
 ```
 
 > [!NOTE]
@@ -125,7 +125,7 @@ ENOVA also provides support for single modules.
 The LLM deployment service facilitates the deployment of LLMs and provides a stable API for accessing LLMs. 
 
 ```bash
-enova enode run --model THUDM/chatglm3-6b
+enova enode run --model mistralai/Mistral-7B-Instruct-v0.1
 ```
 
 > [!NOTE]
@@ -134,7 +134,7 @@ enova enode run --model THUDM/chatglm3-6b
 > OpenAI API and Generate API are both supported. 
 > vllm config can be specified using command-line parameters like:
 ```bash
-enova enode run --model THUDM/chatglm3-6b --host 127.0.0.1 --port 9199
+enova enode run --model mistralai/Mistral-7B-Instruct-v0.1 --host 127.0.0.1 --port 9199
 ```
 
 
