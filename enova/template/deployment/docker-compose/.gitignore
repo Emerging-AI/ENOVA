@@ -1,3 +1,4 @@
 tempo-data
 single-demo
 enova_compose*.yaml
+bin/docker-compose*
