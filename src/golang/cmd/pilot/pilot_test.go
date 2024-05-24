@@ -56,6 +56,9 @@ func TestPilot(t *testing.T) {
 		},
 	}
 
+	extraConfig := make(map[string]string)
+	extraConfig["test"] = "test1"
+	extraConfig["test2"] = "test2"
 	taskName := "test-enode"
 	testTask := meta.TaskSpec{
 		Name:                taskName,
@@ -84,9 +87,10 @@ func TestPilot(t *testing.T) {
 			VllmMode:             "normal",
 			TrustRemoteCode:      true,
 		},
-		Replica: 1,
-		Envs:    envs,
-		Volumes: volumnes,
+		Replica:            1,
+		Envs:               envs,
+		Volumes:            volumnes,
+		BackendExtraConfig: extraConfig,
 	}
 
 	pResult, err := performaceCli.GetVllmCurrentMetricParams(&testTask)

@@ -115,3 +115,6 @@ src/golang/pkg/sumdb
 src/golang/dist
 
 nohup*
+
+# dependencies
+dependencies/

@@ -84,6 +84,7 @@ func CreateHostConfig(params CreateContainerParams) *container.HostConfig {
 		Binds:        params.Volumes,
 		NetworkMode:  container.NetworkMode(params.NetworkName),
 		PortBindings: portBindings,
+		IpcMode:      "host",
 	}
 
 	// TODO: add specific gpu
@@ -125,6 +126,7 @@ func (d *DockerCli) CreateContainer(params CreateContainerParams) (string, error
 		Image: params.ImageName,
 		Cmd:   params.Cmd,
 		Env:   params.Envs,
+		Tty:   true,
 	}, hostConfig, networkingConfig, nil, params.ContainerName)
 	if err != nil {
 		return containerId, err

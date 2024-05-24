@@ -51,9 +51,10 @@ type DockerDeployRequest struct {
 	ExporterServiceName string `json:"exporter_service_name"`
 	ModelConfig         ModelConfig
 	BackendConfig       map[string]interface{}
-	Replica             int      `json:"replica"`
-	Envs                []Env    `json:"envs"`
-	Volumes             []Volume `json:"volumes"`
+	BackendExtraConfig  map[string]string `json:"backend_extra_config"`
+	Replica             int               `json:"replica"`
+	Envs                []Env             `json:"envs"`
+	Volumes             []Volume          `json:"volumes"`
 }
 
 type Env struct {
@@ -76,10 +77,11 @@ type TaskSpec struct {
 	ExporterServiceName string `json:"exporter_service_name"`
 	ModelConfig         ModelConfig
 	BackendConfig       BackendConfig
-	Replica             int      `json:"replica"`
-	Envs                []Env    `json:"envs"`
-	Gpus                string   `json:"gpus"`
-	Volumes             []Volume `json:"volumes"`
+	BackendExtraConfig  map[string]string `json:"backend_extra_config"`
+	Replica             int               `json:"replica"`
+	Envs                []Env             `json:"envs"`
+	Gpus                string            `json:"gpus"`
+	Volumes             []Volume          `json:"volumes"`
 }
 
 func (t *TaskSpec) GetName() string {
@@ -136,9 +138,10 @@ func (t *TaskSpec) UnmarshalJSON(data []byte) error {
 		ModelConfig         ModelConfig
 		Replica             int `json:"replica"`
 		BackendConfig       json.RawMessage
-		Envs                []Env    `json:"envs"`
-		Gpus                string   `json:"gpus"`
-		Volumes             []Volume `json:"volumes"`
+		BackendExtraConfig  map[string]string `json:"backend_extra_config"`
+		Envs                []Env             `json:"envs"`
+		Gpus                string            `json:"gpus"`
+		Volumes             []Volume          `json:"volumes"`
 	}
 	var aux Alias
 	if err := json.Unmarshal(data, &aux); err != nil {
@@ -167,6 +170,7 @@ func (t *TaskSpec) UnmarshalJSON(data []byte) error {
 		ModelConfig:         aux.ModelConfig,
 		Replica:             aux.Replica,
 		BackendConfig:       backendConfig,
+		BackendExtraConfig:  aux.BackendExtraConfig,
 		Envs:                aux.Envs,
 		Gpus:                aux.Gpus,
 		Volumes:             aux.Volumes,
