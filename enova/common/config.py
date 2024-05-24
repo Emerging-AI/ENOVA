@@ -84,6 +84,7 @@ class Config:
             "host": "0.0.0.0",
             "port": 8501,
             "script": "webui/chat.py",
+            "daemon": True,
         },
         "llmo": {
             # "eai_exporter_endpoint": "0.0.0.0:32893",
@@ -126,9 +127,18 @@ class Config:
             "prom_time_step": "1m",
             "enode_api_host": "http://enova-enode:9199",
             "model_dir": "/workspace/model",
+            "dataset_dir_container": "/opt/enova/enova/template/deployment/docker-compose/traffic-injector/data",
         },
         "enova_enode": {},
-        "cli": {"default_app_healthz_check_count": 10},
+        "cli": {
+            "default_app_healthz_check_count": 10,
+            "context_settings": {"help_option_names": ["-h", "--help"]},
+            "subcmd_context_settings": {
+                "help_option_names": ["-h", "--help"],
+                "ignore_unknown_options": True,
+                "allow_extra_args": True,
+            },
+        },
         "traffic_injector": {
             "conf": "template/deployment/docker-compose/traffic-injector",
             "cache_dir": "/tmp/traffic_injector",

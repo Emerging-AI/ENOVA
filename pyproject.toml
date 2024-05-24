@@ -30,7 +30,7 @@ include = ["enova.*"]
 namespaces = true
 
 [tool.setuptools.package-data]
-"*" = ["*.csv"]
+"*" = ["*.csv", "docker-compose-*"]
 "enova.web_statics" = ["*", "*/*"]
 
 [tool.setuptools.dynamic]

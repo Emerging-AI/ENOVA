@@ -65,6 +65,7 @@ def get_pkg_namespace_path(dist):
         if CONFIG.api.get("develop_mode"):
             module_path = maybe_locally_path_lst[0]
 
+    LOGGER.debug(f"module_path: {module_path}")
     return module_path
 
 

@@ -6,7 +6,7 @@ huggingface_hub
 hf-transfer
 torch
 transformers
-vllm
+vllm<=0.4.1
 locate
 python-rapidjson
 opentelemetry-api
