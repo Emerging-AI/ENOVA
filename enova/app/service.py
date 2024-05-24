@@ -59,7 +59,7 @@ class TestActionHandler:
         return html.escape(body_json_str)
 
     def start(self, host, port, test_info):
-        from enova.entry.cli import TrafficInjector
+        from enova.entry.command.injector import TrafficInjector
 
         test_spec = test_info["test_spec"]
         if test_spec["distribution"] == TrafficDistributionType.GAUSSIAN.value:
@@ -213,26 +213,32 @@ class PilotActionHandler:
         return enode_envs
 
     def form_volumes(self):
+        volume_lst = [
+            {
+                "hostPath": "/root/.cache",
+                "mountPath": "/root/.cache",
+            },
+            {
+                "hostPath": "/root/.config/vllm",
+                "mountPath": "/root/.config/vllm",
+            },
+        ]
+
         host_model_dir = CONFIG.enova_app.get("host_model_dir")
         if host_model_dir:
-            return [
+            volume_lst += [
                 {
                     "hostPath": host_model_dir,
                     "mountPath": CONFIG.enova_app.get("model_dir"),
                 }
             ]
 
-        return [
-            {
-                "hostPath": "/root/.cache",
-                "mountPath": "/root/.cache",
-            }
-        ]
+        return volume_lst
 
     async def deploy_enode(self, instance_info):
         user_args = CONFIG.get_user_args()
 
-        model_config = instance_info["model_config"]
+        model_config = instance_info["model_cfg"]
         llm_config = {
             "framework": model_config["model_type"],
             "param": model_config["param"],
@@ -409,7 +415,7 @@ class AppService(BaseApiService):
             "instance_name": params["instance_name"],
             "instance_spec": host_spec,
             "startup_args": {},  # #TODO: polit startup args all in CONFIG
-            "model_config": model_params,
+            "model_cfg": model_params,
             "creator": params["creator"],
         }
         instance_info["creator"] = (
@@ -542,7 +548,7 @@ class AppService(BaseApiService):
         return instance_info_dct
 
     async def list_test(self, params: Dict):
-        from enova.entry.cli import TrafficInjector
+        from enova.entry.command.injector import TrafficInjector
 
         ret = await self.common_list(
             params, TestInfoTable, fuzzy_field_list=["data_set", "test_status", "creator", "updater"]
@@ -612,7 +618,7 @@ class AppService(BaseApiService):
 
     async def delete_test(self, test_id):
         """"""
-        from enova.entry.cli import TrafficInjector
+        from enova.entry.command.injector import TrafficInjector
 
         query = select(TestInfoTable).filter(TestInfoTable.test_id == test_id)
         async with get_async_session() as async_session:
@@ -628,7 +634,7 @@ class AppService(BaseApiService):
 
     async def get_test(self, test_id):
         """"""
-        from enova.entry.cli import TrafficInjector
+        from enova.entry.command.injector import TrafficInjector
 
         query = select(TestInfoTable).filter(TestInfoTable.test_id == test_id)
         async with get_async_session() as async_session:

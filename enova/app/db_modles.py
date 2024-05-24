@@ -25,7 +25,7 @@ class DeploymentInstanceInfoTable(DBModelBase):
     instance_name = Column(String(64), nullable=False, comment="instance name")
     instance_spec = Column(JSON, comment="instance specification")
     startup_args = Column(JSON, comment="the arguments of starting up of model serve by enode")
-    model_config = Column(JSON, comment="the config of llm model")
+    model_cfg = Column(JSON, comment="the config of llm model")
     enode_id = Column(
         String(256), nullable=False, comment="enode's unique id, allow use it get the status by polit api"
     )
