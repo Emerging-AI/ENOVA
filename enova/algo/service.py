@@ -44,7 +44,6 @@ def metric_norm(metric, n=30, th=0.8, fill_v=0):
 def metric_process(params, name, **kwargs):
     metric, freq = None, None
     i = 0
-    kwargs["th"] = 0.4
     resp = [metric_norm(metric[name], **kwargs) for metric in params["metrics"]]
     for df, freq in resp:
         # not consider the replica of LLM service without enough observation points
@@ -67,7 +66,7 @@ def llm_performance_ad(params, **kwargs):
     if not i:
         is_up_anomaly = False
     else:
-        th = kwargs.get("pending_threshold", 10)
+        th = kwargs.get("pending_threshold", 50)
 
         pending_requests = pending_requests.resample("1min").sum()
         LOGGER.info(f"llm_performance_ad pending_requests: {pending_requests}")
@@ -277,7 +276,9 @@ def memory_estimation(param_size, token_size, seq_length, dtype_size=2, mem_acti
     return (param_size + token_size * seq_length) * dtype_size + mem_activations
 
 
-def memory_config_rec(total_mem, n_head, gpu_spec, gpu_num):
+def memory_config_rec(total_mem, n_head, gpu_spec, gpu_num, r_limit=0.9):
+    # for each GPU, safe limit
+    gpu_spec = gpu_spec * 0.9
     tp_size, mem_util = None, None
     for s in find_divisors(n_head):
         if s * gpu_spec * 1024**3 * max(RecConfig.GPU_MEM_UTIL) > total_mem and s <= gpu_num:
@@ -302,7 +303,6 @@ def gpu_memory_rec(llm_config, gpu_config, dtype_size=2, mem_activations=5):
     :param gpu_config:
     :param dtype_size:
     :param mem_activations: memory used to place activations and other variables.
-                            When loading Mistral-7B, it needs about more 5.0 GB memories to store inner state variables.
     """
     total_mem = memory_estimation(
         llm_config["param_size"], llm_config["token_size"], llm_config["seq_length"], dtype_size, mem_activations
@@ -319,7 +319,10 @@ def llm_config_recommendations(params, **kwargs):
     max_num_seqs = max_num_seqs_rec(config)
 
     dtype_size = kwargs.get("dtype_size", 2)
-    mem_activations = kwargs.get("mem_activations", 5) * 1024**3
+    # Default 3.0 GB to store inner state variables.
+    # When loading Mistral-7B, it needs about more 5.0 GB memories to store inner state variables.
+    mem_activations = 3 if params["llm"]["framework"].lower() != "mistral" else 5
+    mem_activations = kwargs.get("mem_activations", mem_activations) * 1024**3
     tp_size, mem_util = gpu_memory_rec(config, params["gpu"], dtype_size, mem_activations)
 
     return {
@@ -364,7 +367,7 @@ def llm_config_recovery(params, **kwargs):
         return params["configurations"]
     running_requests = running_requests.resample("1min").mean() / i
 
-    th = kwargs.get("pending_threshold", 10)  # TODO: how
+    th = kwargs.get("pending_threshold", 50)
     batch_usage = np.percentile(running_requests["value"].to_numpy()[-m:], 90) / max_num_seqs
     kv_cache_usage = np.percentile(kv_cache_usage["value"].to_numpy()[-m:], 90)
 
@@ -499,6 +502,6 @@ if __name__ == "__main__":
             "replicas": 2,
         },
     }
-    # print(llm_config_recommendations(param, **{'fill_v': 0, 'n': 50}))
+    # print(llm_config_recommendations(param, **{"fill_v": 0, "n": 50}))
     # print(llm_performance_ad(param, **{'fill_v': 0, 'n': 50}))
-    print(llm_config_recovery(param, **{"fill_v": 0, "n": 50}))
+    # print(llm_config_recovery(param, **{"fill_v": 0, "n": 50}))
