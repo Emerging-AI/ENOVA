@@ -218,10 +218,6 @@ class PilotActionHandler:
                 "hostPath": "/root/.cache",
                 "mountPath": "/root/.cache",
             },
-            {
-                "hostPath": "/root/.config/vllm",
-                "mountPath": "/root/.config/vllm",
-            },
         ]
 
         host_model_dir = CONFIG.enova_app.get("host_model_dir")
