@@ -29,7 +29,7 @@ const useInitQueryRange = () => {
     const { duration, duration_unit } = activeExperiment.value.test_spec
     const testDuration = getTestDuration(duration, duration_unit)
     startTime.setTime(startTime.getTime())
-    endTime.setTime(startTime.getTime() + (testDuration + 180) * 1000)
+    endTime.setTime(Math.min(startTime.getTime() + (testDuration + 180) * 1000, Date.now()))
   } else {
     startTime.setTime(startTime.getTime() - 3600 * 1000)
   }
