@@ -1,4 +1,4 @@
-ARG HARBOR_PATH=dev-harbor.emergingai.inner.com/emergingai
+ARG HARBOR_PATH=emergingai
 
 FROM ${HARBOR_PATH}/python:base
 

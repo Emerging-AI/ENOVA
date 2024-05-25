@@ -8,8 +8,7 @@ BASEDIR=$(dirname "$SCRIPT")
 BASEDIR=$(dirname "$BASEDIR")
 
 
-export HARBOR_PATH=dev-harbor.emergingai.inner.com/emergingai
-# export HARBOR_PATH=emergingai
+export HARBOR_PATH=emergingai
 
 # build enova
 cd $BASEDIR

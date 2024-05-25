@@ -1,6 +1,4 @@
-# FROM nvcr.io/nvidia/pytorch:24.03-py3
-# see Dockerfile.enova.base
-FROM dev-harbor.emergingai.inner.com/emergingai/enova:base
+FROM emergingai/enova:base
 
 RUN pip install pip install setuptools setuptools_scm[toml]==7.1.0 toml
 

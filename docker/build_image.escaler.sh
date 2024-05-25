@@ -11,7 +11,6 @@ BASEDIR=$(dirname "$BASEDIR")
 echo "BASEDIR: " ${BASEDIR}
 
 
-export HARBOR_PATH=dev-harbor.emergingai.inner.com/emergingai
 export MIRROR_PATH=emergingai
 
 # check golang tar.gz

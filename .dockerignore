@@ -7,6 +7,6 @@ enova.egg-info
 var
 .pre-commit-config.yaml
 tests
-src/front/node_modules
-src/front/package-lock.json
-src/front/yarn.lock
+front/node_modules
+front/package-lock.json
+front/yarn.lock
