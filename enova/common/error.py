@@ -46,7 +46,7 @@ class APIParamsError(EmergingAIBaseError):
 
 
 # --- enode backend api ---
-class PilotApiResponseError(EmergingAIBaseError):
+class EScalerApiResponseError(EmergingAIBaseError):
     ERROR_CODE: str = "101"
     ERROR_MESSAGE: str = "node api response error"
 

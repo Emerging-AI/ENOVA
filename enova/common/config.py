@@ -121,7 +121,7 @@ class Config:
             "port": 8182,
             "url_prefix": "",
             "api_version": "v1",
-            "pilot_api_host": "http://enova-pilot:8183",
+            "escaler_api_host": "http://enova-escaler:8183",
             "app_api_host": "http://127.0.0.1:8182",
             "prom_api_host": "http://enova-prometheus:9090",
             "prom_time_step": "1m",

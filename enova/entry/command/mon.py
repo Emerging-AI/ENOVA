@@ -15,7 +15,7 @@ class EnovaMonitor:
             "otel-collector",
             "prometheus",
             "tempo",
-            "enova-pilot",
+            "enova-escaler",
             "enova-algo",
         ]  # start up by order
         self._docker_compose = DockerComposeHeler()

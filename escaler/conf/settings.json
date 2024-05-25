@@ -1,0 +1,46 @@
+{
+    "docker": {
+
+    },
+    "detector": {
+        "prom": {
+            "host": "enova-prometheus",
+            "port": 9090
+        },
+        "api": {
+            "host": "0.0.0.0",
+            "port": 8183,
+            "version": "v1",
+            "url_prefix": "/escaler"
+        },
+        "detect_interval": 30
+    },
+    "scaler": {},
+    "zmq": {
+        "host": "127.0.0.1",
+        "port": 4321
+    },
+    "redis": {
+        "addr": "127.0.0.1:6379",
+        "password": "",
+        "db": 0
+    },
+    "enova_algo": {
+        "host": "127.0.0.1:8181"
+    },
+    "enode": {
+        "image": "emergingai/enova:v0.0.1",
+        "start_cmd": [
+            "sleep",
+            "inf"
+        ],
+        "network": "enova-mon_enova-net",
+        "network_alias": "enova-enode",
+        "name": "enova"
+    },
+    "logger": {
+        "name": "server",
+        "path": "./var/log/emergingai",
+        "level": "debug"
+    }
+}

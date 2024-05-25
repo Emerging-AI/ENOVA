@@ -1,0 +1,230 @@
+definitions:
+  enova_internal_meta.AnomalyRecommendResult:
+    properties:
+      configRecommendResult:
+        $ref: '#/definitions/enova_pkg_api.ConfigRecommendResult'
+      currentConfig:
+        $ref: '#/definitions/enova_pkg_api.ConfigRecommendResult'
+      isAnomaly:
+        type: boolean
+      timestamp:
+        type: integer
+    type: object
+  enova_internal_meta.DetectTaskSpecResponse:
+    properties:
+      task_infos:
+        items:
+          $ref: '#/definitions/enova_internal_meta.TaskInfo'
+        type: array
+      task_spec:
+        $ref: '#/definitions/enova_internal_meta.TaskSpec'
+    type: object
+  enova_internal_meta.DockerDeployRequest:
+    properties:
+      backend:
+        type: string
+      backendConfig:
+        additionalProperties: true
+        type: object
+      envs:
+        items:
+          $ref: '#/definitions/enova_internal_meta.Env'
+        type: array
+      exporter_endpoint:
+        type: string
+      exporter_service_name:
+        type: string
+      host:
+        type: string
+      model:
+        type: string
+      modelConfig:
+        $ref: '#/definitions/enova_internal_meta.ModelConfig'
+      name:
+        type: string
+      port:
+        type: integer
+      replica:
+        type: integer
+      volumes:
+        items:
+          $ref: '#/definitions/enova_internal_meta.Volume'
+        type: array
+    type: object
+  enova_internal_meta.Env:
+    properties:
+      name:
+        type: string
+      value:
+        type: string
+    type: object
+  enova_internal_meta.ModelConfig:
+    properties:
+      gpu:
+        $ref: '#/definitions/enova_pkg_api.Gpu'
+      llm:
+        $ref: '#/definitions/enova_pkg_api.Llm'
+      version:
+        type: string
+    type: object
+  enova_internal_meta.TaskDetectHistoryResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/enova_internal_meta.AnomalyRecommendResult'
+        type: array
+    type: object
+  enova_internal_meta.TaskInfo:
+    properties:
+      name:
+        type: string
+      status:
+        type: string
+    type: object
+  enova_internal_meta.TaskSpec:
+    properties:
+      backend:
+        type: string
+      backendConfig: {}
+      backend_extra_config: {}
+      envs:
+        items:
+          $ref: '#/definitions/enova_internal_meta.Env'
+        type: array
+      exporter_endpoint:
+        type: string
+      exporter_service_name:
+        type: string
+      gpus:
+        type: string
+      host:
+        type: string
+      model:
+        type: string
+      modelConfig:
+        $ref: '#/definitions/enova_internal_meta.ModelConfig'
+      name:
+        type: string
+      port:
+        type: integer
+      replica:
+        type: integer
+      volumes:
+        items:
+          $ref: '#/definitions/enova_internal_meta.Volume'
+        type: array
+    type: object
+  enova_internal_meta.Volume:
+    properties:
+      hostPath:
+        type: string
+      mountPath:
+        type: string
+    type: object
+  enova_pkg_api.ConfigRecommendResult:
+    properties:
+      gpu_memory_utilization:
+        type: number
+      max_num_seqs:
+        type: integer
+      replicas:
+        type: integer
+      tensor_parallel_size:
+        type: integer
+    type: object
+  enova_pkg_api.Gpu:
+    properties:
+      name:
+        type: string
+      num:
+        type: integer
+      spec:
+        type: integer
+    type: object
+  enova_pkg_api.Llm:
+    properties:
+      framework:
+        type: string
+      param:
+        type: number
+    type: object
+info:
+  contact: {}
+paths:
+  /api/escaler/v1/docker/deploy:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Task Name
+        in: query
+        name: task_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: string
+      summary: Delete docker task
+      tags:
+      - task
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Task Name
+        in: query
+        name: task_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/enova_internal_meta.DetectTaskSpecResponse'
+      summary: Get docker task info
+      tags:
+      - task
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: request content
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/enova_internal_meta.DockerDeployRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            type: string
+      summary: Create alert policy object
+      tags:
+      - task
+  /api/escaler/v1/task/detect/history:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Task Name
+        in: query
+        name: task_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/enova_internal_meta.TaskDetectHistoryResponse'
+      summary: Get task detect history list
+      tags:
+      - task
+swagger: "2.0"

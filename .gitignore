@@ -118,3 +118,4 @@ nohup*
 
 # dependencies
 dependencies/
+enova/template/deployment/docker-compose/bin/

@@ -100,7 +100,7 @@ class WebuiProxyNginx:
             raise NotImplementedError()
 
 
-class EnovaPurePilot:
+class EnovaEscaler:
     @cached_property
     def enova_app(self):
         return EnovaApp(deploy_mode=DeployMode.COMPOSE.value)
@@ -131,7 +131,6 @@ class EnovaPurePilot:
             LOGGER.warning(f"nginx start failed: err: {str(e)}")
             if failed_with_stop:
                 self.nginx.stop()
-
         try:
             self.webui_nginx.run()
         except Exception as e:
@@ -191,7 +190,7 @@ class EnovaPilot:
 
         from enova.api.app_api import EnovaAppApi
 
-        EnovaPurePilot().run(
+        EnovaEscaler().run(
             serving_host=serving_host,
             serving_port=serving_port,
             backend=backend,
@@ -228,7 +227,7 @@ class EnovaPilot:
 
         time.sleep(3)
 
-        # TODO: handle enova-pilot's errors
+        # TODO: handle enova-escaler's errors
         instance_id = enode_ret["instance_id"]
         get_params = {"instance_id": instance_id}
         enode_info = cli_loop.run_until_complete(EnovaAppApi.enode.get(params=get_params))
@@ -274,7 +273,7 @@ class EnovaPilot:
         # magic number, stop 2 sec that pilot can delete enode asynchronously
         time.sleep(2)
         if service == "all":
-            EnovaPurePilot().stop()
+            EnovaEscaler().stop()
 
 
 pass_enova_pilot = click.make_pass_decorator(EnovaPilot)
@@ -314,7 +313,7 @@ def pilot_cli(ctx):
 @click.option("--hf-proxy", "--hf_proxy", "hf_proxy", type=str, default=None)
 @pass_enova_pilot
 @click.pass_context
-def mon_run(
+def pilot_run(
     ctx,
     enova_pilot: EnovaPilot,
     serving_host,
@@ -344,7 +343,9 @@ def mon_run(
 
 
 @pilot_cli.command(name="stop")
+@click.option("--instance-id", "--instance_id", "instance_id", type=str)
+@click.option("--service", "--service", "service", type=str)
 @pass_enova_pilot
 @click.pass_context
-def mon_stop(ctx, enova_pilot: EnovaPilot):
-    enova_pilot.stop()
+def pilot_stop(ctx, enova_pilot: EnovaPilot, instance_id, service=None):
+    enova_pilot.stop(instance_id, service, **parse_extra_args(ctx))

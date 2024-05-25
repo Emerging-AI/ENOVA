@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -x
-IMAGE_VERSION=v0.0.1 # TODO: version.txt
+IMAGE_VERSION=v`cat VERSION`
 
 echo "Runing build image enova:${IMAGE_VERSION} using ${PWD}"
 

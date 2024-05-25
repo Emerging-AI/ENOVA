@@ -2,7 +2,7 @@ import service from '@/utils/request'
 enum API {
   ENODE = '/v1/enode',
   MONITOR = '/api/v1/query_range',
-  PILOT = '/api/pilot/v1'
+  PILOT = '/api/escaler/v1'
 }
 
 export const getEnode = () => service({

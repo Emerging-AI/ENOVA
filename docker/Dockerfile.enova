@@ -2,15 +2,6 @@
 # see Dockerfile.enova.base
 FROM dev-harbor.emergingai.inner.com/emergingai/enova:base
 
-
-# COPY ./dist/enova-0.0.1-py3-none-any.whl /tmp/
-# COPY ./llmo/enova-instrumentation-llmo/dist/enova_instrumentation_llmo-0.0.1-py3-none-any.whl /tmp/
-
-# RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple && \
-#     pip uninstall enova enova-instrumentation-llmo -y && \
-#     pip install --no-cache-dir /tmp/enova_instrumentation_llmo-0.0.1-py3-none-any.whl && \
-#     pip install --no-cache-dir /tmp/enova-0.0.1-py3-none-any.whl
-
 RUN pip install pip install setuptools setuptools_scm[toml]==7.1.0 toml
 
 
@@ -26,11 +17,9 @@ ARG CACHEBUST=1
 
 COPY . /opt/enova
 
-RUN bash /opt/enova/scripts/pack_whl.enova.sh
+RUN cd /opt/enova && bash ./scripts/pack_whl.enova.sh
 
 RUN pip install /opt/enova/dist/enova-0.0.1-py3-none-any.whl && \
     pip uninstall -y transformer-engine
 
 RUN mkdir -p /workspace/model
-
-
