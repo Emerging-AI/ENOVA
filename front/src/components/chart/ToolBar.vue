@@ -368,7 +368,7 @@ const changeLayout = () => {
 }
 
 const handleTimeRangeChange = (val: string[]) => {
-  chartTimeRange.value = [dayjs(new Date(val[0])).format('YYYY-MM-DD HH:mm:ss'), dayjs(new Date(val[1])).format('YYYY-MM-DD HH:mm:ss')]
+  chartTimeRange.value = [dayjs(new Date(val[0])).format('YYYY-MM-DD HH:mm:ss'), dayjs(Math.min(new Date(val[1]).getTime(), Date.now())).format('YYYY-MM-DD HH:mm:ss')]
 }
 
 const handleRefresh = () => {

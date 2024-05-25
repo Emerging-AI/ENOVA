@@ -8,6 +8,7 @@
     :start-placeholder="$t('common.title.startTime')"
     :end-placeholder="$t('common.title.endTime')"
     :shortcuts="shortcuts"
+    :disabled-date="disabledDate"
     value-format="YYYY-MM-DD HH:mm:ss"
     @change="changeTime"
   />
@@ -95,6 +96,11 @@ const shortcuts = [
     }
   }
 ]
+
+const disabledDate = (val: Date) => {
+  return val && new Date(val).getTime() > Date.now()
+}
+
 
 const emit = defineEmits(['changTimeRange'])
 
