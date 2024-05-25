@@ -6,6 +6,26 @@ from json import JSONDecodeError
 import rapidjson
 
 
+def _get_pkg_version(filename="VERSION", back_step=4):
+    version_file_path = None
+    current_dir = os.path.dirname(__file__)
+    for _ in range(back_step):
+        maybe_file_path = os.path.join(current_dir, filename)
+        if os.path.exists(maybe_file_path) and os.path.isfile(maybe_file_path):
+            version_file_path = maybe_file_path
+            break
+        current_dir = os.path.dirname(current_dir)
+
+    try:
+        if version_file_path:
+            with open(version_file_path, "r") as version_file:
+                _ver = version_file.read().strip()
+            return _ver
+    except Exception:
+        pass
+    return "0.0.x"
+
+
 def proc_val(value):
     if not isinstance(value, str):
         return value
@@ -41,6 +61,7 @@ class Config:
 
     # defualt value of whole service
     default_map = {
+        "pkg": {"version": "0.0.1"},
         "app_name": "",
         "api": {
             "docs_url": "/api/docs",
