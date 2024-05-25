@@ -113,6 +113,7 @@ func (d *DockerResourceClient) CreateContainerName(prefix string) string {
 
 func (d *DockerResourceClient) DeployByDocker(task meta.TaskSpec) {
 	containerIds, ok := d.TaskManager.GetTaskContainerIds(task)
+	logger.Infof("DeployByDocker GetTaskContainerIds taskName: %s, containerIds: %v", task.Name, containerIds)
 	if !ok {
 		for i := 0; i < task.Replica; i++ {
 			containerID, err := d.singleDeployByDocker(&task)
@@ -145,6 +146,7 @@ func (d *DockerResourceClient) DeployByDocker(task meta.TaskSpec) {
 						}
 					}
 				}
+				delete(d.ContainerIDGpusMap, containerId)
 			}
 			d.TaskManager.DeleteTaskContainerIds(task)
 		} else {
@@ -181,12 +183,6 @@ func (d *DockerResourceClient) DeployByDocker(task meta.TaskSpec) {
 				for i := 0; i < scaleoutCnt; i++ {
 					// Record Gpu
 					containerID, err := d.singleDeployByDocker(&task)
-					if err != nil {
-						logger.Errorf("DeployByDocker err: %v", err)
-					} else {
-						logger.Infof("sucees deploy task: %v, containerId: %s", task, containerID)
-						containerIds = append(containerIds, containerID)
-					}
 					if err != nil {
 						logger.Errorf("DeployByDocker err: %v", err)
 					} else {
