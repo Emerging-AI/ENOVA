@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Emerging-AI/ENOVA/escaler/internal/meta"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/api"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"

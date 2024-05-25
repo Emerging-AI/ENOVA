@@ -177,7 +177,6 @@ class EnovaPilot:
         enova_app_host=CONFIG.enova_app["host"],
         enova_app_port=CONFIG.enova_app["port"],
         hf_proxy=None,
-        environment=None,
         **kwargs,
     ):
         """
@@ -312,7 +311,6 @@ def pilot_cli(ctx):
 @click.option("--enova-app-host", "--enova_app_host", "enova_app_host", type=str, default=CONFIG.enova_app["host"])
 @click.option("--enova-app-port", "--enova_app_port", "enova_app_port", type=int, default=CONFIG.enova_app["port"])
 @click.option("--hf-proxy", "--hf_proxy", "hf_proxy", type=str, default=None)
-@click.option("--environment", "-e", "environment", type=str, default=CONFIG.enova_app["port"])
 @pass_enova_pilot
 @click.pass_context
 def pilot_run(

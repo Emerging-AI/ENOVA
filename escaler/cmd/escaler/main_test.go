@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Emerging-AI/ENOVA/escaler/internal/detector"
-	"github.com/Emerging-AI/ENOVA/escaler/internal/meta"
-	"github.com/Emerging-AI/ENOVA/escaler/internal/scaler"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/detector"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/scaler"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/api"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
