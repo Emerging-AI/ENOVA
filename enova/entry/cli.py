@@ -1,17 +1,16 @@
 import click
 
-from enova.common.config import CONFIG
-
-from enova.entry.command.enode import enode_cli
+from enova.common.config import _get_pkg_version, CONFIG
+from enova.entry.command.algo import algo_cli
 from enova.entry.command.app import app_cli
+from enova.entry.command.enode import enode_cli
 from enova.entry.command.injector import injector_cli
+from enova.entry.command.mon import mon_cli
 from enova.entry.command.pilot import pilot_cli
 from enova.entry.command.webui import webui_cli
-from enova.entry.command.mon import mon_cli
-from enova.entry.command.algo import algo_cli
 
 
-@click.version_option("0.0.1", "--version", "-v")  # TODO: get by VERSION
+@click.version_option(_get_pkg_version(), "--version", "-v")
 @click.group(context_settings=CONFIG.cli["context_settings"])
 def cli():
     """
