@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -x
-IMAGE_VERSION=v0.0.1 # TODO: version.txt
+IMAGE_VERSION=v`cat VERSION`
 
 echo "Runing build image enova-jmoter:${IMAGE_VERSION} using ${PWD}"
 
@@ -11,8 +11,7 @@ BASEDIR=$(dirname "$BASEDIR")
 echo "BASEDIR: " ${BASEDIR}
 
 
-export HARBOR_PATH=dev-harbor.emergingai.inner.com/emergingai
-# export MIRROR_PATH=emergingai
+export HARBOR_PATH=emergingai
 
 # build enova
 cd $BASEDIR

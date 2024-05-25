@@ -126,7 +126,7 @@ services:
   #   networks:
   #     - enova-net
   enova-algo:
-    image: dev-harbor.emergingai.inner.com/emergingai/enova:v0.0.1
+    image: emergingai/enova:v0.0.1
     container_name: enova-algo
     command: "enova algo run"
     ports:
@@ -137,7 +137,7 @@ services:
           - enova-algo
 
   enova-app:
-    image: dev-harbor.emergingai.inner.com/emergingai/enova:v0.0.1
+    image: emergingai/enova:v0.0.1
     container_name: enova-app
     command: "enova app run"
     volumes:
@@ -154,27 +154,27 @@ services:
     environment:
       - http_proxy=http://192.168.3.2:7892
       - https_proxy=http://192.168.3.2:7892
-      - EMERGINGAI_ENOVA_APP_PILOT_API_HOST=http://192.168.3.2:8183
+      - EMERGINGAI_ENOVA_APP_ESCALER_API_HOST=http://192.168.3.2:8183
     depends_on:
-      - enova-pilot
+      - enova-escaler
     networks:
       enova-net:
         aliases:
           - enova-app
 
-  enova-pilot:
-    image: dev-harbor.emergingai.inner.com/emergingai/enova-pilot:v0.0.1  
-    container_name: enova-pilot
-    command: "bash /app/scripts/local_docker_run.sh --conf /etc/pilot/conf/settings.json"
+  enova-escaler:
+    image: emergingai/enova-escaler:v0.0.1  
+    container_name: enova-escaler
+    command: "bash /app/scripts/local_docker_run.sh --conf /etc/escaler/conf/settings.json"
     volumes:
-      - ./pilot/conf/settings.json:/etc/pilot/conf/settings.json
+      - ./escaler/conf/settings.json:/etc/escaler/conf/settings.json
       - /run/docker.sock:/run/docker.sock
     ports:
       - "8183:8183"
     networks:
       enova-net:
         aliases:
-          - enova-pilot
+          - enova-escaler
 
   traffic_injector:
     image: 60.204.135.2/emergingai/enova-jmeter:v0.0.2

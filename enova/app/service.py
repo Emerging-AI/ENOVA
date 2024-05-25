@@ -12,7 +12,7 @@ from tzlocal import get_localzone
 
 from enova.algo.service import LLMConfig
 from enova.api.enode_api import EnodeApi
-from enova.api.pilot_api import PilotApiWrapper
+from enova.api.escaler_api import EScalerApiWrapper
 from enova.api.prom_api import PromApi
 from enova.app.db_modles import DeploymentInstanceInfoTable, TestInfoTable
 from enova.app.utils import compute_actual_duration
@@ -187,7 +187,7 @@ class TestActionHandler:
 
 class PilotActionHandler:
     def __init__(self) -> None:
-        self.pilot_api = PilotApiWrapper()
+        self.escaler_api = EScalerApiWrapper()
 
     def form_envs(self):
         # TODO: get CUDA_VISIBLE_DEVICES in os.envs or contaienr's os.envs
@@ -207,7 +207,7 @@ class PilotActionHandler:
                 },
                 {
                     "name": "no_proxy",
-                    "value": "otel-collector,enova-pilot,enova-prometheus,enova-enode,grafana,dcgm-exporter,tempo,enova-app,enova-pilot,enova-algo,localhost,127.0.0.1",
+                    "value": "otel-collector,enova-escaler,enova-prometheus,enova-enode,grafana,dcgm-exporter,tempo,enova-app,enova-escaler,enova-algo,localhost,127.0.0.1",
                 },
             ]
         return enode_envs
@@ -217,10 +217,6 @@ class PilotActionHandler:
             {
                 "hostPath": "/root/.cache",
                 "mountPath": "/root/.cache",
-            },
-            {
-                "hostPath": "/root/.config/vllm",
-                "mountPath": "/root/.config/vllm",
             },
         ]
 
@@ -292,7 +288,7 @@ class PilotActionHandler:
         instance_info_extra = instance_info.get("extra", {})
         instance_info_extra["create_deploy_payload"] = enode_info
         try:
-            ret = await self.pilot_api.create_deploy(enode_info)
+            ret = await self.escaler_api.create_deploy(enode_info)
             instance_info_extra["create_deploy_return"] = ret
 
         except Exception as e:
@@ -309,7 +305,7 @@ class PilotActionHandler:
         instance_info_extra = instance_info.extra or {}
         try:
             # TODO:
-            get_deploy_ret = await self.pilot_api.get_deploy(
+            get_deploy_ret = await self.escaler_api.get_deploy(
                 {
                     "task_name": instance_info.enode_id,
                 }
@@ -353,7 +349,7 @@ class PilotActionHandler:
         instance_info_extra = instance_info.extra or {}
         LOGGER.info(f"start shutdown enode: {instance_info}")
         try:
-            delete_deploay_ret = await self.pilot_api.delete_deploy(
+            delete_deploay_ret = await self.escaler_api.delete_deploy(
                 {
                     "task_name": instance_info.enode_id,
                 }

@@ -58,7 +58,7 @@ db.sqlite3
 
 # Flask stuff:
 instance/
-!src/front/src/components/instance
+!front/src/components/instance
 .webassets-cache
 
 # Scrapy stuff:
@@ -118,3 +118,4 @@ nohup*
 
 # dependencies
 dependencies/
+enova/template/deployment/docker-compose/bin/

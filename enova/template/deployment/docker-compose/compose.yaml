@@ -123,7 +123,7 @@ services:
   #     - enova-net
 
   enova-algo:
-    image: emergingai/enova:v0.0.1
+    image: emergingai/enova:v0.0.2
     container_name: enova-algo
     command: "enova algo run"
     ports:
@@ -134,7 +134,7 @@ services:
           - enova-algo
 
   enova-app:
-    image: emergingai/enova:v0.0.1
+    image: emergingai/enova:v0.0.2
     container_name: enova-app
     command: "enova app run"
     volumes:
@@ -149,25 +149,25 @@ services:
     ports:
       - "8182:8182"
     depends_on:
-      - enova-pilot
+      - enova-escaler
     networks:
       enova-net:
         aliases:
           - enova-app
 
-  enova-pilot:
-    image: emergingai/enova-pilot:v0.0.1  
-    container_name: enova-pilot
-    command: "bash /app/scripts/local_docker_run.sh --conf /etc/pilot/conf/settings.json"
+  enova-escaler:
+    image: emergingai/enova-escaler:v0.0.2  
+    container_name: enova-escaler
+    command: "bash /app/scripts/local_docker_run.sh --conf /etc/escaler/conf/settings.json"
     volumes:
-      - ./pilot/conf/settings.json:/etc/pilot/conf/settings.json
+      - ./escaler/conf/settings.json:/etc/escaler/conf/settings.json
       - /run/docker.sock:/run/docker.sock
     ports:
       - "8183:8183"
     networks:
       enova-net:
         aliases:
-          - enova-pilot
+          - enova-escaler
     deploy:
       resources:
         reservations:

@@ -8,6 +8,7 @@ authors = [
     { name = "kyokagong", email = "kyokagong@emergingai-tech.com" },
     { name = "wenxinxie", email = "wenxin@emergingai-tech.com" },
     { name = "jockyhawk", email = "jockyhawk@emergingai-tech.com" },
+    { name = "kimzhao", email = "kimzhao@emergingai-tech.com" },
 ]
 readme = "README.md"
 

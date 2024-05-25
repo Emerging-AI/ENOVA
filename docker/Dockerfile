@@ -1,5 +1,5 @@
 # FROM nvcr.io/nvidia/pytorch:24.03-py3
-FROM dev-harbor.emergingai.inner.com/emergingai/enova:base
+FROM mergingai/enova:base
 
 RUN apt update && apt install net-tools -y
 

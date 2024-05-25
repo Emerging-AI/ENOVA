@@ -151,7 +151,7 @@ enova webui run --serving_host 127.0.0.1 --serving_port 9199 --host 127.0.0.1 --
 
 ### Autoscaling Module
 
-The autoscaling service is automatically launched and managed by pilot module. 
+The autoscaling service is automatically launched and managed by escaler module. 
 
 
 ### Request Injection Module
