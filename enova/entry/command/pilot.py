@@ -3,7 +3,6 @@ import subprocess
 import sys
 import time
 from functools import cached_property
-
 import click
 
 from enova.common.cli_helper import ArgumentHelper, DockerComposeHeler, parse_extra_args
@@ -261,7 +260,7 @@ class EnovaPilot:
         command = ["docker", "logs", "-f", container_id]
         cmd_str = " ".join(command)
         LOGGER.debug("Command: {}".format(cmd_str))
-        subprocess.run(command)
+        subprocess.Popen(command)
 
     def stop(self, instance_id, service=None, *args, **kwargs):
         from enova.api.app_api import EnovaAppApi
@@ -312,7 +311,6 @@ def pilot_cli(ctx):
 @click.option("--enova-app-host", "--enova_app_host", "enova_app_host", type=str, default=CONFIG.enova_app["host"])
 @click.option("--enova-app-port", "--enova_app_port", "enova_app_port", type=int, default=CONFIG.enova_app["port"])
 @click.option("--hf-proxy", "--hf_proxy", "hf_proxy", type=str, default=None)
-@click.option("--environment", "-e", "environment", type=str, default=CONFIG.enova_app["port"])
 @pass_enova_pilot
 @click.pass_context
 def pilot_run(
