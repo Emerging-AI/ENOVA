@@ -5,8 +5,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/Emerging-AI/ENOVA/escaler/internal/meta"
-	"github.com/Emerging-AI/ENOVA/escaler/internal/resource"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/resource"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/logger"

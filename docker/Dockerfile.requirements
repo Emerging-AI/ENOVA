@@ -10,9 +10,9 @@ RUN apt-get install -y \
 RUN mkdir -p /etc/OpenCL/vendors && \
     echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
 
-COPY ./dist/enova-0.0.1-py3-none-any.whl .
+COPY ./dist/enova-0.0.2-py3-none-any.whl .
 COPY ./llmo/enova-instrumentation-llmo/dist/enova_instrumentation_llmo-0.0.1-py3-none-any.whl .
 
-RUN pip install enova_instrumentation_llmo-0.0.1-py3-none-any.whl enova-0.0.1-py3-none-any.whl 
+RUN pip install enova_instrumentation_llmo-0.0.1-py3-none-any.whl enova-0.0.2-py3-none-any.whl 
 
 RUN pip install vllm

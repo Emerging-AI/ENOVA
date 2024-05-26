@@ -2,7 +2,6 @@ FROM emergingai/enova:base
 
 RUN pip install pip install setuptools setuptools_scm[toml]==7.1.0 toml
 
-
 COPY ./llmo /opt/enova/llmo
 
 COPY ./scripts /opt/enova/scripts

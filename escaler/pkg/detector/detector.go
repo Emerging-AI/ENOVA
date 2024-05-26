@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Emerging-AI/ENOVA/escaler/internal/meta"
-	"github.com/Emerging-AI/ENOVA/escaler/internal/resource"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/resource"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/api"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
@@ -187,6 +187,13 @@ func (d *Detector) IsTaskRunning(taskName string, task meta.TaskSpecInterface) b
 	if d.Client.IsTaskRunning(*t) {
 		d.TaskMap[taskName].Status = meta.TaskStatusRunning
 		return true
+	}
+	containerInfos := d.Client.GetContainerinfos(*t)
+	for _, containerInfo := range containerInfos {
+		if containerInfo.Status == "exited" {
+			d.TaskMap[taskName].Status = meta.TaskStatusError
+			return false
+		}
 	}
 	d.TaskMap[taskName].Status = meta.TaskStatusScheduling
 	return false

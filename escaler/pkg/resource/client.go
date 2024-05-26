@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/Emerging-AI/ENOVA/escaler/internal/meta"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/docker"

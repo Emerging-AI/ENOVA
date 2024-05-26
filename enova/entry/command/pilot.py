@@ -176,7 +176,6 @@ class EnovaPilot:
         enova_app_host=CONFIG.enova_app["host"],
         enova_app_port=CONFIG.enova_app["port"],
         hf_proxy=None,
-        environment=None,
         **kwargs,
     ):
         """
