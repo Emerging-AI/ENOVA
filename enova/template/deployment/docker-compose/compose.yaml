@@ -139,6 +139,7 @@ services:
     command: "enova app run"
     volumes:
       - /run/docker.sock:/run/docker.sock
+      - /root/.cache/huggingface:/root/.cache/huggingface
     deploy:
       resources:
         reservations:
