@@ -26,7 +26,7 @@ def specific_eval_hf_model_params_size(model_name, hf_proxies=None):
     for w_name, p in list(model.named_parameters()):
         LOGGER.debug(f"w_name: {w_name}, shape: {p.shape}")
         params_size += np.prod(p.shape)
-    return {"params_size": params_size, "model_type": config.model_type}
+    return {"params_size": int(params_size), "model_type": config.model_type}
 
 
 def estimate_hf_model_params_size(model_name, hf_proxies=None):
@@ -43,7 +43,7 @@ def estimate_hf_model_params_size(model_name, hf_proxies=None):
         + num_layers * (8 * hidden_size**2 + 5 * hidden_size)
         + 4 * num_layers * hidden_size
     )
-    return {"params_size": params_size, "model_type": config.model_type}
+    return {"params_size": int(params_size), "model_type": config.model_type}
 
 
 def chatglm_estimate_hf_model_params_size(config):
@@ -56,4 +56,4 @@ def chatglm_estimate_hf_model_params_size(config):
         + num_layers * (8 * hidden_size**2 + 5 * hidden_size)
         + 4 * num_layers * hidden_size
     )
-    return {"params_size": params_size, "model_type": config.model_type}
+    return {"params_size": int(params_size), "model_type": config.model_type}

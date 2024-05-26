@@ -2,6 +2,8 @@
 
 set -x
 IMAGE_VERSION=v`cat VERSION`
+ENOVA_VERSION=`cat VERSION`
+LLMO_VERSION="0.0.1"
 
 echo "Runing build image enova:${IMAGE_VERSION} using ${PWD}"
 
@@ -26,5 +28,8 @@ export HARBOR_PATH=emergingai
 # build enova
 cd $BASEDIR
 docker build -f $BASEDIR/docker/Dockerfile.enova -t $HARBOR_PATH/enova:$IMAGE_VERSION \
-    --build-arg HARBOR_PATH="$HARBOR_PATH" --build-arg CACHEBUST=$(date +%s) --build-arg VERSION="$VERSION" \
+    --build-arg ENOVA_VERSION="${ENOVA_VERSION}" \
+    --build-arg LLMO_VERSION="${LLMO_VERSION}" \
+    --build-arg HARBOR_PATH="$HARBOR_PATH" \
+    --build-arg CACHEBUST=$(date +%s) \
     $BASEDIR

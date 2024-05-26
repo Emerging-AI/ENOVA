@@ -3,7 +3,6 @@ import subprocess
 import sys
 import time
 from functools import cached_property
-
 import click
 
 from enova.common.cli_helper import ArgumentHelper, DockerComposeHeler, parse_extra_args
@@ -260,7 +259,7 @@ class EnovaPilot:
         command = ["docker", "logs", "-f", container_id]
         cmd_str = " ".join(command)
         LOGGER.debug("Command: {}".format(cmd_str))
-        subprocess.run(command)
+        subprocess.Popen(command)
 
     def stop(self, instance_id, service=None, *args, **kwargs):
         from enova.api.app_api import EnovaAppApi
