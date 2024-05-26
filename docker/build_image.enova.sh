@@ -25,4 +25,6 @@ export HARBOR_PATH=emergingai
 
 # build enova
 cd $BASEDIR
-docker build -f $BASEDIR/docker/Dockerfile.enova -t $HARBOR_PATH/enova:$IMAGE_VERSION --build-arg HARBOR_PATH="$HARBOR_PATH" --build-arg CACHEBUST=$(date +%s) $BASEDIR
+docker build -f $BASEDIR/docker/Dockerfile.enova -t $HARBOR_PATH/enova:$IMAGE_VERSION \
+    --build-arg HARBOR_PATH="$HARBOR_PATH" --build-arg CACHEBUST=$(date +%s) --build-arg VERSION="$VERSION" \
+    $BASEDIR
