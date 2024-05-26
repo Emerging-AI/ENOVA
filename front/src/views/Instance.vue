@@ -122,7 +122,7 @@
       :title-desc="drawerTitle"
       :size="drawerType === 'detail' ? '95%' : '50%'"
       @open="openDrawer"
-      @close-drawer="showDrawer = false"
+      @close-drawer="closeDrawer"
     >
       <InstanceDetail v-if="drawerType === 'detail'" />
       <TestConfig v-else @close-config="showDrawer = false" />
@@ -144,6 +144,7 @@ import { useInstanceStore } from '@/stores/instance'
 import { deleteEnode, getDetectHistory } from '@/api/instance'
 import { useDateFormat } from '@vueuse/core'
 import { useInitQueryRange } from '@/hooks/useInitQueryRange'
+import { useIntervalFn } from '@vueuse/core'
 
 const { t } = useI18n()
 
@@ -233,7 +234,11 @@ const statusMap: { [x: number | string]: { color: string; text: string } } = {
   scheduling: {
     color: '#909399',
     text: t('instance.title.deploying')
-  }
+  },
+  error: {
+    color: '#F56C6C',
+    text: t('instance.title.deployFail')
+  },
 }
 
 const showDetail = (row: any, type: string) => {
@@ -258,8 +263,18 @@ const jumpToWebUI = () => {
   window.open(`${protocol}//${hostname}:8501`, '_blank')
 }
 
+const { pause, resume } = useIntervalFn(() => {
+  instanceStore.getInstanceList()
+}, 15000)
+
 const openDrawer = () => {
   useInitQueryRange()
+  pause()
+}
+
+const closeDrawer = () => {
+  showDrawer.value = false
+  resume()
 }
 onMounted(() => {
   columnsVisible.value = columns.value.map((item) => item.prop)
