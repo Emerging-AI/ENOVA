@@ -2,7 +2,6 @@ FROM emergingai/enova:base
 
 RUN pip install pip install setuptools setuptools_scm[toml]==7.1.0 toml
 
-
 COPY ./llmo /opt/enova/llmo
 
 COPY ./scripts /opt/enova/scripts
@@ -17,7 +16,7 @@ COPY . /opt/enova
 
 RUN cd /opt/enova && bash ./scripts/pack_whl.enova.sh
 
-RUN pip install /opt/enova/dist/enova-0.0.1-py3-none-any.whl && \
+RUN pip install /opt/enova/dist/enova-0.0.2-py3-none-any.whl && \
     pip uninstall -y transformer-engine
 
 RUN mkdir -p /workspace/model
