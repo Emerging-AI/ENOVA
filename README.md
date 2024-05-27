@@ -164,7 +164,7 @@ http://localhost:8182/instance
 ```
 
 
-## 🏠 LLM Monitering Service 
+## 🏠 LLM Monitoring Service 
 
 ### Manage LLM Monitoring Service
 
