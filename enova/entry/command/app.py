@@ -23,14 +23,14 @@ class EnovaApp:
         api_server = get_app_api_server()
         uvicorn.run(api_server.app, host=host, port=port)
 
-    def _run_compose(self, host, port):
+    def _run_compose(self, host, port, restart=False):
         """
         - first stop svc
         - update svc options
         - start up svc
         """
-
-        self._docker_compose.stop_service(self._svc_name)
+        if restart:
+            self._docker_compose.stop_service(self._svc_name)
 
         svc_cmd = ["enova", "app", "run", "--host", host, "--port", port]
         environment_lst = self._docker_compose.get_service_option(self._svc_name, "environment") or []
@@ -88,7 +88,7 @@ class EnovaApp:
         self._docker_compose.update_service_options(self._svc_name, options)
         self._docker_compose.startup_service(self._svc_name, is_daemon=True)
 
-    def run(self, host, port, **kwargs):
+    def run(self, host, port, restart=False, **kwargs):
         args_helper = ArgumentHelper(self, sys._getframe())
         CONFIG.update_config(args_helper.args_map)
 
@@ -96,7 +96,7 @@ class EnovaApp:
             self._run_local(host=host, port=port)
 
         elif self._deploy_mode in [DeployMode.COMPOSE.value]:
-            self._run_compose(host=host, port=port)
+            self._run_compose(host=host, port=port, restart=restart)
 
         else:
             raise NotImplementedError()
