@@ -99,7 +99,7 @@ class WebuiProxyNginx:
             raise NotImplementedError()
 
 
-class EnovaEscaler:
+class EnovaService:
     @cached_property
     def enova_app(self):
         return EnovaApp(deploy_mode=DeployMode.COMPOSE.value)
@@ -120,6 +120,7 @@ class EnovaEscaler:
         return self.mon.status()
 
     def run(self, failed_with_stop=False, *args, **kwars):
+        restart_service = kwars.pop("restart_service", None)
         args_helper = ArgumentHelper(self, sys._getframe())
         CONFIG.update_config(args_helper.args_map)
 
@@ -144,10 +145,7 @@ class EnovaEscaler:
             if failed_with_stop:
                 self.mon.stop()
         try:
-            self.enova_app.run(
-                host=kwars["enova_app_host"],
-                port=int(kwars["enova_app_port"]),
-            )
+            self.enova_app.run(host=kwars["enova_app_host"], port=int(kwars["enova_app_port"]), restart=restart_service == "enova_app")
         except Exception as e:
             LOGGER.warning(f"enova_app start failed: err: {str(e)}")
             if failed_with_stop:
@@ -176,6 +174,7 @@ class EnovaPilot:
         enova_app_host=CONFIG.enova_app["host"],
         enova_app_port=CONFIG.enova_app["port"],
         hf_proxy=None,
+        restart_service=None,
         **kwargs,
     ):
         """
@@ -189,7 +188,7 @@ class EnovaPilot:
 
         from enova.api.app_api import EnovaAppApi
 
-        EnovaEscaler().run(
+        EnovaService().run(
             serving_host=serving_host,
             serving_port=serving_port,
             backend=backend,
@@ -199,6 +198,7 @@ class EnovaPilot:
             exporter_service_name=exporter_service_name,
             enova_app_host=enova_app_host,
             enova_app_port=enova_app_port,
+            restart_service=restart_service,
             **kwargs,
         )
 
@@ -233,13 +233,7 @@ class EnovaPilot:
         LOGGER.info(f"enode_info: {enode_info}")
 
         # TODO:
-        container_infos = (
-            enode_info.get("extra", {})
-            .get("get_deploy_ret", {})
-            .get("ret", {})
-            .get("result", {})
-            .get("container_infos")
-        )
+        container_infos = enode_info.get("extra", {}).get("get_deploy_ret", {}).get("ret", {}).get("result", {}).get("container_infos")
         LOGGER.info(f"container_infos: {container_infos}")
 
         if not container_infos:
@@ -261,18 +255,27 @@ class EnovaPilot:
         LOGGER.debug("Command: {}".format(cmd_str))
         subprocess.Popen(command)
 
-    def stop(self, instance_id, service=None, *args, **kwargs):
+    def stop(self, instance_id=None, service=None, *args, **kwargs):
         from enova.api.app_api import EnovaAppApi
 
-        try:
-            delete_ret = cli_loop.run_until_complete(EnovaAppApi.enode.delete(params={"instance_id": instance_id}))
-            LOGGER.info(f"enode delete ret: {delete_ret}")
-        except Exception as e:
-            LOGGER.warning(f"enode delete error: {str(e)}")
+        def delete_enode(enode_id):
+            try:
+                delete_ret = cli_loop.run_until_complete(EnovaAppApi.enode.delete(params={"instance_id": enode_id}))
+                LOGGER.info(f"enode delete ret: {delete_ret}")
+            except Exception as e:
+                LOGGER.warning(f"enode delete error: {str(e)}")
+
+        if instance_id in ["all", None]:
+            enode_list = cli_loop.run_until_complete(EnovaAppApi.enode.list(params={}))["data"]
+            for enode_info in enode_list:
+                delete_enode(enode_info["instance_id"])
+        else:
+            delete_enode(instance_id)
+
         # magic number, stop 2 sec that pilot can delete enode asynchronously
         time.sleep(2)
         if service == "all":
-            EnovaEscaler().stop()
+            EnovaService().stop()
 
 
 pass_enova_pilot = click.make_pass_decorator(EnovaPilot)
@@ -310,6 +313,7 @@ def pilot_cli(ctx):
 @click.option("--enova-app-host", "--enova_app_host", "enova_app_host", type=str, default=CONFIG.enova_app["host"])
 @click.option("--enova-app-port", "--enova_app_port", "enova_app_port", type=int, default=CONFIG.enova_app["port"])
 @click.option("--hf-proxy", "--hf_proxy", "hf_proxy", type=str, default=None)
+@click.option("--restart-service", "--restart_service", "restart_service", type=str, default=None)
 @pass_enova_pilot
 @click.pass_context
 def pilot_run(
@@ -325,6 +329,7 @@ def pilot_run(
     enova_app_host,
     enova_app_port,
     hf_proxy,
+    restart_service=None,
 ):
     enova_pilot.run(
         serving_host=serving_host,
@@ -337,6 +342,7 @@ def pilot_run(
         enova_app_host=enova_app_host,
         enova_app_port=enova_app_port,
         hf_proxy=hf_proxy,
+        restart_service=restart_service,
         **parse_extra_args(ctx),
     )
 
