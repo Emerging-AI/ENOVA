@@ -14,7 +14,7 @@ ESCALER_API_HOST = CONFIG.api["escaler_api_host"]
 # ----------------
 
 
-class GetPilotStatusRequest(EmergingAIBaseModel):
+class GetEScalerStatusRequest(EmergingAIBaseModel):
     task_name: str
 
 
@@ -49,7 +49,7 @@ class VolumePaths(EmergingAIBaseModel):
     mountPath: str
 
 
-class CreatePilotDeployParameters(EmergingAIBaseModel):
+class CreateEScalerDeployParameters(EmergingAIBaseModel):
     backend: str
     backendConfig: dict
     envs: List[EnvKVPair]
@@ -74,7 +74,7 @@ class ListDetectHistoryRequest(EmergingAIBaseModel):
 # ----------------
 
 
-class _PilotRequestFormer:
+class _EScalerRequestFormer:
     def get_deploy(self, params) -> Dict:
         req_body = {"task_name": params["task_name"]}
         req_body = GetDeployRequest(**req_body)
@@ -82,7 +82,7 @@ class _PilotRequestFormer:
 
     def create_deploy(self, params) -> Dict:
         req_body = params
-        req_body = CreatePilotDeployParameters(**req_body)
+        req_body = CreateEScalerDeployParameters(**req_body)
         return req_body.dict()
 
     def delete_deploy(self, params) -> Dict:
@@ -96,7 +96,7 @@ class _PilotRequestFormer:
         return req_body.dict()
 
 
-class _PilotResponseReformer:
+class _EScalerResponseReformer:
     def get_deploy(self, ret) -> Dict:
         if ret.get("code") and ret["code"] not in [0]:
             raise EScalerApiResponseError()
@@ -164,8 +164,8 @@ class _EScalerApi:
 class EScalerApiWrapper:
     def __post_init__(self) -> None:
         self.async_api = _EScalerApi()
-        self.request_former = _PilotRequestFormer
-        self.response_reformer = _PilotResponseReformer
+        self.request_former = _EScalerRequestFormer
+        self.response_reformer = _EScalerResponseReformer
 
     def __getattr__(self, item):
         if all(

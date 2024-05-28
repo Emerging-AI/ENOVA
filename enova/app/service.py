@@ -410,7 +410,7 @@ class AppService(BaseApiService):
         instance_info = {
             "instance_name": params["instance_name"],
             "instance_spec": host_spec,
-            "startup_args": {},  # #TODO: polit startup args all in CONFIG
+            "startup_args": {},
             "model_cfg": model_params,
             "creator": params["creator"],
         }
