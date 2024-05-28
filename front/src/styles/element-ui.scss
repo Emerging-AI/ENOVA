@@ -141,7 +141,7 @@
     }
 
     &__content {
-      @apply pb-7 h-[calc(100%-60px)];
+      @apply pb-7 h-[calc(100%-60px)] overflow-y-auto overflow-x-hidden;
     }
 
     &__nav {
