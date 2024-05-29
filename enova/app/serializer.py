@@ -122,7 +122,7 @@ class SingleQueryEnodeResponseSLZ(EmergingAIBaseModel):
     instance_id: str
     instance_name: str | None
     instance_spec: dict | None
-    model_cfg: dict | None  # TODO: pydantic 2.7 not suggest model_* as property
+    mdl_cfg: dict | None  # TODO: pydantic 2.7 not suggest model_* as property
     startup_args: dict | None
     enode_id: str
     deploy_status: str
