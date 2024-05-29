@@ -1,4 +1,5 @@
 import dataclasses
+import threading
 from typing import Dict, List
 from enova.common.config import CONFIG
 from enova.api.base import ASyncAPI
@@ -162,10 +163,23 @@ class _EScalerApi:
 
 @dataclasses.dataclass
 class EScalerApiWrapper:
+    _instance = None
+    _lock = threading.Lock()
+    _initialized: bool = dataclasses.field(default=False, init=False)
+
+    def __new__(cls, *args, **kwargs):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super(EScalerApiWrapper, cls).__new__(cls)
+        return cls._instance
+
     def __post_init__(self) -> None:
+        if self._initialized:
+            return
         self.async_api = _EScalerApi()
         self.request_former = _EScalerRequestFormer
         self.response_reformer = _EScalerResponseReformer
+        self._initialized = True
 
     def __getattr__(self, item):
         if all(
