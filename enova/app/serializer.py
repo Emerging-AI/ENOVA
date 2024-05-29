@@ -45,7 +45,7 @@ class EnodeCreateSLZ(EmergingAIBaseModel):
     model: str
     creator: str | None = "eadmin"
 
-    class Config:
+    class Extra:
         openapi_examples = {
             "Enode Instance 1": {
                 "value": {
@@ -98,7 +98,7 @@ class TestCreateSLZ(EmergingAIBaseModel):
     param_spec: ParamSpec
     creator: str | None = None
 
-    class Config:
+    class Extra:
         openapi_examples = {
             "Test Instance 1": {
                 "value": {

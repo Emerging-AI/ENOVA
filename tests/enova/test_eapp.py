@@ -16,3 +16,8 @@ class TestEnovaApp:
         async with AsyncClient(app=eapp, base_url="http://test") as ac:
             response = await ac.get(f"/{CONFIG.enova_app['url_prefix']}/healthz")
             assert response.status_code == 200
+
+    async def test_list_enode(self, eapp):
+        async with AsyncClient(app=eapp, base_url="http://test") as ac:
+            response = await ac.get(f"/{CONFIG.enova_app['url_prefix']}/v1/enode")
+            assert response.status_code == 200
