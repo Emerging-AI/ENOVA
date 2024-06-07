@@ -42,6 +42,22 @@ from enova.server.restful.service import BaseApiService
 class TestActionHandler:
     @staticmethod
     def build_req_body(param_spec):
+        body_script = f"""
+            ${{__groovy(
+                def builder = new groovy.json.JsonBuilder();
+                builder {{
+                    prompt org.apache.commons.lang.StringEscapeUtils.escapeJavaScript(vars.get('question'))
+                    max_tokens {param_spec["max_tokens"]}
+                    temperature {param_spec["temperature"]}
+                    top_p {param_spec["top_p"]}
+                }}
+                return builder.toString();
+            )}}
+        """
+        return html.escape(body_script)
+
+    @staticmethod
+    def build_req_body_old(param_spec):
         body = {
             "prompt": "${question}",
             "max_tokens": param_spec["max_tokens"],
