@@ -1,36 +1,66 @@
+#### [**English**](https://github.com/Emerging-AI/ENOVA) | [**中文**](https://github.com/Emerging-AI/ENOVA/blob/master/README_ZH.md)
+
 # ENOVA 
 
 <a href=''><img src='https://img.shields.io/badge/Paper-PDF-red'></a>
 [![Code License](https://img.shields.io/badge/Code%20License-Apache-green.svg)](https://github.com/Emerging-AI/ENOVA?tab=Apache-2.0-1-ov-file)
 
 
-ENOVA is an open-source llm deployment, monitoring, injection and auto-scaling service.
-Since the increasing popularity of large language model (LLM) backend systems, it is common and necessary to
-deploy stable serverless serving of LLM on GPU clusters with auto-scaling. 
-However, there exist challenges because the diversity and co-location of applications in GPU clusters 
-will lead to low service quality and GPU utilization. 
-To address them, we build ENOVA, which deconstructs the execution process of LLM service comprehensively
-and designs a configuration recommendation module for automatic deployment on any GPU clusters 
+ENOVA is an open-source service for LLM deployment, monitoring, injection, and auto-scaling. 
+With the increasing popularity of large language model (LLM) backend systems, deploying stable 
+serverless LLM services on GPU clusters with auto-scaling has become essential. 
+However, challenges arise due to the diversity and co-location of applications in GPU clusters, 
+leading to low service quality and GPU utilization. 
+
+To address these issues, ENOVA deconstructs the LLM service execution process and incorporates
+a configuration recommendation module for automatic deployment on any GPU cluster 
 and a performance detection module for auto-scaling. 
-On top of them, ENOVA implements a deployment execution engine for GPU cluster scheduling.
+Additionally, ENOVA features a deployment execution engine for efficient GPU cluster scheduling.
 
+With **ENOVA**, users can:
+- Build and deploy LLM with only few command lines
+- Recommend optimal computing resources and operating parameter configurations for LLM
+- Quick experience LLM performance with ENOVA by request injection offered
+- In-depth observation of LLM operating status and abnormal self-healing
+- Achieve load balancing through autoscaling
 
-## 🤖 Architecture of ENOVA
+Here are ENOVA's core technical points and values:
+- **Configuration Recommendation**: ENOVA can automatically identify various LLMs (open-source or fine-tuned), 
+and recommend the most suitable parameter configurations for deploying the model, 
+such as GPU type, maximal batch size, replicas, weights etc.
+- **Performance Detection**: ENOVA enables real-time monitoring of service quality 
+and abnormal usage of computational resources. 
+- **Deep Observability**: By conducting in-depth observation of the entire chain of task execution of large models, 
+we can provide the best guidance for maximizing model performance and optimizing the utilization of computing resources.
+- **Deployment & Execution**: Achieve rapid deployment and model serving, aiming to achieve autoscaling objectives.
 
 <p align="center">
 <img src="./.github/assets/ENOVA.png">
 </p>
 
-
+Based on the aforementioned capabilities of ENOVA, we can ensure that LLM services with ENOVA are:
+- **Stable**: Achieve a high availability rate of over 99%, ensuring stable operation without downtime.
+- **Cost-effective**: Increase resource utilization by over 50% and enhance comprehensive GPU memory utilization from 40% to 90%.
+- **Efficient**: Boost deployment efficiency by over 10 times and run LLMs with lower latency and higher throughputs
+- **Strong Scalability**: ENOVA can automatically cluster different task types, thus adapting to applications in many fields.
 
 ## ✈️ Getting Started
 
+We can demonstrate the powerful capabilities of E NOVA in model deployment and performance monitoring 
+by swiftly running an open-source AI model on your GPUs and conducting request injection tests.
+
 ### Requirement
 
-* OS: Linux
-* Docker
-* Python: >=3.10
-* GPU: Nvidia GPUs with compute capability 7.0 or higher
+- OS: Linux
+- Docker
+- Python: >=3.10
+- GPU: Nvidia GPUs with compute capability 7.0 or higher
+
+> [!NOTE]
+> 
+> If the above conditions are not met, the installation and operation of ENOVA may fail. 
+> If you do not have available GPU resources, 
+> we recommend that you use the free GPU resources on Google Colab to install and experience ENOVA.
 
 ### Installation
 
@@ -54,6 +84,33 @@ pip install enova
 enova -h 
 ```
 
+The expected output is:
+```text
+Usage: enova [OPTIONS] COMMAND [ARGS]...
+
+  ███████╗███╗   ██╗ ██████╗ ██╗   ██╗ █████╗
+  ██╔════╝████╗  ██║██╔═══██╗██║   ██║██╔══██╗
+  █████╗  ██╔██╗ ██║██║   ██║██║   ██║███████║
+  ██╔══╝  ██║╚██╗██║██║   ██║╚██╗ ██╔╝██╔══██║
+  ███████╗██║ ╚████║╚██████╔╝ ╚████╔╝ ██║  ██║
+  ╚══════╝╚═╝  ╚═══╝ ╚═════╝   ╚═══╝  ╚═╝  ╚═╝
+
+  ENOVA is an open-source llm deployment, monitoring, injection and auto-scaling service.
+  It provides a set of commands to deploy stable serverless serving of LLM on GPU clusters with auto-scaling.
+
+Options:
+  -v, --version  Show the version and exit.
+  -h, --help     Show this message and exit.
+
+Commands:
+  algo      Run the autoscaling service.
+  app       Start ENOVA application server.
+  enode     Deploy the target LLM and launch the LLM API service.
+  injector  Run the autoscaling service.
+  mon       Run the monitors of LLM server
+  pilot     Start an all-in-one LLM server with deployment, monitoring,...
+  webui     Build agent at this page based on the launched LLM API service.
+```
 
 ### Quickstart
 
@@ -72,18 +129,12 @@ Use proxy to download LLMs:
 enova pilot run --model mistralai/Mistral-7B-Instruct-v0.1 --hf_proxy xxx
 ```
 
-> [!NOTE]
-> 
-> * First, we use docker-compose to start grafana, prometheus, opentelmentry-collector, tempo, dcgm modules.
-> * Second, we start a streamlit webui service.
-> * Third, we launch the llm server with default vllm backend.
-
 > [!TIP]
 > 
-> * The default port of LLM service is 9199.
-> * The default port of grafana server is 32827.
-> * The default port of LLM webUI server is 8501.
-> * The default port of ENOVA application server is 8182.
+> - The default port of LLM service is 9199.
+> - The default port of grafana server is 32827.
+> - The default port of LLM webUI server is 8501.
+> - The default port of ENOVA application server is 8182.
 
 
 2. Check Deployed LLM service via ENOVA Application Server:
@@ -91,6 +142,10 @@ enova pilot run --model mistralai/Mistral-7B-Instruct-v0.1 --hf_proxy xxx
 ```text
 http://localhost:8182/instance
 ```
+
+<p align="center">
+<img src="./.github/assets/llm_instance.png">
+</p>
 
 
 3. Test the Deployed LLM service with an prompt:
@@ -129,6 +184,10 @@ curl http://localhost:9199/v1/completions \
 http://localhost:8182/instance
 ```
 
+<p align="center">
+<img src="./.github/assets/monitoring_metrics.png">
+</p>
+
 5. Stop all service
 ```
 enova pilot stop --service all
@@ -141,6 +200,8 @@ In addition to offering an all-in-one solution for service deployment, monitorin
 ENOVA also provides support for single modules.
 
 The LLM deployment service facilitates the deployment of LLMs and provides a stable API for accessing LLMs. 
+
+### Run an LLM
 
 ```bash
 enova enode run --model mistralai/Mistral-7B-Instruct-v0.1
@@ -166,6 +227,10 @@ are configurable parameters.
 enova webui run --serving_host 127.0.0.1 --serving_port 9199 --host 127.0.0.1 --port 8501
 ```
 
+<p align="center">
+<img src="./.github/assets/webui.png">
+</p>
+
 
 ### Autoscaling Module
 
@@ -180,6 +245,14 @@ Further details on the injection operation are available at:
 ```text
 http://localhost:8182/instance
 ```
+
+<p align="center">
+<img src="./.github/assets/request_inject.png">
+</p>
+
+<p align="center">
+<img src="./.github/assets/test_results.png">
+</p>
 
 
 ## 🏠 LLM Monitoring Service 
@@ -214,13 +287,6 @@ enova mon stop
 Monitoring metrics are collected using the DCGM exporter, Prometheus exporters, and the OpenTelemetry collector. 
 A brief description is provided in the following tables. For more details, please refer to the Grafana dashboard.
 
-```text
-http://localhost:32827/dashboards
-
-# default user / passwd
-admin / grafana
-```
-
 
 | Metric Type     | Metric Description                                              |
 |-----------------|-----------------------------------------------------------------|
@@ -240,6 +306,26 @@ admin / grafana
 | GPU Utilization | DCGM Metrics, like DCGM_FI_DEV_GPU_UTIL.                        |
 
 
+More detailed metrics can be viewed on our application server. 
+In the process of deploying the all-in-one llm service with ENOVA, 
+we also created the corresponding indicator dashboard in Grafana and supported viewing of more detailed trace data.
+
+- URL：http://localhost:32827/dashboards
+- Default user account：admin
+- Password：grafana
+
+
+#### GPU Metrics
+
+<p align="center">
+<img src="./.github/assets/gpu_metrics.png">
+</p>
+
+#### Traces
+
+<p align="center">
+<img src="./.github/assets/trace.png">
+</p>
 
 
 ## 📚 Reference
@@ -257,4 +343,5 @@ admin / grafana
 
 We use Slack workspace for the collaboration on building ENOVA.
 
-* [Slack workspace](https://join.slack.com/t/emergingai/shared_invite/zt-2i9ngqa10-OU8SsVJbV0mqTBrjjt5rmQ)
+- [Slack workspace](https://join.slack.com/t/emergingai/shared_invite/zt-2i9ngqa10-OU8SsVJbV0mqTBrjjt5rmQ)
+- Browse our [website](https://www.emergingai.pro/) for more informations
