@@ -42,9 +42,10 @@ from enova.server.restful.service import BaseApiService
 
 class TestActionHandler:
     @staticmethod
-    def build_req_body(param_spec, vllm_mode):
+    def build_req_body(param_spec, instance_info):
+        vllm_mode = instance_info["extra"]["create_deploy_payload"]["backendConfig"]["vllm_mode"]
         if vllm_mode == VllmMode.OPENAI.value:
-            return TestActionHandler.build_openai_req_body(param_spec)
+            return TestActionHandler.build_openai_req_body(param_spec, instance_info)
         body_script = f"""
             ${{__groovy(
                 def builder = new groovy.json.JsonBuilder();
@@ -60,13 +61,13 @@ class TestActionHandler:
         return html.escape(body_script)
 
     @staticmethod
-    def build_openai_req_body(param_spec):
+    def build_openai_req_body(param_spec, instance_info):
         """"""
         body_script = f"""
             ${{__groovy(
                 def builder = new groovy.json.JsonBuilder();
                 builder {{
-                    model {param_spec["model"]}
+                    model '{instance_info["mdl_cfg"]["model_name"]}'
                     prompt org.apache.commons.lang.StringEscapeUtils.escapeJavaScript(vars.get('question'))
                     max_tokens {param_spec["max_tokens"]}
                     temperature {param_spec["temperature"]}
@@ -109,7 +110,7 @@ class TestActionHandler:
                 duration=compute_actual_duration(test_spec["duration"], test_spec["duration_unit"]),
                 timer=timer,
                 data=test_spec["data_set"],
-                body=self.build_req_body(param_spec, vllm_mode),
+                body=self.build_req_body(param_spec, instance_info),
                 headers="Content-Type:application/json",
                 output=test_info["test_id"],
                 container_name="enova-traffic-injector-" + test_info["test_id"],
@@ -253,6 +254,7 @@ class EScalerActionHandler:
         return volume_lst
 
     async def deploy_enode(self, instance_info):
+        # TODO: remove user_args
         user_args = CONFIG.get_user_args()
 
         model_config = instance_info["mdl_cfg"]
@@ -282,7 +284,7 @@ class EScalerActionHandler:
         for k in backendConfig.keys():
             if k in user_args.keys():
                 backendConfig[k] = user_args[k]
-
+        backendConfig.update(instance_info["mdl_cfg"]["backend_config"])
         llmo_args = CONFIG.llmo
         for k in llmo_args.keys():
             if k in user_args.keys():
@@ -423,7 +425,7 @@ class AppService(BaseApiService):
         llm_config = LLMConfig()
         model_params["llm_config"] = llm_config.LLM_CONFIG.get(model_params["model_name"], {}).get(model_params["param"], {})
         model_params["default_config"] = llm_config.DEFAULT_CONFIG.get(model_params["param"], {})
-        # model_params = {}
+        model_params["backend_config"] = params.get("backend_config") or {}
         host_spec = get_machine_spec()
 
         instance_info = {

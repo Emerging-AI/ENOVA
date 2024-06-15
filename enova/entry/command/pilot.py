@@ -219,6 +219,7 @@ class EnovaPilot:
         app_params = {
             "instance_name": kwargs.get("name") or "enova-enode",
             "model": kwargs["model"],
+            "backend_config": kwargs,
         }
         enode_ret = cli_loop.run_until_complete(EnovaAppApi.enode.create(params=app_params))
 

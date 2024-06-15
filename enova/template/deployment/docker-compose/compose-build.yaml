@@ -126,7 +126,7 @@ services:
   #   networks:
   #     - enova-net
   enova-algo:
-    image: emergingai/enova:v0.0.1
+    image: emergingai/enova:v0.0.3
     container_name: enova-algo
     command: "enova algo run"
     ports:
@@ -137,7 +137,7 @@ services:
           - enova-algo
 
   enova-app:
-    image: emergingai/enova:v0.0.1
+    image: emergingai/enova:v0.0.3
     container_name: enova-app
     command: "enova app run"
     volumes:
@@ -161,7 +161,7 @@ services:
           - enova-app
 
   enova-escaler:
-    image: emergingai/enova-escaler:v0.0.1  
+    image: emergingai/enova-escaler:v0.0.3
     container_name: enova-escaler
     command: "bash /app/scripts/local_docker_run.sh --conf /etc/escaler/conf/settings.json"
     volumes:
