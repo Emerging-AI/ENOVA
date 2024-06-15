@@ -1,5 +1,5 @@
 from typing import List
-from enova.common.constant import DurationUnitType, TrafficDistributionType
+from enova.common.constant import DurationUnitType, TrafficDistributionType, VllmMode
 from enova.server.restful.serializer import (
     EmergingAIBaseModel,
     EmergingAIQueryRequestBaseModel,
@@ -43,6 +43,7 @@ class EnodeInstanceSpec(EmergingAIBaseModel):
 class EnodeCreateSLZ(EmergingAIBaseModel):
     instance_name: str | None
     model: str
+    backend_config: dict | None
     creator: str | None = "eadmin"
 
     class Extra:

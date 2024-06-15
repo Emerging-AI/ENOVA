@@ -61,6 +61,9 @@ enova -h
 
 ```bash
 enova pilot run --model mistralai/Mistral-7B-Instruct-v0.1
+
+# openai
+enova pilot run --model mistralai/Mistral-7B-Instruct-v0.1 --vllm_mode openai
 ```
 
 Use proxy to download LLMs:
@@ -107,6 +110,16 @@ curl -X POST http://localhost:9199/generate \
 "max_tokens": 1024,
 "temperature": 0.9,
 "top_p": 0.9
+}'
+
+# openai
+curl http://localhost:9199/v1/completions \
+-H "Content-Type: application/json" \
+-d '{
+"model": "mistralai/Mistral-7B-Instruct-v0.1",
+"prompt": "San Francisco is a",
+"max_tokens": 128,
+"temperature": 0
 }'
 ```
 
