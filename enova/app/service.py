@@ -22,6 +22,7 @@ from enova.common.constant import (
     Distribution,
     TestStatus,
     TrafficDistributionType,
+    VllmMode,
 )
 from enova.common.error import (
     BackendConfigMissingError,
@@ -41,7 +42,9 @@ from enova.server.restful.service import BaseApiService
 
 class TestActionHandler:
     @staticmethod
-    def build_req_body(param_spec):
+    def build_req_body(param_spec, vllm_mode):
+        if vllm_mode == VllmMode.OPENAI.value:
+            return TestActionHandler.build_openai_req_body(param_spec)
         body = {
             "prompt": "${question}",
             "max_tokens": param_spec["max_tokens"],
@@ -58,8 +61,27 @@ class TestActionHandler:
         body_json_str = json.dumps(body)
         return html.escape(body_json_str)
 
-    def start(self, host, port, test_info):
+    @staticmethod
+    def build_openai_req_body(param_spec):
+        """"""
+        body = {
+            "model": param_spec["model"],
+            "prompt": "${question}",
+            "max_tokens": param_spec["max_tokens"],
+            "temperature": param_spec["temperature"],
+            "top_p": param_spec["top_p"],
+        }
+        body_json_str = json.dumps(body)
+        return html.escape(body_json_str)
+
+    def start(self, host, port, test_info, instance_info):
         from enova.entry.command.injector import TrafficInjector
+
+        traffic_injector_path_map = {
+            VllmMode.NORMAL.value: "/generate",
+            # TODO: adapt /v1/chat/completions
+            VllmMode.OPENAI.value: "/v1/completions",
+        }
 
         test_spec = test_info["test_spec"]
         if test_spec["distribution"] == TrafficDistributionType.GAUSSIAN.value:
@@ -71,18 +93,20 @@ class TestActionHandler:
             LOGGER.exception(f"distribution {distribution} not allow.")
             raise NotImplementedError()
 
+        vllm_mode = instance_info["extra"]["create_deploy_payload"]["backendConfig"]["vllm_mode"]
         param_spec = test_info["param_spec"]
+        path = traffic_injector_path_map[vllm_mode]
 
         try:
             TrafficInjector().run(
                 host=host,
                 port=port,
-                path="/generate",
+                path=path,
                 method="post",
                 duration=compute_actual_duration(test_spec["duration"], test_spec["duration_unit"]),
                 timer=timer,
                 data=test_spec["data_set"],
-                body=self.build_req_body(param_spec),
+                body=self.build_req_body(param_spec, vllm_mode),
                 headers="Content-Type:application/json",
                 output=test_info["test_id"],
                 container_name="enova-traffic-injector-" + test_info["test_id"],
@@ -105,9 +129,7 @@ class TestActionHandler:
         start_time = datetime.datetime.fromisoformat(test_info.create_time).replace(tzinfo=local_tz)
         utc_start_time = start_time.astimezone(pytz.utc)
         end_time = utc_start_time + datetime.timedelta(
-            seconds=max(
-                60, compute_actual_duration(test_info.test_spec["duration"], test_info.test_spec["duration_unit"])
-            )
+            seconds=max(60, compute_actual_duration(test_info.test_spec["duration"], test_info.test_spec["duration_unit"]))
         )
 
         start = int(start_time.timestamp())
@@ -134,12 +156,8 @@ class TestActionHandler:
         )
 
         return {
-            "generation_tps": 0
-            if not generation_tps_query_ret
-            else int(TestActionHandler.compute_metric_avg(generation_tps_query_ret)),
-            "prompt_tps": 0
-            if not prompt_tps_query_ret
-            else int(TestActionHandler.compute_metric_avg(prompt_tps_query_ret)),
+            "generation_tps": 0 if not generation_tps_query_ret else int(TestActionHandler.compute_metric_avg(generation_tps_query_ret)),
+            "prompt_tps": 0 if not prompt_tps_query_ret else int(TestActionHandler.compute_metric_avg(prompt_tps_query_ret)),
         }
 
     @staticmethod
@@ -400,9 +418,7 @@ class AppService(BaseApiService):
         model_params["param"] = int(round(model_params.get("params_size", 0) / 10**9, ndigits=0))
 
         llm_config = LLMConfig()
-        model_params["llm_config"] = llm_config.LLM_CONFIG.get(model_params["model_name"], {}).get(
-            model_params["param"], {}
-        )
+        model_params["llm_config"] = llm_config.LLM_CONFIG.get(model_params["model_name"], {}).get(model_params["param"], {})
         model_params["default_config"] = llm_config.DEFAULT_CONFIG.get(model_params["param"], {})
         # model_params = {}
         host_spec = get_machine_spec()
@@ -546,9 +562,7 @@ class AppService(BaseApiService):
     async def list_test(self, params: Dict):
         from enova.entry.command.injector import TrafficInjector
 
-        ret = await self.common_list(
-            params, TestInfoTable, fuzzy_field_list=["data_set", "test_status", "creator", "updater"]
-        )
+        ret = await self.common_list(params, TestInfoTable, fuzzy_field_list=["data_set", "test_status", "creator", "updater"])
         async with get_async_session() as async_session:
             for datum in ret["data"]:
                 # Sync Docker-compose
@@ -590,9 +604,7 @@ class AppService(BaseApiService):
             raise TestStartError(f"instance: {params['instance_id']} is not running")
         async with get_async_session() as async_session:
             smt = select(TestInfoTable).filter(
-                TestInfoTable.test_status.in_(
-                    [TestStatus.INIT.value, TestStatus.RUNNING.value, TestStatus.UNKNOWN.value]
-                )
+                TestInfoTable.test_status.in_([TestStatus.INIT.value, TestStatus.RUNNING.value, TestStatus.UNKNOWN.value])
             )
             c = await async_session.scalar(select(func.count()).select_from(smt))
             if c > 0:
@@ -603,6 +615,7 @@ class AppService(BaseApiService):
                 CONFIG.traffic_injector["default_enode_host"],
                 instance_info["extra"]["create_deploy_payload"]["port"],
                 test_info,
+                instance_info,
             )
             if not success:
                 raise TestStartError(f"instance_id: {params['instance_id']} start failed")

@@ -81,3 +81,8 @@ class ServeStatus(Enum):
 class Distribution(Enum):
     NORMAL = "normal"
     POISSON = "poisson"
+
+
+class VllmMode(Enum):
+    NORMAL = "normal"
+    OPENAI = "openai"

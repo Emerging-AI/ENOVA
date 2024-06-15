@@ -2,6 +2,7 @@ import asyncio
 import dataclasses
 from enova.common.logger import LOGGER
 from enova.common.config import CONFIG
+from enova.common.constant import VllmMode
 from enova.serving.backend.base import BaseBackend
 
 
@@ -12,9 +13,9 @@ class VllmBackend(BaseBackend):
 
     def _create_app(self):
         vllm_mode = CONFIG.vllm.pop("vllm_mode", "normal")
-        if vllm_mode == "normal":
+        if vllm_mode == VllmMode.NORMAL.value:
             from vllm.entrypoints import api_server
-        elif vllm_mode == "openai":
+        elif vllm_mode == VllmMode.OPENAI.value:
             from vllm.entrypoints.openai import api_server
         else:
             raise ValueError(f"vllm_mode: {vllm_mode} is not support")
