@@ -119,7 +119,7 @@ import InstanceDetail from '@/components/instance/InstanceDetail.vue'
 import TimeRangePicker from '@/components/TimeRangePicker.vue'
 import { useExperimentStore } from '@/stores/experiment'
 import { useInstanceStore } from '@/stores/instance'
-import { useDateFormat } from '@vueuse/core'
+import { useDateFormat, useIntervalFn } from '@vueuse/core'
 import { useInitQueryRange } from '@/hooks/useInitQueryRange'
 
 
@@ -251,14 +251,20 @@ const showDetail = (row: any, type: string) => {
   showDrawer.value = true
 }
 
+const { pause, resume } = useIntervalFn(() => {
+  getTableData()
+}, 15000)
+
 const closeDrawer = () => {
   showDrawer.value = false
   curInstanceId.value = ''
   currentId.value = ''
+  resume()
 }
 
 const openDrawer = () => {
   useInitQueryRange()
+  pause()
 }
 
 const changeTime = (val: string[]) => {

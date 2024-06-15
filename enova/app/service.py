@@ -45,34 +45,37 @@ class TestActionHandler:
     def build_req_body(param_spec, vllm_mode):
         if vllm_mode == VllmMode.OPENAI.value:
             return TestActionHandler.build_openai_req_body(param_spec)
-        body = {
-            "prompt": "${question}",
-            "max_tokens": param_spec["max_tokens"],
-            "temperature": param_spec["temperature"],
-            "top_p": param_spec["top_p"],
-        }
-
-        # others param format: k1:v1,k2:v2,...
-        if param_spec["others"]:
-            for pair in param_spec["others"].split(","):
-                k, v = pair.split(":")
-                body[k] = v
-
-        body_json_str = json.dumps(body)
-        return html.escape(body_json_str)
+        body_script = f"""
+            ${{__groovy(
+                def builder = new groovy.json.JsonBuilder();
+                builder {{
+                    prompt org.apache.commons.lang.StringEscapeUtils.escapeJavaScript(vars.get('question'))
+                    max_tokens {param_spec["max_tokens"]}
+                    temperature {param_spec["temperature"]}
+                    top_p {param_spec["top_p"]}
+                }}
+                return builder.toString();
+            )}}
+        """
+        return html.escape(body_script)
 
     @staticmethod
     def build_openai_req_body(param_spec):
         """"""
-        body = {
-            "model": param_spec["model"],
-            "prompt": "${question}",
-            "max_tokens": param_spec["max_tokens"],
-            "temperature": param_spec["temperature"],
-            "top_p": param_spec["top_p"],
-        }
-        body_json_str = json.dumps(body)
-        return html.escape(body_json_str)
+        body_script = f"""
+            ${{__groovy(
+                def builder = new groovy.json.JsonBuilder();
+                builder {{
+                    model {param_spec["model"]}
+                    prompt org.apache.commons.lang.StringEscapeUtils.escapeJavaScript(vars.get('question'))
+                    max_tokens {param_spec["max_tokens"]}
+                    temperature {param_spec["temperature"]}
+                    top_p {param_spec["top_p"]}
+                }}
+                return builder.toString();
+            )}}
+        """
+        return html.escape(body_script)
 
     def start(self, host, port, test_info, instance_info):
         from enova.entry.command.injector import TrafficInjector
@@ -203,7 +206,7 @@ class TestActionHandler:
         return test_info
 
 
-class PilotActionHandler:
+class EScalerActionHandler:
     def __init__(self) -> None:
         self.escaler_api = EScalerApiWrapper()
 
@@ -252,7 +255,7 @@ class PilotActionHandler:
     async def deploy_enode(self, instance_info):
         user_args = CONFIG.get_user_args()
 
-        model_config = instance_info["model_cfg"]
+        model_config = instance_info["mdl_cfg"]
         llm_config = {
             "framework": model_config["model_type"],
             "param": model_config["param"],
@@ -390,7 +393,7 @@ class AppService(BaseApiService):
     END_TIME_FIELD = "update_time"
 
     def __init__(self) -> None:
-        self.pilot_handler = PilotActionHandler()
+        self.escaler_handler = EScalerActionHandler()
         self.test_handler = TestActionHandler()
 
     async def create_instance(self, params):
@@ -426,8 +429,8 @@ class AppService(BaseApiService):
         instance_info = {
             "instance_name": params["instance_name"],
             "instance_spec": host_spec,
-            "startup_args": {},  # #TODO: polit startup args all in CONFIG
-            "model_cfg": model_params,
+            "startup_args": {},
+            "mdl_cfg": model_params,
             "creator": params["creator"],
         }
         instance_info["creator"] = (
@@ -440,7 +443,7 @@ class AppService(BaseApiService):
         instance_info["enode_id"] = gen_ulid()
 
         async with get_async_session() as async_session:
-            instance_info = await self.pilot_handler.deploy_enode(instance_info)
+            instance_info = await self.escaler_handler.deploy_enode(instance_info)
 
             if not instance_info:
                 raise DeploymentInstanceCreateFailedError()
@@ -487,7 +490,7 @@ class AppService(BaseApiService):
             query_result = await async_session.execute(query)
             for instance_info in query_result:
                 instance_info = instance_info[0]
-                instance_info = await self.pilot_handler.sync_enode_status(instance_info)
+                instance_info = await self.escaler_handler.sync_enode_status(instance_info)
                 await async_session.merge(instance_info)
                 await async_session.flush()
 
@@ -508,7 +511,7 @@ class AppService(BaseApiService):
                 raise DeploymentInstanceNotExistError()
 
             instance_info = instance_info[0]
-            instance_info = await self.pilot_handler.shutdown_enode(instance_info)
+            instance_info = await self.escaler_handler.shutdown_enode(instance_info)
             if instance_info is None:
                 return "failed"
 
@@ -527,7 +530,7 @@ class AppService(BaseApiService):
             query_result = await async_session.execute(query)
             for instance_info in query_result:
                 instance_info = instance_info[0]
-                instance_info = await self.pilot_handler.shutdown_enode(instance_info)
+                instance_info = await self.escaler_handler.shutdown_enode(instance_info)
                 if instance_info is None:
                     continue
 
@@ -551,7 +554,7 @@ class AppService(BaseApiService):
                 raise DeploymentInstanceNotExistError()
 
             instance_info = instance_info[0]
-            instance_info = await self.pilot_handler.sync_enode_status(instance_info)
+            instance_info = await self.escaler_handler.sync_enode_status(instance_info)
 
             await async_session.merge(instance_info)
             await async_session.flush()

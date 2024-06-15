@@ -116,6 +116,11 @@ curl -X POST http://localhost:9199/generate \
 http://localhost:8182/instance
 ```
 
+5. Stop all service
+```
+enova pilot stop --service all
+```
+
 
 ## 🏠 LLM Deployment Service
 
@@ -164,7 +169,7 @@ http://localhost:8182/instance
 ```
 
 
-## 🏠 LLM Monitering Service 
+## 🏠 LLM Monitoring Service 
 
 ### Manage LLM Monitoring Service
 

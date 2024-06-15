@@ -4,7 +4,6 @@ from typing import Dict, List
 from pydantic import BaseModel, Field
 from pydantic.version import VERSION as PYDANTIC_VERSION
 
-from enova.common.encoder import numpy_dumps
 
 PYDANTIC_V2 = PYDANTIC_VERSION.startswith("2.")
 if PYDANTIC_V2:
@@ -25,14 +24,8 @@ class AllFields(ModelMetaclass):
 
 
 class EmergingAIBaseModel(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-        json_dumps = numpy_dumps
-
     def dict(self, *args, **kwargs):
-        # json_string = self.json(encoder=numpy_dumps)
-        json_string = self.model_dump_json()
-        return json.loads(json_string)
+        return json.loads(self.model_dump_json())
 
 
 class EmergingAIQueryRequestBaseModel(EmergingAIBaseModel):

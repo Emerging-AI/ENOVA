@@ -1,9 +1,8 @@
 [project]
 name = "enova"
-version = "0.0.1"
 description = "enova"
 requires-python = ">=3.8"
-dynamic = ["dependencies"]
+dynamic = ["dependencies", "version"]
 authors = [
     { name = "kyokagong", email = "kyokagong@emergingai-tech.com" },
     { name = "wenxinxie", email = "wenxin@emergingai-tech.com" },
@@ -36,6 +35,7 @@ namespaces = true
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
+version = {file = ["VERSION"]}
 
 [tool.coverage.run]
 omit = ["*/tests/test_*.py"]

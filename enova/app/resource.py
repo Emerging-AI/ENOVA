@@ -22,6 +22,7 @@ class BaseResource(BaseResource):
 
 class HealthzResource(BaseResource):
     PATH = "/healthz"
+    TAGS = ["monitor"]
 
     async def get(self) -> Dict:
         """"""
@@ -33,9 +34,10 @@ class EnodeResource(BaseResource):
     GET_INCLUDE_IN_SCHEMA = True
     GET_RESPONSE_MODEL = QueryEnodeResponseSLZ
     POST_RESPONSE_MODEL = SingleQueryEnodeResponseSLZ
+    TAGS = ["enode serve"]
 
     async def post(
-        self, params: Annotated[EnodeCreateSLZ, Body(openapi_examples=EnodeCreateSLZ.Config.openapi_examples)]
+        self, params: Annotated[EnodeCreateSLZ, Body(openapi_examples=EnodeCreateSLZ.Extra.openapi_examples)]
     ) -> Dict:
         """"""
         return await self.service.create_instance(params.dict())
@@ -47,6 +49,7 @@ class EnodeResource(BaseResource):
 
 class SingleEnodeResource(BaseResource):
     PATH = "/enode/{instance_id}"
+    TAGS = ["enode serve"]
 
     async def delete(self, instance_id: str):
         """"""
@@ -57,21 +60,14 @@ class SingleEnodeResource(BaseResource):
         return await self.service.get_instance(instance_id)
 
 
-class SingleEnodeByNameResource(BaseResource):
-    PATH = "/enode/by/name"
-
-    async def delete(self, instance_name: str):
-        """"""
-        return await self.service.delete_instance_by_name(instance_name)
-
-
 class TestResource(BaseResource):
     PATH = "/enode/instance/test"
     GET_RESPONSE_MODEL = ListTestResponseSLZ
     POST_RESPONSE_MODEL = SingleQueryTestResponseSLZ
+    TAGS = ["test inject"]
 
     async def post(
-        self, params: Annotated[TestCreateSLZ, Body(openapi_examples=TestCreateSLZ.Config.openapi_examples)]
+        self, params: Annotated[TestCreateSLZ, Body(openapi_examples=TestCreateSLZ.Extra.openapi_examples)]
     ):
         return await self.service.create_test(params.dict())
 
@@ -82,6 +78,7 @@ class TestResource(BaseResource):
 class SingleTestResource(BaseResource):
     PATH = "/enode/instance/test/{test_id}"
     GET_RESPONSE_MODEL = SingleQueryTestResponseSLZ
+    TAGS = ["test inject"]
 
     async def get(self, test_id: str):
         return await self.service.get_test(test_id)

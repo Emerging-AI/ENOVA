@@ -45,7 +45,7 @@ class EnodeCreateSLZ(EmergingAIBaseModel):
     model: str
     creator: str | None = "eadmin"
 
-    class Config:
+    class Extra:
         openapi_examples = {
             "Enode Instance 1": {
                 "value": {
@@ -98,7 +98,7 @@ class TestCreateSLZ(EmergingAIBaseModel):
     param_spec: ParamSpec
     creator: str | None = None
 
-    class Config:
+    class Extra:
         openapi_examples = {
             "Test Instance 1": {
                 "value": {
@@ -122,7 +122,7 @@ class SingleQueryEnodeResponseSLZ(EmergingAIBaseModel):
     instance_id: str
     instance_name: str | None
     instance_spec: dict | None
-    model_cfg: dict | None
+    mdl_cfg: dict | None  # TODO: pydantic 2.7 not suggest model_* as property
     startup_args: dict | None
     enode_id: str
     deploy_status: str

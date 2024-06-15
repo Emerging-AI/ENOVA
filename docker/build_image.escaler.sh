@@ -33,6 +33,4 @@ fi
 
 # build enova
 cd $BASEDIR
-docker build -f $BASEDIR/docker/Dockerfile.escaler -t $HARBOR_PATH/enova-escaler:$IMAGE_VERSION $BASEDIR
-
-docker tag $HARBOR_PATH/enova-escaler:$IMAGE_VERSION  $MIRROR_PATH/enova-escaler:$IMAGE_VERSION
+docker build -f $BASEDIR/docker/Dockerfile.escaler -t $MIRROR_PATH/enova-escaler:$IMAGE_VERSION $BASEDIR

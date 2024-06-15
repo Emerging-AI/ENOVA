@@ -7,8 +7,8 @@ import (
 
 	"github.com/Emerging-AI/ENOVA/escaler/cmd/escaler/docs"
 
-	"github.com/Emerging-AI/ENOVA/escaler/internal/detector"
-	"github.com/Emerging-AI/ENOVA/escaler/internal/scaler"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/detector"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/scaler"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
 
