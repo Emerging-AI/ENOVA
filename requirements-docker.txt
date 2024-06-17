@@ -24,3 +24,4 @@ uvicorn
 ulid-py
 pyopencl
 py-cpuinfo
+openai
