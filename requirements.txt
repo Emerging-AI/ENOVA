@@ -27,3 +27,4 @@ pyopencl
 py-cpuinfo
 pytz
 tzlocal
+openai

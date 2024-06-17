@@ -16,7 +16,7 @@ class Webui:
         args_helper = ArgumentHelper(self, sys._getframe())
         CONFIG.update_config(args_helper.args_map)
 
-        os.environ["SERVING_URL"] = f"http://{serving_host}:{serving_port}/generate"
+        os.environ['SERVING_URL'] = f"http://{serving_host}:{serving_port}"
 
         base_enova_path = get_enova_path()
         streamlit_script = os.path.join(base_enova_path, CONFIG.webui["script"])
