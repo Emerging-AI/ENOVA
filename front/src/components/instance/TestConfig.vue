@@ -18,7 +18,7 @@
               <el-form-item :label="$t('common.title.dataset')" prop="dataset">
                 <el-select
                   v-model="formData.dataset"
-                  :placeholder="$t('instance.inst.datastPlaceholder')"
+                  :placeholder="$t('instance.inst.datasetPlaceholder')"
                   popper-class="max-w-[800px]"
                 >
                   <el-option-group
@@ -64,7 +64,11 @@
                     :value="item.value"
                   />
                 </el-select>
-                <el-select class="suffix !w-20" v-model="formData.duration_unit" placeholder="Select">
+                <el-select
+                  class="suffix !w-20"
+                  v-model="formData.duration_unit"
+                  placeholder="Select"
+                >
                   <el-option
                     v-for="item in timeOptions"
                     :key="item.value"
@@ -87,7 +91,10 @@
           </el-row>
           <el-row :gutter="24">
             <el-col :span="12">
-              <el-form-item :label="`Requests per Sec (${formData.distribution === 'poisson' ? 'Lambda' : 'Mean'})`" prop="mean">
+              <el-form-item
+                :label="`Requests per Sec (${formData.distribution === 'poisson' ? 'Lambda' : 'Mean'})`"
+                prop="mean"
+              >
                 <el-input-number
                   v-model="formData.mean"
                   :min="0"
@@ -164,7 +171,7 @@
                   :placeholder="$t('instance.inst.paramsPlaceholder')"
                 >
                   <el-option
-                    v-for="item in praameterOptions"
+                    v-for="item in parameterOptions"
                     :key="item.value"
                     :label="item.label"
                     :value="item.value"
@@ -177,7 +184,7 @@
       </el-collapse>
     </el-form>
     <div
-      class="flex flex-row-reverse gap-3 w-1/2 p-4 bg-white z-[4] border-t botder-gray2 fixed bottom-0 right-0"
+      class="flex flex-row-reverse gap-3 w-1/2 p-4 bg-white z-[4] border-t border-gray2 fixed bottom-0 right-0"
     >
       <el-button type="primary" :loading="submitLoading" @click="handleConfirm">{{
         $t('instance.action.startTest')
@@ -187,12 +194,12 @@
   </div>
 </template>
 <script setup lang="ts">
-import { createTest } from '@/api/instance';
-import { useInstanceStore } from '@/stores/instance';
+import { createTest } from '@/api/instance'
+import { useInstanceStore } from '@/stores/instance'
 import type { FormInstance, FormRules } from 'element-plus'
 import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router';
+import { useRouter } from 'vue-router'
 interface DatasetOptionsType {
   label: string
   options: {
@@ -300,7 +307,7 @@ const datasetOptions: DatasetOptionsType[] = [
 
 const durationOptions = ['1', '3', '5', '15', '30', '60'].map((i) => ({ label: i, value: i }))
 
-const praameterOptions = [
+const parameterOptions = [
   {
     value: '1',
     label: 'params1'
@@ -322,7 +329,17 @@ const handleConfirm = async (): Promise<void> => {
   await ruleFormRef.value.validate((valid, fields) => {
     if (valid) {
       submitLoading.value = true
-      const { dataset, duration, distribution, duration_unit, mean, std, token, temperature, topP} = formData.value;
+      const {
+        dataset,
+        duration,
+        distribution,
+        duration_unit,
+        mean,
+        std,
+        token,
+        temperature,
+        topP
+      } = formData.value
       const params = {
         instance_id: instanceStore.currentId,
         test_spec: {
@@ -341,17 +358,19 @@ const handleConfirm = async (): Promise<void> => {
         },
         creator: 'admin'
       }
-      createTest(params).then((res) => {
-        ElMessage({
-          message: t('experiment.inst.successTip'),
-          type: 'success',
-          duration: 3 * 1000
+      createTest(params)
+        .then((res) => {
+          ElMessage({
+            message: t('experiment.inst.successTip'),
+            type: 'success',
+            duration: 3 * 1000
+          })
+          emit('closeConfig')
+          router.push({ name: 'testRecord' })
         })
-        emit('closeConfig')
-        router.push({name: 'testRecord'})
-      }).finally(() => {
-        submitLoading.value = false
-      })
+        .finally(() => {
+          submitLoading.value = false
+        })
     }
   })
 }

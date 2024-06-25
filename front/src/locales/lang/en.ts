@@ -30,7 +30,7 @@ export default {
       delete: 'Delete',
       operationLog: 'Operation Log',
       cancel: 'Cancel',
-      refresh: 'Refresh',
+      refresh: 'Refresh'
     },
     inst: {
       deleteTips: 'Are you sure you want to delete?'
@@ -44,12 +44,12 @@ export default {
       minute: 'Minute',
       second: 'Second',
       day: 'Day',
-      week: 'Week',
+      week: 'Week'
     }
   },
   menu: {
     service: 'LLM Service',
-    record: 'Injection Records',
+    record: 'Injection Records'
   },
   instance: {
     title: {
@@ -59,7 +59,7 @@ export default {
       deploying: 'Deploying',
       deploySuccess: 'Deployment Success',
       deployFail: 'Deployment Fail',
-      finsihed: 'Finished',
+      finished: 'Finished',
       instanceDetail: 'LLM Deployment Instance Detail',
       testConfig: 'Test Configuration',
       startupOptions: 'Startup Parameter',
@@ -80,7 +80,7 @@ export default {
       userDataset: 'Custom Dataset',
       configSuggest: 'Configuration Suggestions',
       currentVal: 'Current Value',
-      suggessVal: 'Recommended Value',
+      suggestVal: 'Recommended Value'
     },
     action: {
       inject: 'Request Injection',
@@ -88,7 +88,7 @@ export default {
     },
     inst: {
       searchPlaceholder: 'Instance Name, Deployment Status',
-      datastPlaceholder: 'Please Select The Dataset',
+      datasetPlaceholder: 'Please Select The Dataset',
       paramsPlaceholder: 'Please Select The Parameters',
       chartSearch: 'Indicator Name、Indicator Type',
       durationTip: 'Duration {0}'
@@ -112,18 +112,18 @@ export default {
       testFail: 'Test Fail',
       testInit: 'Init',
       testUnknown: 'Unknown',
-      finsihed: 'Test Finsihed',
+      finished: 'Test Finished',
       testResultOverview: 'Overview of Test Results',
       testConfig: 'Test Configuration',
       requestNum: 'Total Number of Requests Sent',
       requestSuccessNum: 'Number of Successful Requests Executed',
-      requestsuccessRate: 'Request Execution Success Rate',
+      requestSuccessRate: 'Request Execution Success Rate',
       avgTime: 'Average Execution Time of Requests'
     },
     action: {},
     inst: {
       searchPlaceholder: 'Test Instance, Test Dataset',
-      successTip: 'Request Injection Successfully!',
+      successTip: 'Request Injection Successfully!'
     }
   },
   datepicker: {
@@ -150,11 +150,11 @@ export default {
       requestNum: 'Number of requests received per second',
       requestExecuteNum: 'Number of requests returned per second',
       requestSuccessNum: 'Number of successful requests executed per second',
-      requestSueeceeRate: 'Success rate of request execution per second',
+      requestSuccessRate: 'Success rate of request execution per second',
       activeRequestNum: 'The number of requests being processed',
       requestDuration: 'Average request execution time per second',
       responseSize: 'Response size',
-      requsetSize: 'Request size',
+      requestSize: 'Request size',
       promptThroughput: 'avg_prompt_throughput',
       generationThroughput: 'avg_generation_throughput',
       runningRequests: 'running_requests',
@@ -168,11 +168,11 @@ export default {
       memTemp: 'DCGM_FI_DEV_MEMORY_TEMP',
       gpuTemp: 'DCGM_FI_DEV_GPU_TEMP',
       power: 'DCGM_FI_DEV_POWER_USAGE',
-      grEngingActive: 'DCGM_FI_PROF_GR_ENGINE_ACTIVE',
+      grEnginActive: 'DCGM_FI_PROF_GR_ENGINE_ACTIVE',
       tensor: 'DCGM_FI_PROF_PIPE_TENSOR_ACTIVE',
       memCopyUtil: 'DCGM_FI_PROF_DRAM_ACTIVE',
       pcie: 'DCGM_FI_PROF_PCIE_TX_BYTES DCGM_FI_PROF_PCIE_RX_BYTES',
-      nvlink: 'DCGM_FI_PROF_NVLINK_RX_BYTES DCGM_FI_PROF_NVLINK_TX_BYTES',
+      nvLink: 'DCGM_FI_PROF_NVLINK_RX_BYTES DCGM_FI_PROF_NVLINK_TX_BYTES',
       noData: 'There is currently no data available'
     }
   }

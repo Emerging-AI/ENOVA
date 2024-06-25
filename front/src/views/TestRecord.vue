@@ -41,7 +41,11 @@
           </template>
           <template #default="scope">
             <template v-if="column.prop === 'test_id'">
-              <span class="cursor-pointer text-sm text-secondary font-medium" @click="showDetail(scope.row, 'reslut')">{{ scope.row.test_id }}</span>
+              <span
+                class="cursor-pointer text-sm text-secondary font-medium"
+                @click="showDetail(scope.row, 'result')"
+                >{{ scope.row.test_id }}</span
+              >
             </template>
             <template v-if="column.prop === 'create_time'">
               <span>{{ useDateFormat(scope.row.create_time, 'YYYY-MM-DD HH:mm:ss').value }}</span>
@@ -76,10 +80,16 @@
               </div>
             </template>
             <template v-if="column.prop === 'generation_tps'">
-              <span>{{ scope.row.test_status === 'success' ? scope.row.generation_tps : '-' }}</span>
+              <span>{{
+                scope.row.test_status === 'success' ? scope.row.generation_tps : '-'
+              }}</span>
             </template>
             <template v-if="column.prop === 'avg_time'">
-              <span>{{ scope.row.test_status === 'success' ? `${getAvgTime(scope.row?.result?.elasped_avg)}s` : '-' }}</span>
+              <span>{{
+                scope.row.test_status === 'success'
+                  ? `${getAvgTime(scope.row?.result?.elasped_avg)}s`
+                  : '-'
+              }}</span>
             </template>
             <template v-if="column.prop === 'operation'">
               <el-button link type="primary" size="small" @click="showDetail(scope.row, 'result')">
@@ -122,12 +132,11 @@ import { useInstanceStore } from '@/stores/instance'
 import { useDateFormat, useIntervalFn } from '@vueuse/core'
 import { useInitQueryRange } from '@/hooks/useInitQueryRange'
 
-
 const { t } = useI18n()
 const experimentStore = useExperimentStore()
-const instancetore = useInstanceStore()
-const { testList: tableData, currentId } = storeToRefs(experimentStore)
-const { currentId: curInstanceId, instanceList, instanceNameMap } = storeToRefs(instancetore)
+const instanceStore = useInstanceStore()
+const { testList: tableData, currentId, drawerVisible } = storeToRefs(experimentStore)
+const { currentId: curInstanceId, instanceList, instanceNameMap } = storeToRefs(instanceStore)
 
 const showDrawer = ref(false)
 const drawerTitle = ref('')
@@ -169,7 +178,7 @@ const statusMap: { [x: string]: { color: string; text: string } } = {
   },
   finsihed: {
     color: '#909399',
-    text: t('experiment.title.finsihed')
+    text: t('experiment.title.finished')
   }
 }
 
@@ -180,7 +189,6 @@ const statusFilter = computed(() => {
     value: item
   }))
 })
-
 
 const filterStatus = (value: string, row: any) => {
   return row.test_status === value
@@ -253,9 +261,10 @@ const showDetail = (row: any, type: string) => {
 
 const { pause, resume } = useIntervalFn(() => {
   getTableData()
-}, 15000)
+}, 5000)
 
 const closeDrawer = () => {
+  drawerVisible.value = false
   showDrawer.value = false
   curInstanceId.value = ''
   currentId.value = ''
@@ -263,6 +272,7 @@ const closeDrawer = () => {
 }
 
 const openDrawer = () => {
+  drawerVisible.value = true
   useInitQueryRange()
   pause()
 }
@@ -278,6 +288,12 @@ const handleSearch = (val: string) => {
   getTableData()
 }
 
+const checkStatus = () => {
+  if (tableData.value.length === 0) return
+  const needUpdate = tableData.value.some((i) => i.test_status !== 'success')
+  if (!needUpdate) pause()
+}
+
 const getTableData = async () => {
   tableLoading.value = true
   const { current_page, pageSize } = pageData.value
@@ -290,19 +306,19 @@ const getTableData = async () => {
   }
   try {
     const res = await experimentStore.getTestList(params)
+    checkStatus()
     if (res != null) {
-    pageData.value = {
-      current_page: res.page,
-      page_count: res.total_page,
-      total: res.total_num,
-      pageSize: res.size
+      pageData.value = {
+        current_page: res.page,
+        page_count: res.total_page,
+        total: res.total_num,
+        pageSize: res.size
+      }
     }
-  }
   } catch (error) {
-    console.log(error);
+    console.log(error)
   }
   tableLoading.value = false
-
 }
 
 const getAvgTime = (time?: number) => {
@@ -312,7 +328,7 @@ const getAvgTime = (time?: number) => {
 
 onMounted(() => {
   if (instanceList.value.length === 0) {
-    instancetore.getInstanceList()
+    instanceStore.getInstanceList()
   }
   getTableData()
 })

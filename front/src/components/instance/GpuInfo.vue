@@ -24,7 +24,7 @@
           <el-table :data="gridData" class="configTable" width="500px">
             <el-table-column width="165px" property="data" />
             <el-table-column property="current" :label="$t('instance.title.currentVal')" />
-            <el-table-column property="recommend" :label="$t('instance.title.suggessVal')" />
+            <el-table-column property="recommend" :label="$t('instance.title.suggestVal')" />
           </el-table>
         </div>
       </el-popover>
@@ -36,7 +36,7 @@
           ref="containerRef1"
           :style="{ height: containerHeight + 'px' }"
         >
-          <el-collapse v-model="cputedNameTabs">
+          <el-collapse v-model="computedNameTabs">
             <el-collapse-item
               v-for="item in monitors"
               :key="item.title"
@@ -102,7 +102,7 @@
                         :compare-time="compareTime"
                         :series-name="c.name"
                         :group-name="item.title"
-                        @update:unit="chaneChartUnit(item, index, $event)"
+                        @update:unit="changeChartUnit(item, index, $event)"
                       />
                     </el-col>
                   </template>
@@ -166,11 +166,11 @@ const chartRef = ref(null)
 
 const updatedUnitMap = ref(new Map())
 
-const chaneChartUnit = (item: any, idx: number, val: string) => {
+const changeChartUnit = (item: any, idx: number, val: string) => {
   updatedUnitMap.value.set(`${item.key}-${idx}`, val)
 }
 
-const cputedNameTabs = ref(cpuCardArray.map((i) => i.value))
+const computedNameTabs = ref(cpuCardArray.map((i) => i.value))
 
 const gridData = computed(() => {
   const data =
@@ -218,202 +218,219 @@ const gridData = computed(() => {
 })
 
 const apiChart = computed(() => {
-  return filterChartTitle([
-    {
-      title: t('chart.title.requestNum'),
-      query:
-        'sum(rate(http_server_requests_total{}[1m])) by (exported_job)',
-      step: '60s',
-      unit: '',
-      name: 'exported_job'
-    },
-    {
-      title: t('chart.title.requestExecuteNum'),
-      query:
-        'sum(rate(http_server_response_size_bytes_count{}[1m])) by (exported_job)',
-      step: '60s',
-      unit: '',
-      name: 'exported_job'
-    },
-    {
-      title: t('chart.title.requestSuccessNum'),
-      query:
-        'sum(rate(http_server_response_size_bytes_count{http_status_code=~"2.."}[1m])) by (exported_job)',
-      step: '60s',
-      unit: '',
-      name: 'exported_job'
-    },
-    {
-      title: t('chart.title.requestSueeceeRate'),
-      query:
-      'sum(rate(http_server_response_size_bytes_count{http_status_code=~"2.."}[1m])) by (exported_job) / sum(rate(http_server_response_size_bytes_count{}[1m])) by (exported_job) * 100',
-      step: '60s',
-      unit: '%',
-      name: 'exported_job'
-    },
-    {
-      title: t('chart.title.activeRequestNum'),
-      query: 'sum(http_server_active_requests{}) by (exported_job)',
-      unit: '',
-      name: 'exported_job'
-    },
-    {
-      title: t('chart.title.requestDuration'),
-      query:
-        'sum(rate(http_server_duration_milliseconds_sum{}[1m])) by (exported_job) / sum(rate(http_server_duration_milliseconds_count{}[1m])) by (exported_job)',
-      unit: 's',
-      name: 'exported_job'
-    },
-    {
-      title: t('chart.title.responseSize'),
-      query:
-        'sum(rate(http_server_response_size_bytes_sum{}[1m])) by (exported_job)',
-      step: '60s',
-      unit: 'MB/s',
-      name: 'exported_job'
-    },
-    {
-      title: t('chart.title.requsetSize'),
-      query:
-        'sum(rate(http_server_request_size_bytes_sum{}[1m])) by(exported_job)',
-      step: '60s',
-      unit: 'MB/s',
-      name: 'exported_job'
-    }
-  ], 'API')
+  return filterChartTitle(
+    [
+      {
+        title: t('chart.title.requestNum'),
+        query: 'sum(rate(http_server_requests_total{}[1m])) by (exported_job)',
+        step: '60s',
+        unit: '',
+        name: 'exported_job'
+      },
+      {
+        title: t('chart.title.requestExecuteNum'),
+        query: 'sum(rate(http_server_response_size_bytes_count{}[1m])) by (exported_job)',
+        step: '60s',
+        unit: '',
+        name: 'exported_job'
+      },
+      {
+        title: t('chart.title.requestSuccessNum'),
+        query:
+          'sum(rate(http_server_response_size_bytes_count{http_status_code=~"2.."}[1m])) by (exported_job)',
+        step: '60s',
+        unit: '',
+        name: 'exported_job'
+      },
+      {
+        title: t('chart.title.requestSuccessRate'),
+        query:
+          'sum(rate(http_server_response_size_bytes_count{http_status_code=~"2.."}[1m])) by (exported_job) / sum(rate(http_server_response_size_bytes_count{}[1m])) by (exported_job) * 100',
+        step: '60s',
+        unit: '%',
+        name: 'exported_job'
+      },
+      {
+        title: t('chart.title.activeRequestNum'),
+        query: 'sum(http_server_active_requests{}) by (exported_job)',
+        unit: '',
+        name: 'exported_job'
+      },
+      {
+        title: t('chart.title.requestDuration'),
+        query:
+          'sum(rate(http_server_duration_milliseconds_sum{}[1m])) by (exported_job) / sum(rate(http_server_duration_milliseconds_count{}[1m])) by (exported_job)',
+        unit: 's',
+        name: 'exported_job'
+      },
+      {
+        title: t('chart.title.responseSize'),
+        query: 'sum(rate(http_server_response_size_bytes_sum{}[1m])) by (exported_job)',
+        step: '60s',
+        unit: 'MB/s',
+        name: 'exported_job'
+      },
+      {
+        title: t('chart.title.requestSize'),
+        query: 'sum(rate(http_server_request_size_bytes_sum{}[1m])) by(exported_job)',
+        step: '60s',
+        unit: 'MB/s',
+        name: 'exported_job'
+      }
+    ],
+    'API'
+  )
 })
 
 const llmChart = computed(() => {
-  return filterChartTitle([
-    {
-      title: t('chart.title.promptThroughput'),
-      query: 'sum (avg_prompt_throughput_tokens_per_second{}) by (exported_job)',
-      unit: 'tokens/s',
-      name: 'exported_job'
-    },
-    {
-      title: t('chart.title.generationThroughput'),
-      query: 'sum (avg_generation_throughput_tokens_per_second{}) by (exported_job)',
-      unit: 'tokens/s',
-      name: 'exported_job'
-    },
-    {
-      title: t('chart.title.runningRequests'),
-      query: 'sum (running_requests{}) by (exported_job)',
-      unit: '',
-      name: 'exported_job'
-    },
-    {
-      title: t('chart.title.pendingRequests'),
-      query: 'sum (pending_requests{}) by (exported_job)',
-      unit: '',
-      name: 'exported_job'
-    },
-    {
-      title: t('chart.title.gpuKv'),
-      query: 'sum (gpu_kv_cache_usage_percent{}) by (exported_job)',
-      unit: '%',
-      name: 'exported_job'
-    }
-  ], 'LLM')
+  return filterChartTitle(
+    [
+      {
+        title: t('chart.title.promptThroughput'),
+        query: 'sum (avg_prompt_throughput_tokens_per_second{}) by (exported_job)',
+        unit: 'tokens/s',
+        name: 'exported_job'
+      },
+      {
+        title: t('chart.title.generationThroughput'),
+        query: 'sum (avg_generation_throughput_tokens_per_second{}) by (exported_job)',
+        unit: 'tokens/s',
+        name: 'exported_job'
+      },
+      {
+        title: t('chart.title.runningRequests'),
+        query: 'sum (running_requests{}) by (exported_job)',
+        unit: '',
+        name: 'exported_job'
+      },
+      {
+        title: t('chart.title.pendingRequests'),
+        query: 'sum (pending_requests{}) by (exported_job)',
+        unit: '',
+        name: 'exported_job'
+      },
+      {
+        title: t('chart.title.gpuKv'),
+        query: 'sum (gpu_kv_cache_usage_percent{}) by (exported_job)',
+        unit: '%',
+        name: 'exported_job'
+      }
+    ],
+    'LLM'
+  )
 })
 
 const gpuChart = computed(() => {
-  return filterChartTitle([
-    {
-      title: t('chart.title.gpuRate'),
-      query: 'DCGM_FI_DEV_GPU_UTIL',
-      unit: '%',
-      name: 'device'
-    }
-  ], 'GPU')
+  return filterChartTitle(
+    [
+      {
+        title: t('chart.title.gpuRate'),
+        query: 'DCGM_FI_DEV_GPU_UTIL',
+        unit: '%',
+        name: 'device'
+      }
+    ],
+    'GPU'
+  )
 })
 
 const memChart = computed(() => {
-  return filterChartTitle([
-    {
-      title: t('chart.title.memRate'),
-      query: 'DCGM_FI_DEV_MEM_COPY_UTIL',
-      unit: '%',
-      name: 'device'
-    },
-    {
-      title: t('chart.title.fbNum'),
-      query: 'DCGM_FI_DEV_FB_USED',
-      unit: 'GB',
-      name: 'device'
-    }
-  ], 'Memory')
+  return filterChartTitle(
+    [
+      {
+        title: t('chart.title.memRate'),
+        query: 'DCGM_FI_DEV_MEM_COPY_UTIL',
+        unit: '%',
+        name: 'device'
+      },
+      {
+        title: t('chart.title.fbNum'),
+        query: 'DCGM_FI_DEV_FB_USED',
+        unit: 'GB',
+        name: 'device'
+      }
+    ],
+    'Memory'
+  )
 })
 
 const clockChart = computed(() => {
-  return filterChartTitle([
-    {
-      title: t('chart.title.smClock'),
-      query: 'DCGM_FI_DEV_SM_CLOCK * 1000000',
-      unit: 'MHz',
-      name: 'device'
-    },
-    {
-      title: t('chart.title.memClock'),
-      query: 'DCGM_FI_DEV_MEM_CLOCK * 1000000',
-      unit: 'MHz',
-      name: 'device'
-    }
-  ], 'Clock')
+  return filterChartTitle(
+    [
+      {
+        title: t('chart.title.smClock'),
+        query: 'DCGM_FI_DEV_SM_CLOCK * 1000000',
+        unit: 'MHz',
+        name: 'device'
+      },
+      {
+        title: t('chart.title.memClock'),
+        query: 'DCGM_FI_DEV_MEM_CLOCK * 1000000',
+        unit: 'MHz',
+        name: 'device'
+      }
+    ],
+    'Clock'
+  )
 })
 
 const powerChart = computed(() => {
-  return filterChartTitle([
-    {
-      title: t('chart.title.memTemp'),
-      query: 'avg by(device) (DCGM_FI_DEV_MEMORY_TEMP)',
-      unit: '℃',
-      name: 'device'
-    },
-    {
-      title: t('chart.title.gpuTemp'),
-      query: 'avg by(device) (DCGM_FI_DEV_GPU_TEMP)',
-      unit: '℃',
-      name: 'device'
-    },
-    {
-      title: t('chart.title.power'),
-      query: 'DCGM_FI_DEV_POWER_USAGE',
-      unit: 'W',
-      name: 'device'
-    }
-  ], 'Temperature & Power')
+  return filterChartTitle(
+    [
+      {
+        title: t('chart.title.memTemp'),
+        query: 'avg by(device) (DCGM_FI_DEV_MEMORY_TEMP)',
+        unit: '℃',
+        name: 'device'
+      },
+      {
+        title: t('chart.title.gpuTemp'),
+        query: 'avg by(device) (DCGM_FI_DEV_GPU_TEMP)',
+        unit: '℃',
+        name: 'device'
+      },
+      {
+        title: t('chart.title.power'),
+        query: 'DCGM_FI_DEV_POWER_USAGE',
+        unit: 'W',
+        name: 'device'
+      }
+    ],
+    'Temperature & Power'
+  )
 })
 
 const profilingChart = computed(() => {
-  return filterChartTitle([
-    {
-      title: t('chart.title.grEngingActive'),
-      query: '',
-      unit: '%'
-    },
-    {
-      title: t('chart.title.tensor'),
-      query: '',
-      unit: '%'
-    },
-    {
-      title: t('chart.title.memCopyUtil'),
-      query: '',
-      unit: '%'
-    },
-    {
-      title: t('chart.title.pcie'),
-      query: '',
-      unit: 'MB/s'
-    },
-    {
-      title: t('chart.title.nvlink'),
-      query: '',
-      unit: 'MB/s'
-    }
-  ], 'Profiling')
+  return filterChartTitle(
+    [
+      {
+        title: t('chart.title.grEnginActive'),
+        query: '',
+        unit: '%'
+      },
+      {
+        title: t('chart.title.tensor'),
+        query: '',
+        unit: '%'
+      },
+      {
+        title: t('chart.title.memCopyUtil'),
+        query: '',
+        unit: '%'
+      },
+      {
+        title: t('chart.title.pcie'),
+        query: '',
+        unit: 'MB/s'
+      },
+      {
+        title: t('chart.title.nvLink'),
+        query: '',
+        unit: 'MB/s'
+      }
+    ],
+    'Profiling'
+  )
 })
 
 const cudaData = ref([])
@@ -496,9 +513,12 @@ const comparisonChange = (val: number) => {
   compareTime.value = val * 60
 }
 
-
-const filterChartTitle = (list: any[], catecory: string) => {
-  return list.filter((item) => catecory.toLowerCase().includes(searchInput.value.toLowerCase()) || item.title.toLowerCase().includes(searchInput.value.toLowerCase()))
+const filterChartTitle = (list: any[], category: string) => {
+  return list.filter(
+    (item) =>
+      category.toLowerCase().includes(searchInput.value.toLowerCase()) ||
+      item.title.toLowerCase().includes(searchInput.value.toLowerCase())
+  )
 }
 
 const debouncedFn = useDebounceFn(
@@ -541,7 +561,7 @@ onMounted(() => {
 })
 
 watch(
-  () => cputedNameTabs.value,
+  () => computedNameTabs.value,
   (nv: string[], ov: string[]) => {
     if (nv.length > ov.length) {
       const diff = nv.filter((item) => !ov.includes(item))

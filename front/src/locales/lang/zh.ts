@@ -30,7 +30,7 @@ export default {
       delete: '删除',
       operationLog: '操作日志',
       cancel: '取消',
-      refresh: '刷新',
+      refresh: '刷新'
     },
     inst: {
       deleteTips: '确认删除？'
@@ -44,7 +44,7 @@ export default {
       minute: '分',
       second: '秒',
       day: '日',
-      week: '周',
+      week: '周'
     }
   },
   menu: {
@@ -59,7 +59,7 @@ export default {
       deploying: '部署中',
       deploySuccess: '部署成功',
       deployFail: '部署失败',
-      finsihed: '执行结束',
+      finished: '执行结束',
       instanceDetail: 'LLM部署实例详情',
       testConfig: '测试配置',
       startupOptions: '启动参数',
@@ -80,7 +80,7 @@ export default {
       userDataset: '自定义数据集',
       configSuggest: '配置建议',
       currentVal: '当前值',
-      suggessVal: '建议值'
+      suggestVal: '建议值'
     },
     action: {
       inject: '注入测试',
@@ -88,7 +88,7 @@ export default {
     },
     inst: {
       searchPlaceholder: '实例名称、部署状态',
-      datastPlaceholder: '请选择数据集',
+      datasetPlaceholder: '请选择数据集',
       paramsPlaceholder: '请选择参数值',
       chartSearch: '指标名称、指标类型',
       durationTip: '持续{0}'
@@ -112,12 +112,12 @@ export default {
       testFail: '测试失败',
       testInit: '未测试',
       testUnknown: '未测试',
-      finsihed: '测试结束',
+      finished: '测试结束',
       testResultOverview: '测试结果总览',
       testConfig: '测试配置',
       requestNum: '发送总请求数',
       requestSuccessNum: '请求执行成功数',
-      requestsuccessRate: '请求执行成功率',
+      requestSuccessRate: '请求执行成功率',
       avgTime: '请求平均执行时间'
     },
     action: {},
@@ -143,18 +143,18 @@ export default {
     lastSevenDays: '最近7天',
     day: '天',
     hour: '小时',
-    minute: '分钟',
+    minute: '分钟'
   },
   chart: {
     title: {
       requestNum: '每秒收到的请求数',
       requestExecuteNum: '每秒返回的请求数',
       requestSuccessNum: '每秒成功执行的请求数',
-      requestSueeceeRate: '请求执行的成功率',
+      requestSuccessRate: '请求执行的成功率',
       activeRequestNum: '正在处理中的请求数量',
       requestDuration: '每秒平均请求执行时间',
       responseSize: '每秒发送的请求大小',
-      requsetSize: '每秒处理的请求大小',
+      requestSize: '每秒处理的请求大小',
       promptThroughput: 'Prompt输入速率',
       generationThroughput: '生成速率',
       runningRequests: '正在运行的请求数',
@@ -168,11 +168,11 @@ export default {
       memTemp: '内存温度',
       gpuTemp: 'GPU温度',
       power: '功率',
-      grEngingActive: '图形引擎活动',
+      grEnginActive: '图形引擎活动',
       tensor: 'Tensor核心使用率',
       memCopyUtil: '内存带宽利用率',
       pcie: 'PCIE总线速率',
-      nvlink: 'NVLink速率',
+      nvLink: 'NVLink速率',
       noData: '目前尚无相关数据'
     }
   }
