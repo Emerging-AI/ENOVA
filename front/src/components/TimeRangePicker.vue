@@ -18,9 +18,9 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Calendar } from '@element-plus/icons-vue'
-import { watch } from 'vue';
+import { watch } from 'vue'
 
-const porps = defineProps({
+const props = defineProps({
   defaultTime: {
     type: Array<string>,
     default: () => [],
@@ -101,19 +101,22 @@ const disabledDate = (val: Date) => {
   return val && new Date(val).getTime() > Date.now()
 }
 
-
 const emit = defineEmits(['changTimeRange'])
 
 const changeTime = () => {
   emit('changTimeRange', searchTimePair.value)
 }
 
-watch(() => porps.defaultTime, (val) => {
-  if (val != null && val.length > 0) {
-    searchTimePair.value = val
-    changeTime()
+watch(
+  () => props.defaultTime,
+  (val) => {
+    if (val != null && val.length > 0) {
+      searchTimePair.value = val
+      changeTime()
+    }
+  },
+  {
+    immediate: true
   }
-}, {
-  immediate: true
-})
+)
 </script>

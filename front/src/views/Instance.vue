@@ -8,7 +8,12 @@
           @change-search="handleSearch"
         />
       </div>
-      <el-table class="enova-table flex-1" :data="tableData" style="width: 100%" v-loading="tableLoading">
+      <el-table
+        class="enova-table flex-1"
+        :data="tableData"
+        style="width: 100%"
+        v-loading="tableLoading"
+      >
         <template v-for="column in columns" :key="column.prop">
           <el-table-column
             v-if="columnsVisible.includes(column.prop)"
@@ -238,7 +243,7 @@ const statusMap: { [x: number | string]: { color: string; text: string } } = {
   error: {
     color: '#F56C6C',
     text: t('instance.title.deployFail')
-  },
+  }
 }
 
 const showDetail = (row: any, type: string) => {

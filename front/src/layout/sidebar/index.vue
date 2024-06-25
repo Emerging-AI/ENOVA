@@ -1,14 +1,18 @@
 <template>
-  <el-scrollbar height="100%" wrap-class="h-full sidebarScrollbar" view-class="h-[calc(100vh-60px)]">
-    <el-menu class="sidebarMenu relative" router :default-active="activeMenu">
+  <el-scrollbar
+    height="100%"
+    wrap-class="h-full sidebarScrollbar"
+    view-class="h-[calc(100vh-60px)]"
+  >
+    <el-menu class="sidebarMenu relative" router :default-active="route.path">
       <el-menu-item
         v-for="item in routeOptions"
         :key="item.path"
         :index="item.path"
         @mouseenter="handleMouseEnter"
-        @mouseleave="handlemouseLeave"
+        @mouseleave="handleMouseLeave"
       >
-        <svg-icon :name="(item.meta?.icon as string)" class="shrink-0" />
+        <svg-icon :name="item.meta?.icon as string" class="shrink-0" />
         <template #title>{{ $t(`menu.${item.meta?.title}`) }}</template>
       </el-menu-item>
       <svg-icon
@@ -31,20 +35,20 @@ const routeOptions = router.options.routes[0].children
 
 const activeMenu = ref('')
 const isOpen = ref(true)
-const sidebarHoversta = ref(false)
+const sidebarHoverSta = ref(false)
 
 const isCollapse = computed(() => {
   if (isOpen.value) return false
-  return !sidebarHoversta.value
+  return !sidebarHoverSta.value
 })
 
 const handleMouseEnter = (): void => {
-  sidebarHoversta.value = true
+  sidebarHoverSta.value = true
   emit('toggleCollapse', isCollapse.value)
 }
 
-const handlemouseLeave = (): void => {
-  sidebarHoversta.value = false
+const handleMouseLeave = (): void => {
+  sidebarHoverSta.value = false
   emit('toggleCollapse', isCollapse.value)
 }
 

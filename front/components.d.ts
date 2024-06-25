@@ -7,7 +7,7 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
-    BaseInfo: typeof import('./src/components/experiment/BaseInfo.vue')['default']
+    BaseInfo: typeof import('./src/components/instance/BaseInfo.vue')['default']
     Drawer: typeof import('./src/components/Drawer.vue')['default']
     ElAnchor: typeof import('element-plus/es')['ElAnchor']
     ElAnchorLink: typeof import('element-plus/es')['ElAnchorLink']
@@ -62,6 +62,7 @@ declare module 'vue' {
     SvgIcon: typeof import('./src/components/SvgIcon.vue')['default']
     TestConfig: typeof import('./src/components/instance/TestConfig.vue')['default']
     TestDetail: typeof import('./src/components/experiment/TestDetail.vue')['default']
+    TestInfo: typeof import('./src/components/experiment/TestInfo.vue')['default']
     TimeRangePicker: typeof import('./src/components/TimeRangePicker.vue')['default']
     ToolBar: typeof import('./src/components/chart/ToolBar.vue')['default']
   }

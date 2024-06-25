@@ -3,7 +3,11 @@
     <div class="flex items-center gap-2 flex-1">
       <!-- time range -->
       <div class="w-[352px] shrink-0 flex items-center">
-        <TimeRangePicker :default-time="searchTimePair" @chang-time-range="handleTimeRangeChange" :clearable="false" />
+        <TimeRangePicker
+          :default-time="searchTimePair"
+          @chang-time-range="handleTimeRangeChange"
+          :clearable="false"
+        />
       </div>
       <!-- comparison -->
       <div class="min-w-[138px] flex items-center shrink-0">
@@ -24,22 +28,22 @@
         </el-select>
         <el-input-number
           v-show="comparison === 'custom'"
-          v-model="customCompairNum"
+          v-model="customComparisonNum"
           class="numInput"
           :min="1"
           controls-position="right"
-          @change="changeCustomCompairNum"
+          @change="changeCustomComparisonNum"
         />
         <el-select
           v-show="comparison === 'custom'"
-          v-model="customCompairUnit"
+          v-model="customComparisonUnit"
           class="!w-16 shrink-0"
           :class="{ 'cus-select-r': comparison === 'custom' }"
           placeholder=""
-          @change="changeCompairUnit"
+          @change="changeComparisonUnit"
         >
           <el-option
-            v-for="item in customCompairOptions"
+            v-for="item in customComparisonOptions"
             :key="item.value"
             :label="item.label"
             :value="item.value"
@@ -72,7 +76,7 @@
           v-show="refreshTime === 'custom'"
           v-model="customRefreshNum"
           class="numInput"
-          :min=" customRefreshUnit === 'sec' ? 10 : 1"
+          :min="customRefreshUnit === 'sec' ? 10 : 1"
           controls-position="right"
           @change="changCustomRefreshNum"
         />
@@ -93,12 +97,8 @@
         </el-select>
       </div>
       <!-- refresh btn -->
-      <el-tooltip
-        effect="dark"
-        :content="$t('common.action.refresh')"
-        placement="top"
-      >
-      <el-button :icon="RefreshRight" class="size-8" @click="handleRefresh" />
+      <el-tooltip effect="dark" :content="$t('common.action.refresh')" placement="top">
+        <el-button :icon="RefreshRight" class="size-8" @click="handleRefresh" />
       </el-tooltip>
     </div>
     <div class="flex items-center gap-2">
@@ -145,16 +145,19 @@ import { useInstanceStore } from '@/stores/instance'
 import { useDebounceFn } from '@vueuse/core'
 import dayjs from 'dayjs'
 import { useInitQueryRange } from '@/hooks/useInitQueryRange'
+import { watch } from 'vue'
+import { useExperimentStore } from '@/stores/experiment'
 
 const { chartTimeRange, searchTimePair } = storeToRefs(useInstanceStore())
+const { drawerVisible } = storeToRefs(useExperimentStore())
 
 const { t } = useI18n()
 
 let refreshTimer: number | null = null
 
 const comparison = ref('none')
-const customCompairNum = ref(1)
-const customCompairUnit = ref('min')
+const customComparisonNum = ref(1)
+const customComparisonUnit = ref('min')
 const refreshTime = ref<string | number>(0)
 const customRefreshNum = ref(1)
 const customRefreshUnit = ref('min')
@@ -273,7 +276,7 @@ const customRefreshOptions = [
   }
 ]
 
-const customCompairOptions = [
+const customComparisonOptions = [
   {
     value: 'min',
     label: t('common.time.minute')
@@ -292,23 +295,31 @@ const customCompairOptions = [
   }
 ]
 
-const emit = defineEmits(['changeComparison', 'changeInterval', 'changeCompairUnit', 'changeRefreshUnit', 'changeLayout', 'changeSearchVal', 'refreshChart'])
+const emit = defineEmits([
+  'changeComparison',
+  'changeInterval',
+  'changeComparisonUnit',
+  'changeRefreshUnit',
+  'changeLayout',
+  'changeSearchVal',
+  'refreshChart'
+])
 
 const getIntervalByUnit = (num: number | string, unit: string): number => {
-  const _num = Number(num);
+  const _num = Number(num)
   switch (unit) {
     case 'sec':
-      return _num;
+      return _num
     case 'min':
-      return _num * 60;
+      return _num * 60
     case 'hour':
-      return _num * 60 * 60;
+      return _num * 60 * 60
     case 'day':
-      return _num * 60 * 60 * 24;
+      return _num * 60 * 60 * 24
     case 'week':
-      return _num * 60 * 60 * 24 * 7;
+      return _num * 60 * 60 * 24 * 7
     default:
-      throw new Error('Invalid unit');
+      throw new Error('Invalid unit')
   }
 }
 
@@ -329,14 +340,13 @@ const changeComparison = (val: string | number) => {
   emit('changeComparison', Number(val))
 }
 
-const changeCustomCompairNum = useDebounceFn((val) => {
-  const num = getIntervalByUnit(val, customCompairUnit.value)
+const changeCustomComparisonNum = useDebounceFn((val) => {
+  const num = getIntervalByUnit(val, customComparisonUnit.value)
   changeComparison(num)
 }, 1000)
 
-
-const changeCompairUnit = (val: string) => {
-  const num = getIntervalByUnit(customCompairNum.value, val)
+const changeComparisonUnit = (val: string) => {
+  const num = getIntervalByUnit(customComparisonNum.value, val)
   changeComparison(num)
 }
 
@@ -347,9 +357,12 @@ const changeInterval = (val: string | number) => {
   if (val === 'custom') {
     num = getIntervalByUnit(customRefreshNum.value, customRefreshUnit.value)
   }
-  refreshTimer = setInterval(() => {
-    handleRefresh()
-  }, Number(num) * 1000)
+  refreshTimer = setInterval(
+    () => {
+      handleRefresh()
+    },
+    Number(num) * 1000
+  )
 }
 
 const clearTimer = (): void => {
@@ -368,10 +381,14 @@ const changeLayout = () => {
 }
 
 const handleTimeRangeChange = (val: string[]) => {
-  chartTimeRange.value = [dayjs(new Date(val[0])).format('YYYY-MM-DD HH:mm:ss'), dayjs(Math.min(new Date(val[1]).getTime(), Date.now())).format('YYYY-MM-DD HH:mm:ss')]
+  chartTimeRange.value = [
+    dayjs(new Date(val[0])).format('YYYY-MM-DD HH:mm:ss'),
+    dayjs(Math.min(new Date(val[1]).getTime(), Date.now())).format('YYYY-MM-DD HH:mm:ss')
+  ]
 }
 
 const handleRefresh = () => {
+  useInitQueryRange()
   emit('refreshChart')
 }
 
@@ -379,6 +396,14 @@ onMounted(() => {
   useInitQueryRange()
 })
 
+watch(
+  () => drawerVisible.value,
+  (val) => {
+    if (!val) {
+      clearTimer()
+    }
+  }
+)
 </script>
 <style lang="scss">
 .layoutSelect {
