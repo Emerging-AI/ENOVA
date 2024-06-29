@@ -144,3 +144,13 @@ def llmengine_init_wrapper(tracer, to_wrap, wrapped, instance, args, kwargs):
     )
 
     return response
+
+
+def statlogger_init_wrapper(service_name: str):
+    def wrapper(wrapped, instance, args, kwargs):
+        labels = kwargs.get('labels', {})
+        labels["exported_job"] = service_name
+        kwargs['labels'] = labels
+        return wrapped(*args, **kwargs)
+
+    return wrapper

@@ -36,7 +36,7 @@ def start(otlp_exporter_endpoint: str = "localhost:4317", service_name: str = __
     from .instrumentation import EnovaFastAPIInstrumentor, EnovaVllmInstrumentor
 
     EnovaFastAPIInstrumentor().instrument()
-    EnovaVllmInstrumentor().instrument()
+    EnovaVllmInstrumentor().instrument(service_name)
 
     from .metrics_adapter import VLLMLogMetricsAdapter
 
