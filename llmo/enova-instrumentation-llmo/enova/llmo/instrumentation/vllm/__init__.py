@@ -7,11 +7,11 @@ from opentelemetry.trace import get_tracer
 from vllm.model_executor.models import _MODELS
 from wrapt import wrap_function_wrapper
 
-from .wrappers import forward_wrapper, llmengine_init_wrapper
+from .wrappers import forward_wrapper, llmengine_init_wrapper, statlogger_init_wrapper
 
 _instruments = ("vllm >= v0.3.1",)
 
-TARGET_METHODS = {
+TARGET_TRACE_METHODS = {
     "build-in": [
         {
             "package": "vllm.worker.model_runner",
@@ -51,6 +51,11 @@ class EnovaVllmInstrumentor(BaseInstrumentor):
         super().__init__()
         self._original_methods = {}
         self.instrumented_methods = []
+        self.service_name = None
+
+    def instrument(self, service_name, **kwargs):
+        self.service_name = service_name
+        super().instrument(**kwargs)
 
     def _instrument(self, **kwargs):
         tracer = get_tracer(__name__)
@@ -64,12 +69,27 @@ class EnovaVllmInstrumentor(BaseInstrumentor):
                 "span_name": f"{obj}.forward",
                 "wrapper": forward_wrapper
             }
-            self._apply_wrapper(tracer, wrapper_method)
+            self._apply_trace_wrapper(tracer, wrapper_method)
 
-        for wrapper_method in TARGET_METHODS['build-in']:
-            self._apply_wrapper(tracer, wrapper_method)
+        for wrapper_method in TARGET_TRACE_METHODS['build-in']:
+            self._apply_trace_wrapper(tracer, wrapper_method)
 
-    def _apply_wrapper(self, tracer, wrapped_method):
+        statlogger_package = "vllm.engine.metrics"
+        statlogger_object = "StatLogger"
+        statlogger_method = "__init__"
+        if module_exists(statlogger_package):
+            wrap_function_wrapper(
+                statlogger_package,
+                f"{statlogger_object}.{statlogger_method}",
+                statlogger_init_wrapper(self.service_name)
+            )
+            self.instrumented_methods.append({
+                "package": statlogger_package,
+                "object": statlogger_object,
+                "method": statlogger_method
+            })
+
+    def _apply_trace_wrapper(self, tracer, wrapped_method):
         if module_exists(wrapped_method["package"]):
             wrap_function_wrapper(
                 wrapped_method["package"],
@@ -84,6 +104,7 @@ class EnovaVllmInstrumentor(BaseInstrumentor):
             wrap_package = wrapped_method.get("package")
             if module_exists(wrap_package):
                 unwrap(
-                    f"{wrapped_method['package']}.{wrapped_method['object']}" if wrapped_method["object"] else wrapped_method["package"],
+                    f"{wrapped_method['package']}.{wrapped_method['object']}" if wrapped_method["object"] else
+                    wrapped_method["package"],
                     wrapped_method['method'],
                 )
