@@ -37,9 +37,15 @@ type VllmBackendConfig struct {
 }
 
 func (v *VllmBackendConfig) Update(recommendResult api.ConfigRecommendResult) {
-	v.MaxNumSeqs = recommendResult.MaxNumSeqs
-	v.TensorParallelSize = recommendResult.TensorParallelSize
-	v.GpuMemoryUtilization = recommendResult.GpuMemoryUtilization
+	if v.MaxNumSeqs <= 0 {
+		v.MaxNumSeqs = recommendResult.MaxNumSeqs
+	}
+	if v.TensorParallelSize <= 0 {
+		v.TensorParallelSize = recommendResult.TensorParallelSize
+	}
+	if v.GpuMemoryUtilization <= 0 {
+		v.GpuMemoryUtilization = recommendResult.GpuMemoryUtilization
+	}
 }
 
 type DockerDeployRequest struct {

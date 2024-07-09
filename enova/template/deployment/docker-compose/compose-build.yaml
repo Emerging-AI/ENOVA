@@ -147,7 +147,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: 2
+              count: all
               capabilities: [gpu]
     ports:
       - "8182:8182"

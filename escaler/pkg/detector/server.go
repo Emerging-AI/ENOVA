@@ -93,6 +93,7 @@ func (r DockerDeployResource) Post(c *gin.Context) {
 		return
 	}
 
+	logger.Infof("Get dockerDeployRequest: %v", dockerDeployRequest)
 	var taskSpec meta.TaskSpec
 	if dockerDeployRequest.Backend == "vllm" {
 		var vllmConfig meta.VllmBackendConfig
