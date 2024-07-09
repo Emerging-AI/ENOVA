@@ -13,7 +13,7 @@ opentelemetry-sdk
 opentelemetry-exporter-otlp
 opentelemetry-distro
 opentelemetry-instrumentation-fastapi
-enova-instrumentation-llmo==0.0.3
+enova-instrumentation-llmo==0.0.4
 streamlit
 pymysql==1.1.0
 aiomysql==0.2.0
