@@ -160,6 +160,8 @@ export default {
       runningRequests: '正在运行的请求数',
       pendingRequests: '等待中的请求数',
       gpuKv: 'KV cache使用率',
+      timeToFirst: '平均首包延迟',
+      timePerOutput: '平均生成一个token的时长',
       gpuRate: 'GPU利用率',
       memRate: '内存带宽利用率',
       fbNum: '显存已使用数',

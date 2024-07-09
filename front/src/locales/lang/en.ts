@@ -160,6 +160,8 @@ export default {
       runningRequests: 'running_requests',
       pendingRequests: 'pending_requests',
       gpuKv: 'gpu_kv_cache_usage',
+      timeToFirst: 'time_to_first_token_seconds',
+      timePerOutput: 'time_per_output_token_seconds',
       gpuRate: 'DCGM_FI_DEV_GPU_UTIL',
       memRate: 'DCGM_FI_DEV_MEM_COPY_UTIL',
       fbNum: 'DCGM_FI_DEV_FB_USED',

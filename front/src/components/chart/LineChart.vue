@@ -215,11 +215,11 @@ const initChart = async (): Promise<void> => {
   if (data != null && data.length > 0) {
     const _data1 =
       props.seriesName === 'exported_job'
-        ? data.filter((i: any) => i.metric.exported_job.includes(activeEnodeJob.value))
+        ? data.filter((i: any) => i.metric.exported_job != null ? i.metric.exported_job?.includes(activeEnodeJob.value) : i)
         : data
     const _data2 =
       props.seriesName === 'exported_job'
-        ? data2.filter((i: any) => i.metric.exported_job.includes(activeEnodeJob.value))
+        ? data2.filter((i: any) => i.metric.exported_job != null ? i.metric.exported_job?.includes(activeEnodeJob.value) : i)
         : data2
     const series1 = _data1.map((i: any) => {
       return {

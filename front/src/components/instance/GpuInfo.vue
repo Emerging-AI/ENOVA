@@ -287,32 +287,49 @@ const llmChart = computed(() => {
     [
       {
         title: t('chart.title.promptThroughput'),
-        query: 'sum (avg_prompt_throughput_tokens_per_second{}) by (exported_job)',
+        // query: 'sum (avg_prompt_throughput_tokens_per_second{}) by (exported_job)',
+        query: 'sum (vllm:avg_prompt_throughput_toks_per_s{}) by (exported_job)',
         unit: 'tokens/s',
         name: 'exported_job'
       },
       {
         title: t('chart.title.generationThroughput'),
-        query: 'sum (avg_generation_throughput_tokens_per_second{}) by (exported_job)',
+        // query: 'sum (avg_generation_throughput_tokens_per_second{}) by (exported_job)',
+        query: 'sum (vllm:avg_generation_throughput_toks_per_s{}) by (exported_job)',
         unit: 'tokens/s',
         name: 'exported_job'
       },
       {
         title: t('chart.title.runningRequests'),
-        query: 'sum (running_requests{}) by (exported_job)',
+        // query: 'sum (running_requests{}) by (exported_job)',
+        query: 'sum (vllm:num_requests_running{}) by (exported_job)',
         unit: '',
         name: 'exported_job'
       },
       {
         title: t('chart.title.pendingRequests'),
-        query: 'sum (pending_requests{}) by (exported_job)',
+        // query: 'sum (pending_requests{}) by (exported_job)',
+        query: 'sum (vllm:num_requests_waiting{}) by (exported_job)',
         unit: '',
         name: 'exported_job'
       },
       {
         title: t('chart.title.gpuKv'),
-        query: 'sum (gpu_kv_cache_usage_percent{}) by (exported_job)',
+        // query: 'sum (gpu_kv_cache_usage_percent{}) by (exported_job)',
+        query: 'sum (vllm:gpu_cache_usage_perc{}) by (exported_job)',
         unit: '%',
+        name: 'exported_job'
+      },
+      {
+        title: t('chart.title.timeToFirst'),
+        query: 'sum(rate(vllm:time_to_first_token_seconds_sum{}[1m])) by (exported_job) / sum(rate(vllm:time_to_first_token_seconds_count{}[1m])) by (exported_job)',
+        unit: 'ms',
+        name: 'exported_job'
+      },
+      {
+        title: t('chart.title.timePerOutput'),
+        query: 'sum(rate(vllm:time_per_output_token_seconds_sum{}[1m])) by (exported_job) / sum(rate(vllm:time_per_output_token_seconds_count{}[1m])) by (exported_job)',
+        unit: 'ms',
         name: 'exported_job'
       }
     ],
