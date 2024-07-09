@@ -113,7 +113,6 @@ class Config:
             "eai_exporter_service_name": "llmo-svc",
         },
         "vllm": {
-            "gpu_memory_utilization": 0.5,
             "tensor_parallel_size": 1,
             "vllm_mode": "normal",
             "trust_remote_code": True,

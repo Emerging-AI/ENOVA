@@ -110,7 +110,7 @@ func (d *Detector) AnomalyDetect(spec meta.TaskSpecInterface) (bool, error) {
 
 	var anomalyDetectResp api.AnomalyDetectResponse
 	if err := json.Unmarshal(resultData, &anomalyDetectResp); err != nil {
-		logger.Errorf("encode ConfigRecommendResult err: %v", err)
+		logger.Errorf("encode AnomalyDetectResponse err: %v", err)
 		return false, err
 	}
 	return anomalyDetectResp.IsAnomaly > 0, err
