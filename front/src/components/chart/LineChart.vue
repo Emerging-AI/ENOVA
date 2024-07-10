@@ -14,12 +14,36 @@
 </template>
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import * as echarts from 'echarts'
+// import * as echarts from 'echarts'
 import { nextTick } from 'vue'
 import { getMonitorData } from '@/api/instance'
 import { storeToRefs } from 'pinia'
 import { useInstanceStore } from '@/stores/instance'
 import { watch } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
+import * as echarts from 'echarts/core'
+import {
+  // TitleComponent,
+  ToolboxComponent,
+  TooltipComponent,
+  GridComponent,
+  LegendComponent
+} from 'echarts/components'
+import { LineChart } from 'echarts/charts'
+import { UniversalTransition } from 'echarts/features'
+import { CanvasRenderer } from 'echarts/renderers'
+
+echarts.use([
+  // TitleComponent,
+  ToolboxComponent,
+  TooltipComponent,
+  GridComponent,
+  LegendComponent,
+  LineChart,
+  CanvasRenderer,
+  UniversalTransition
+])
+
 const { chartQuery, activeEnodeJob } = storeToRefs(useInstanceStore())
 
 const props = defineProps({
@@ -56,7 +80,7 @@ const props = defineProps({
   },
   groupName: {
     type: String,
-    defeult: '',
+    default: '',
     required: false
   }
 })
@@ -189,8 +213,14 @@ const initChart = async (): Promise<void> => {
     }
   }
   if (data != null && data.length > 0) {
-    const _data1 = props.seriesName === 'exported_job' ? data.filter((i: any) => i.metric.exported_job.includes(activeEnodeJob.value)) : data;
-    const _data2 = props.seriesName === 'exported_job' ? data2.filter((i: any) => i.metric.exported_job.includes(activeEnodeJob.value)) : data2;
+    const _data1 =
+      props.seriesName === 'exported_job'
+        ? data.filter((i: any) => i.metric.exported_job != null ? i.metric.exported_job?.includes(activeEnodeJob.value) : i)
+        : data
+    const _data2 =
+      props.seriesName === 'exported_job'
+        ? data2.filter((i: any) => i.metric.exported_job != null ? i.metric.exported_job?.includes(activeEnodeJob.value) : i)
+        : data2
     const series1 = _data1.map((i: any) => {
       return {
         name: i.metric[props.seriesName] ?? 'value',
@@ -236,9 +266,11 @@ const resizeChart = () => {
   })
 }
 
+const debounceInit = useDebounceFn(() => initChart(), 300)
+
 defineExpose({
   resizeChart,
-  initChart,
+  initChart: debounceInit,
   groupName: props.groupName
 })
 
@@ -250,14 +282,14 @@ watch(
   () => chartQuery.value,
   (val, oVal) => {
     if (oVal.start !== '' && JSON.stringify(val) !== JSON.stringify(oVal)) {
-      initChart()
+      debounceInit()
     }
   }
 )
 watch(
   () => props.compareTime,
   async () => {
-    initChart()
+    debounceInit()
   }
 )
 </script>

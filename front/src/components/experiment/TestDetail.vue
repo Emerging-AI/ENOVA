@@ -1,7 +1,7 @@
 <template>
   <el-tabs v-model="activeName" class="enova-tabs h-full">
     <el-tab-pane :label="$t('common.title.baseInfo')" name="baseInfo" :lazy="true">
-      <BaseInfo />
+      <TestInfo />
     </el-tab-pane>
     <el-tab-pane :label="$t('common.title.metrics')" name="gpuInfo" class="h-full" :lazy="true">
       <GpuInfo />
@@ -10,7 +10,7 @@
 </template>
 <script setup lang="ts">
 import { ref } from 'vue'
-import BaseInfo from './BaseInfo.vue'
+import TestInfo from './TestInfo.vue'
 import GpuInfo from '../instance/GpuInfo.vue'
 defineProps({
   showDrawer: {
@@ -19,5 +19,4 @@ defineProps({
   }
 })
 const activeName = ref('baseInfo')
-
 </script>

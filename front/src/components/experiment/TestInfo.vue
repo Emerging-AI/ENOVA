@@ -95,25 +95,34 @@ const activeResults = ref(['api', 'llm'])
 const activeConfigs = ref(['data', 'parameter'])
 
 const apiData = computed(() => {
-  const { result, test_status } = activeExperiment.value ?? { result: { success: 0, total: 0, elasped_avg: 0 }, test_status: 'running' }
-  let successRate: string | number = result.total == null || result.total === 0 ? 0 : ((result.success ?? 0) / (result.total ?? 0)) * 100;
-  successRate = [0, 100].includes(Number(successRate)) ? Number(successRate) : successRate.toFixed(3)
-  const avgTime = Number(result.elasped_avg ?? 0) === 0 ? 0 : (Number(result.elasped_avg ?? 0) / 1000).toFixed(3)
+  const { result, test_status } = activeExperiment.value ?? {
+    result: { success: 0, total: 0, elasped_avg: 0 },
+    test_status: 'running'
+  }
+  let successRate: string | number =
+    result.total == null || result.total === 0
+      ? 0
+      : ((result.success ?? 0) / (result.total ?? 0)) * 100
+  successRate = [0, 100].includes(Number(successRate))
+    ? Number(successRate)
+    : successRate.toFixed(3)
+  const avgTime =
+    Number(result.elasped_avg ?? 0) === 0 ? 0 : (Number(result.elasped_avg ?? 0) / 1000).toFixed(3)
   const isSuccess = test_status === 'success'
   return [
     {
       key: 'requestNum',
       title: t('experiment.title.requestNum'),
-      value: isSuccess ? (result.total ?? 0) : '-'
+      value: isSuccess ? result.total ?? 0 : '-'
     },
     {
       key: 'successNum',
       title: t('experiment.title.requestSuccessNum'),
-      value: isSuccess ? (result.success ?? 0) : '-'
+      value: isSuccess ? result.success ?? 0 : '-'
     },
     {
       key: 'successRate',
-      title: t('experiment.title.requestsuccessRate'),
+      title: t('experiment.title.requestSuccessRate'),
       value: isSuccess ? successRate : '-',
       unit: '%'
     },
@@ -127,23 +136,27 @@ const apiData = computed(() => {
 })
 
 const llmData = computed(() => {
-  const { prompt_tps, generation_tps, test_status } = activeExperiment.value ?? {  prompt_tps: '-', generation_tps: '-', test_status: 'running'  }
+  const { prompt_tps, generation_tps, test_status } = activeExperiment.value ?? {
+    prompt_tps: '-',
+    generation_tps: '-',
+    test_status: 'running'
+  }
   const isSuccess = test_status === 'success'
   return [
     {
       key: 'prompt',
       title: t('experiment.title.prompt'),
-      value: isSuccess ? (prompt_tps ?? 0) : '-'
+      value: isSuccess ? prompt_tps ?? 0 : '-'
     },
     {
       key: 'generation',
       title: t('experiment.title.generation'),
-      value: isSuccess ? (generation_tps ?? 0) : '-'
+      value: isSuccess ? generation_tps ?? 0 : '-'
     }
   ]
 })
 
-const durationUnitMap = computed<{ [key: string]: string}>(() => {
+const durationUnitMap = computed<{ [key: string]: string }>(() => {
   return {
     sec: t('common.time.second'),
     min: t('common.time.minute'),
@@ -152,8 +165,17 @@ const durationUnitMap = computed<{ [key: string]: string}>(() => {
 })
 
 const dataConfigs = computed(() => {
-  const { data_set, duration, duration_unit, distribution, tps_mean, tps_std} = activeExperiment.value?.test_spec ||
-  { test_spec: { data_set: '-', duration: '-', duration_unit: 'min', distribution: '-', tps_mean: '-', tps_std: '-' } }
+  const { data_set, duration, duration_unit, distribution, tps_mean, tps_std } = activeExperiment
+    .value?.test_spec || {
+    test_spec: {
+      data_set: '-',
+      duration: '-',
+      duration_unit: 'min',
+      distribution: '-',
+      tps_mean: '-',
+      tps_std: '-'
+    }
+  }
   return [
     {
       key: t('common.title.dataset'),
@@ -179,7 +201,9 @@ const dataConfigs = computed(() => {
 })
 
 const parameterConfigs = computed(() => {
-  const { max_tokens, temperature, top_p, others} = activeExperiment.value?.param_spec || { param_spec: { max_tokens: '-', temperature: '-', top_p: '-', others: '-' } }
+  const { max_tokens, temperature, top_p, others } = activeExperiment.value?.param_spec || {
+    param_spec: { max_tokens: '-', temperature: '-', top_p: '-', others: '-' }
+  }
   return [
     {
       key: 'Max_tokens',
