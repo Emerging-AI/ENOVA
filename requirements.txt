@@ -28,3 +28,4 @@ py-cpuinfo
 pytz
 tzlocal
 openai
+packaging

@@ -1,5 +1,7 @@
 import importlib
+import importlib.metadata
 from typing import Collection
+from packaging import version
 
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap
@@ -74,9 +76,16 @@ class EnovaVllmInstrumentor(BaseInstrumentor):
         for wrapper_method in TARGET_TRACE_METHODS['build-in']:
             self._apply_trace_wrapper(tracer, wrapper_method)
 
-        statlogger_package = "vllm.engine.metrics"
-        statlogger_object = "StatLogger"
-        statlogger_method = "__init__"
+        # Check vllm version to determine the correct StatLogger class
+        vllm_version = importlib.metadata.version('vllm')
+        if version.parse(vllm_version) < version.parse("0.5.1"):
+            statlogger_package = "vllm.engine.metrics"
+            statlogger_object = "StatLogger"
+            statlogger_method = "__init__"
+        else:
+            statlogger_package = "vllm.engine.metrics"
+            statlogger_object = "PrometheusStatLogger"
+            statlogger_method = "__init__"
         if module_exists(statlogger_package):
             wrap_function_wrapper(
                 statlogger_package,
