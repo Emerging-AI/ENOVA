@@ -1,5 +1,5 @@
 # image enova:base
-FROM nvcr.io/nvidia/pytorch:24.03-py3
+FROM nvcr.io/nvidia/pytorch:24.07-py3
 
 RUN apt update && apt install -y \
     net-tools \
@@ -12,7 +12,8 @@ RUN mkdir -p /etc/OpenCL/vendors && \
     mkdir -p /opt/enova
 
 COPY ./requirements-docker.txt /opt/enova/requirements.txt
+COPY ./requirements-docker-no-deps.txt /opt/enova/requirements-docker-no-deps.txt
 
-RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple && \
-    pip install build && \
-    pip install -r /opt/enova/requirements.txt
+# RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple && \
+RUN pip install build && \
+    pip install -r /opt/enova/requirements.txt && pip install -r /opt/enova/requirements-docker-no-deps.txt --no-deps

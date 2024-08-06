@@ -24,7 +24,7 @@ import (
 
 func TestPilot(t *testing.T) {
 	// start mock enova algo server
-	// go StartMockEnovaAlgoServer()
+	go StartMockEnovaAlgoServer()
 	config.GetEConfig().Init("../../enova/template/deployment/docker-compose/escaler/conf/settings.json")
 	config.GetEConfig().PrintConfig()
 	gin.SetMode(gin.TestMode)
@@ -83,11 +83,11 @@ func TestPilot(t *testing.T) {
 			Version: "test",
 		},
 		BackendConfig: &meta.VllmBackendConfig{
-			MaxNumSeqs:           1,
-			TensorParallelSize:   1,
-			GpuMemoryUtilization: 0.5,
-			VllmMode:             "normal",
-			TrustRemoteCode:      true,
+			// MaxNumSeqs:           1,
+			// TensorParallelSize:   1,
+			// GpuMemoryUtilization: 0.5,
+			VllmMode:        "normal",
+			TrustRemoteCode: true,
 		},
 		Replica:            1,
 		Envs:               envs,

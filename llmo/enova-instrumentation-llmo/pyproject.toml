@@ -1,6 +1,6 @@
 [project]
 name = "enova-instrumentation-llmo"
-version = "0.0.4"
+version = "0.0.5"
 description = "enova-instrumentation-llmo"
 requires-python = ">=3.10"
 dynamic = [
@@ -21,7 +21,7 @@ requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2,<=7.1.0", "toml"]
 
 [tool.poetry]
 name = "enova-instrumentation-llmo"
-version = "0.0.4"
+version = "0.0.5"
 description = "llmo instrumentation for OpenTelemetry"
 authors = ["wenxinxie <wenxin@emergingai-tech.com>"]
 
@@ -32,7 +32,7 @@ include = "enova/llmo"
 python = "^3.10"
 opentelemetry-api = "*"
 opentelemetry-sdk = "*"
-vllm = "^v0.4.1"
+vllm = "v0.5.4"
 fastapi = "*"
 opentelemetry-exporter-otlp = "*"
 opentelemetry-distro = "*"

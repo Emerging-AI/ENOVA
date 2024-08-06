@@ -2,8 +2,7 @@ package redis
 
 import (
 	"context"
-
-	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -55,13 +54,25 @@ func (r *RedisClient) AppendListWithLimitSize(key string, value string, limit in
 	return nil
 }
 
-func NewRedisClient() *RedisClient {
+func (r *RedisClient) Set(key string, value string, timeout int64) {
+	r.Redis.Set(r.Ctx, key, value, time.Duration(time.Duration(timeout)*time.Microsecond))
+}
+
+func (r *RedisClient) Get(key string) string {
+	result := r.Redis.Get(r.Ctx, key)
+	if result.Err() != nil {
+		return ""
+	}
+	return result.Val()
+}
+
+func NewRedisClient(addr string, passwd string, db int) *RedisClient {
 	ctx := context.Background()
 
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     config.GetEConfig().Redis.Addr,
-		Password: config.GetEConfig().Redis.Password,
-		DB:       config.GetEConfig().Redis.Db,
+		Addr:     addr,
+		Password: passwd,
+		DB:       db,
 	})
 
 	return &RedisClient{

@@ -29,7 +29,7 @@
         "host": "enova-algo:8181"
     },
     "enode": {
-        "image": "emergingai/enova:v0.0.4",
+        "image": "emergingai/enova:v0.0.5",
         "start_cmd": [
         ],
         "network": "enova-mon_enova-net",

@@ -12,23 +12,32 @@ import (
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/logger"
 )
 
-type HttpApi struct {
-	Method string
-	Url    string
+type HttpResponse interface{}
+
+type HeaderBuilderInterface interface {
+	Build() (map[string]string, error)
 }
 
-type EnvoaResponse struct {
-	Code    int
-	Message string
-	Result  interface{}
-	TraceId string
-	Version string
+type EmptyHeaderBuilder struct {
 }
 
-func (api *HttpApi) GetRequest(Params interface{}, Headers map[string]string) (*http.Request, error) {
-	newHeader := make(map[string]string)
+func (hb *EmptyHeaderBuilder) Build() (map[string]string, error) {
+	return make(map[string]string), nil
+}
 
-	// 遍历Headers并将键值对拷贝到newHeader中
+type HttpApi[T HttpResponse] struct {
+	Method        string
+	Url           string
+	HeaderBuilder HeaderBuilderInterface
+}
+
+func (api *HttpApi[T]) GetRequest(Params interface{}, Headers map[string]string) (*http.Request, error) {
+	newHeader, err := api.HeaderBuilder.Build()
+	if err != nil {
+		logger.Errorf("HeaderBuilder get error: %v", err)
+		return nil, err
+	}
+
 	for key, value := range Headers {
 		newHeader[key] = value
 	}
@@ -68,32 +77,33 @@ func (api *HttpApi) GetRequest(Params interface{}, Headers map[string]string) (*
 	return req, nil
 }
 
-func (api *HttpApi) Call(Params interface{}, Headers map[string]string) (EnvoaResponse, error) {
+func (api *HttpApi[T]) Call(Params interface{}, Headers map[string]string) (T, error) {
 	client := &http.Client{}
 	req, err := api.GetRequest(Params, Headers)
+	var resp T
 	if err != nil {
-		return EnvoaResponse{}, err
+		return resp, err
 	}
 	res, err := client.Do(req) // todo 处理err
 	if err != nil {
-		return EnvoaResponse{}, err
+		return resp, err
 	}
 	return api.processResponse(res)
 }
 
-func (api *HttpApi) processResponse(res *http.Response) (EnvoaResponse, error) {
+func (api *HttpApi[T]) processResponse(res *http.Response) (T, error) {
 	defer res.Body.Close()
-	var enovaResp EnvoaResponse
+	var httpResp T
 	if res.StatusCode != http.StatusOK {
 		resBody, _ := io.ReadAll(res.Body)
 		msg := fmt.Sprintf("HttpApi get StatusOK not ok: status code: %d, resBody: %s", res.StatusCode, resBody)
 		logger.Info(msg)
-		return enovaResp, errors.New(msg)
+		return httpResp, errors.New(msg)
 	}
 	resBody, _ := io.ReadAll(res.Body)
-	if err := json.Unmarshal(resBody, &enovaResp); err != nil {
+	if err := json.Unmarshal(resBody, &httpResp); err != nil {
 		logger.Error("Error parsing JSON response: %v", err)
-		return enovaResp, err
+		return httpResp, err
 	}
-	return enovaResp, nil
+	return httpResp, nil
 }

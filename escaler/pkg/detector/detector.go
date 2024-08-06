@@ -69,7 +69,9 @@ func NewDetector() *Detector {
 		TaskMap:   make(map[string]*meta.DetectTask),
 		Client:    resource.NewDockerResourcClient(),
 		DetectResultManager: &DetectResultManager{
-			RedisClient: redis.NewRedisClient(),
+			RedisClient: redis.NewRedisClient(
+				config.GetEConfig().Redis.Addr, config.GetEConfig().Redis.Password, config.GetEConfig().Redis.Db,
+			),
 		},
 	}
 }

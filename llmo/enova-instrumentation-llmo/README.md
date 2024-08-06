@@ -1,7 +1,7 @@
 ## 使用方式
 安装whl包
 ```bash
-pip install enova_instrumentation_llmo-0.0.4-py3-none-any.whl 
+pip install enova_instrumentation_llmo-0.0.5-py3-none-any.whl 
 ```
 在vllm程序代码中进行ot配置和开启注入
 ```python

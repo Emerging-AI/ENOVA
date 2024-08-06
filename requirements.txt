@@ -1,11 +1,8 @@
 httpx==0.24.1
 fastapi==0.108.0
-accelerate
 huggingface_hub
 hf-transfer
-torch
 transformers
-vllm
 locate
 python-rapidjson
 opentelemetry-api
@@ -13,7 +10,6 @@ opentelemetry-sdk
 opentelemetry-exporter-otlp
 opentelemetry-distro
 opentelemetry-instrumentation-fastapi
-enova-instrumentation-llmo==0.0.4
 streamlit
 pymysql==1.1.0
 aiomysql==0.2.0
@@ -29,3 +25,6 @@ pytz
 tzlocal
 openai
 packaging
+ray
+enova-instrumentation-llmo==0.0.5
+addict

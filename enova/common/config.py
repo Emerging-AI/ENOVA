@@ -61,7 +61,7 @@ class Config:
 
     # defualt value of whole service
     default_map = {
-        "pkg": {"version": "0.0.4"},
+        "pkg": {"version": "0.0.5"},
         "app_name": "",
         "api": {
             "docs_url": "/api/docs",

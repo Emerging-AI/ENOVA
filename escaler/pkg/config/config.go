@@ -106,8 +106,14 @@ type EConfig struct {
 	Zmq       ZmqConfig
 	Redis     RedisConfig
 	Logger    LoggerConfig
+	K8s       K8sConfig
 	Enode     EnodeConfig     `json:"enode"`
 	EnovaAlgo EnovaAlgoConfig `json:"enova_algo"`
+}
+
+type K8sConfig struct {
+	Host string
+	Port int
 }
 
 func (c *EConfig) Init(configPath string) error {
