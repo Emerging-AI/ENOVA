@@ -9,4 +9,4 @@ BASEDIR=$(dirname "$BASEDIR")
 
 # pack
 cd $BASEDIR/llmo/enova-instrumentation-llmo
-python -m build --no-isolation
+poetry build

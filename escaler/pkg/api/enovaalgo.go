@@ -10,9 +10,9 @@ import (
 var enovaAlgoInitOnce sync.Once
 
 type enovaAlgoClient struct {
-	ConfigRecommend HttpApi
-	AnomalyDetect   HttpApi
-	AnomalyRecover  HttpApi
+	ConfigRecommend HttpApi[EnvoaResponse]
+	AnomalyDetect   HttpApi[EnvoaResponse]
+	AnomalyRecover  HttpApi[EnvoaResponse]
 }
 
 type ConfigRecommendRequest struct {
@@ -84,17 +84,20 @@ var EnovaAlgoClient *enovaAlgoClient
 func GetEnovaAlgoClient() *enovaAlgoClient {
 	enovaAlgoInitOnce.Do(func() {
 		EnovaAlgoClient = &enovaAlgoClient{
-			ConfigRecommend: HttpApi{
-				Method: "POST",
-				Url:    fmt.Sprintf("http://%s/api/enovaalgo/v1/config_recommend", config.GetEConfig().EnovaAlgo.Host),
+			ConfigRecommend: HttpApi[EnvoaResponse]{
+				Method:        "POST",
+				Url:           fmt.Sprintf("http://%s/api/enovaalgo/v1/config_recommend", config.GetEConfig().EnovaAlgo.Host),
+				HeaderBuilder: &EmptyHeaderBuilder{},
 			},
-			AnomalyDetect: HttpApi{
-				Method: "POST",
-				Url:    fmt.Sprintf("http://%s/api/enovaalgo/v1/anomaly_detect", config.GetEConfig().EnovaAlgo.Host),
+			AnomalyDetect: HttpApi[EnvoaResponse]{
+				Method:        "POST",
+				Url:           fmt.Sprintf("http://%s/api/enovaalgo/v1/anomaly_detect", config.GetEConfig().EnovaAlgo.Host),
+				HeaderBuilder: &EmptyHeaderBuilder{},
 			},
-			AnomalyRecover: HttpApi{
-				Method: "POST",
-				Url:    fmt.Sprintf("http://%s/api/enovaalgo/v1/anomaly_recover", config.GetEConfig().EnovaAlgo.Host),
+			AnomalyRecover: HttpApi[EnvoaResponse]{
+				Method:        "POST",
+				Url:           fmt.Sprintf("http://%s/api/enovaalgo/v1/anomaly_recover", config.GetEConfig().EnovaAlgo.Host),
+				HeaderBuilder: &EmptyHeaderBuilder{},
 			},
 		}
 	})

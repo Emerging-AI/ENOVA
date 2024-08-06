@@ -1,24 +1,24 @@
 FROM emergingai/enova:base
 
-RUN pip install pip install setuptools setuptools_scm[toml]==7.1.0 toml
+RUN pip install pip setuptools setuptools_scm[toml]==7.1.0 toml poetry
 
 COPY ./llmo /opt/enova/llmo
 
 COPY ./scripts /opt/enova/scripts
+COPY ./requirements-docker.txt /opt/enova/requirements.txt
 
 RUN bash /opt/enova/scripts/pack_whl.llmo.sh 
 
-ARG LLMO_VERSION=0.0.4
-RUN pip install /opt/enova/llmo/enova-instrumentation-llmo/dist/enova_instrumentation_llmo-${LLMO_VERSION}-py3-none-any.whl
+ARG LLMO_VERSION=0.0.5
+RUN pip install -r /opt/enova/requirements.txt && \
+    pip install /opt/enova/llmo/enova-instrumentation-llmo/dist/enova_instrumentation_llmo-${LLMO_VERSION}-py3-none-any.whl --no-deps
 
 ARG CACHEBUST=1
 
 COPY . /opt/enova
 
 RUN cd /opt/enova && bash ./scripts/pack_whl.enova.sh
-ARG ENOVA_VERSION=0.0.4
+ARG ENOVA_VERSION=0.0.5
 
-RUN pip install /opt/enova/dist/enova-${ENOVA_VERSION}-py3-none-any.whl && \
-    pip uninstall -y transformer-engine
-
-RUN mkdir -p /workspace/model
+RUN pip install /opt/enova/dist/enova-${ENOVA_VERSION}-py3-none-any.whl --no-deps && \
+    pip uninstall -y transformer-engine && mkdir -p /workspace/model

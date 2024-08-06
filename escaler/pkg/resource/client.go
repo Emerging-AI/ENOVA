@@ -349,7 +349,8 @@ func NewDockerResourcClient() *DockerResourceClient {
 	return &DockerResourceClient{
 		DockerClient: &dockerCli,
 		TaskManager: &TaskManager{
-			RedisClient: redis.NewRedisClient(),
+			RedisClient: redis.NewRedisClient(
+				config.GetEConfig().Redis.Addr, config.GetEConfig().Redis.Password, config.GetEConfig().Redis.Db),
 		},
 		ContainerIDGpusMap: make(map[string][]string),
 		LocalGpuStats:      localGpuStats,

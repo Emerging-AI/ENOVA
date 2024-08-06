@@ -1,11 +1,8 @@
 httpx==0.24.1
 fastapi==0.108.0
-accelerate
 huggingface_hub
 hf-transfer
-torch
 transformers
-vllm
 locate
 python-rapidjson
 opentelemetry-api
@@ -13,7 +10,6 @@ opentelemetry-sdk
 opentelemetry-exporter-otlp
 opentelemetry-distro
 opentelemetry-instrumentation-fastapi
-enova-instrumentation-llmo==0.0.4
 streamlit
 pymysql==1.1.0
 aiomysql==0.2.0
@@ -29,3 +25,20 @@ pytz
 tzlocal
 openai
 packaging
+ray
+# filelock
+# lm-format-enforcer==0.10.3
+# ninja
+# nvidia-ml-py
+# outlines
+# pillow
+# prometheus-client
+# prometheus-fastapi-instrumentator
+# psutil
+# sentencepiece
+# tiktoken
+# tokenizers
+# typing-extensions
+# vllm-flash-attn==2.5.9.post1
+# xformers==0.0.27
+enova-instrumentation-llmo==0.0.5

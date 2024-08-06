@@ -1,11 +1,9 @@
 httpx==0.24.1
+vllm==0.5.4
 fastapi==0.108.0
-accelerate
 huggingface_hub
 hf-transfer
-torch
 transformers
-vllm
 locate
 python-rapidjson
 opentelemetry-api
@@ -24,4 +22,23 @@ uvicorn
 ulid-py
 pyopencl
 py-cpuinfo
+pytz
+tzlocal
 openai
+packaging
+ray
+# filelock
+# lm-format-enforcer==0.10.3
+# ninja
+# nvidia-ml-py
+# outlines
+# pillow
+# prometheus-client
+# prometheus-fastapi-instrumentator
+# psutil
+# sentencepiece
+# tiktoken
+# tokenizers
+# typing-extensions
+# vllm-flash-attn==2.5.9.post1
+# xformers==0.0.27
