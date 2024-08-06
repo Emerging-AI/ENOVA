@@ -26,19 +26,5 @@ tzlocal
 openai
 packaging
 ray
-# filelock
-# lm-format-enforcer==0.10.3
-# ninja
-# nvidia-ml-py
-# outlines
-# pillow
-# prometheus-client
-# prometheus-fastapi-instrumentator
-# psutil
-# sentencepiece
-# tiktoken
-# tokenizers
-# typing-extensions
-# vllm-flash-attn==2.5.9.post1
-# xformers==0.0.27
 enova-instrumentation-llmo==0.0.5
+addict

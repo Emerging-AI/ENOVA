@@ -39,29 +39,45 @@ class VllmBackend(BaseBackend):
             )
         elif vllm_mode == VllmMode.OPENAI.value:
             from vllm.entrypoints.openai import api_server
+            from addict import Dict as AddDict
 
             engine_args = AsyncEngineArgs(model=self.enode.model, **CONFIG.vllm)
             engine = AsyncLLMEngine.from_engine_args(engine_args, usage_context=api_server.UsageContext.OPENAI_API_SERVER)
 
+            request_logger = api_server.RequestLogger(max_log_len=CONFIG.vllm.get("max_log_len"))
+            engine_model_config = asyncio.run(engine.get_model_config())
+
             served_model_names = [self.enode.model]
             openai_serving_chat = api_server.OpenAIServingChat(
                 engine,
-                served_model_names,
-                CONFIG.vllm.get("response_role") or "assistant",
-                CONFIG.vllm.get("lora_modules"),
-                CONFIG.vllm.get("chat_template"),
+                model_config=engine_model_config,
+                served_model_names=served_model_names,
+                response_role=CONFIG.vllm.get("response_role") or "assistant",
+                lora_modules=CONFIG.vllm.get("lora_modules"),
+                prompt_adapters=CONFIG.vllm.get("prompt_adapters"),
+                request_logger=request_logger,
+                chat_template=CONFIG.vllm.get("chat_template"),
             )
-            openai_serving_completion = api_server.OpenAIServingCompletion(engine, served_model_names, CONFIG.vllm.get("lora_modules"))
+            openai_serving_completion = api_server.OpenAIServingCompletion(
+                engine,
+                model_config=engine_model_config,
+                served_model_names=served_model_names,
+                lora_modules=CONFIG.vllm.get("lora_modules"),
+                prompt_adapters=CONFIG.vllm.get("prompt_adapters"),
+                request_logger=request_logger,
+                return_tokens_as_token_ids=CONFIG.vllm.get("return_tokens_as_token_ids") or False,
+            )
             api_server.engine = engine
             api_server.engine_args = engine_args
             api_server.openai_serving_chat = openai_serving_chat
             api_server.openai_serving_completion = openai_serving_completion
+            args = AddDict(CONFIG.vllm)
+            api_server.app = api_server.build_app(args)
         else:
             raise ValueError(f"vllm_mode: {vllm_mode} is not support")
         LOGGER.info(f"CONFIG.vllm: {CONFIG.vllm}")
 
         self.app = api_server.app
-
         cur_app = api_server.app
 
         @cur_app.get("/v1/model/info/args")
