@@ -55,6 +55,7 @@ type Detector struct {
 	Client              resource.ClientInterface
 	TaskMap             map[string]*meta.DetectTask
 	DetectResultManager *DetectResultManager
+	stopped             bool
 }
 
 func NewDetector() *Detector {
@@ -73,7 +74,12 @@ func NewDetector() *Detector {
 				config.GetEConfig().Redis.Addr, config.GetEConfig().Redis.Password, config.GetEConfig().Redis.Db,
 			),
 		},
+		stopped: false,
 	}
+}
+
+func (d *Detector) Stop() {
+	d.stopped = true
 }
 
 func (d *Detector) SendScaleTask(task meta.TaskSpecInterface) {
@@ -209,6 +215,9 @@ func (d *Detector) UpdateTaskSpec(task meta.TaskSpecInterface, resp api.ConfigRe
 func (d *Detector) RunDetector() {
 	ticker := time.NewTicker(time.Duration(time.Duration(config.GetEConfig().Detector.DetectInterval) * time.Second))
 	for {
+		if d.stopped {
+			break
+		}
 		select {
 		case <-ticker.C:
 			d.DetectOnce()
