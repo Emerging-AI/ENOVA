@@ -21,10 +21,16 @@ type DetectorServer struct {
 }
 
 func NewDetectorServer() *DetectorServer {
-	detector := NewDetector()
-	detectorServer := DetectorServer{
-		Detector: detector,
+
+	detectorServer := DetectorServer{}
+	if config.GetEConfig().ResourceBackend.Type == config.ResourceBackendTypeK8s {
+		detector := NewDetector()
+		detectorServer.Detector = detector
+	} else {
+		detector := NewK8sDetector()
+		detectorServer.Detector = detector
 	}
+
 	detectorServer.InitServer()
 	return &detectorServer
 }
@@ -128,7 +134,7 @@ func (r DockerDeployResource) Post(c *gin.Context) {
 		}
 	}
 
-	r.Detector.RegisterTask(taskSpec)
+	r.Detector.DeployTask(taskSpec)
 	r.SetResult(c, "Success")
 }
 

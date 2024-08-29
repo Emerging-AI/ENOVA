@@ -38,7 +38,7 @@ func main() {
 	d := detector.NewDetectorServer()
 	d.GetEngine().GET("/api/escaler/docs/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-	s := scaler.NewLocalDockerServingScaler()
+	s := scaler.NewServingScaler()
 
 	wg.Add(2)
 	go d.RunInWaitGroup(&wg)

@@ -20,18 +20,6 @@ type TritonInferConfig struct {
 	ModelName string
 }
 
-//type ExecutionControlConfig struct {
-//	TritonInferConfig
-//}
-//
-//type PerformanceDetectionConfig struct {
-//	TritonInferConfig
-//}
-//
-//type ApplicationDomainAdaptionConfig struct {
-//	TritonInferConfig
-//}
-
 type EnovaInferConfig struct {
 	ExecutionControl          TritonInferConfig
 	PerformanceDetection      TritonInferConfig
@@ -99,21 +87,33 @@ type RedisConfig struct {
 	Db       int
 }
 
+type ResourceBackendType string
+
+const (
+	ResourceBackendTypeDocker = "docker"
+	ResourceBackendTypeK8s    = "k8s"
+)
+
+type ResourceBackendConfig struct {
+	Type ResourceBackendType
+}
+
 type EConfig struct {
-	Docker    DockerConfig
-	Detector  DetectorConfig
-	Scaler    ScalerConfig
-	Zmq       ZmqConfig
-	Redis     RedisConfig
-	Logger    LoggerConfig
-	K8s       K8sConfig
-	Enode     EnodeConfig     `json:"enode"`
-	EnovaAlgo EnovaAlgoConfig `json:"enova_algo"`
+	Docker          DockerConfig
+	Detector        DetectorConfig
+	Scaler          ScalerConfig
+	Zmq             ZmqConfig
+	Redis           RedisConfig
+	Logger          LoggerConfig
+	K8s             K8sConfig
+	Enode           EnodeConfig           `json:"enode"`
+	EnovaAlgo       EnovaAlgoConfig       `json:"enova_algo"`
+	ResourceBackend ResourceBackendConfig `json:"resource_backend"`
 }
 
 type K8sConfig struct {
-	Host string
-	Port int
+	InCluster      bool   `json:"in_cluster"`
+	KubeConfigPath string `json:"kube_config_path"`
 }
 
 func (c *EConfig) Init(configPath string) error {
@@ -198,6 +198,14 @@ func (c *EConfig) Init(configPath string) error {
 	allFields = utils.GetAllField(c.Zmq)
 	v = reflect.ValueOf(&c.Zmq).Elem()
 	c.DynamicUpdateConfig(&v, allFields, "ENOVA_ZMQ")
+
+	allFields = utils.GetAllField(c.K8s)
+	v = reflect.ValueOf(&c.K8s).Elem()
+	c.DynamicUpdateConfig(&v, allFields, "ENOVA_K8S")
+
+	allFields = utils.GetAllField(c.ResourceBackend)
+	v = reflect.ValueOf(&c.ResourceBackend).Elem()
+	c.DynamicUpdateConfig(&v, allFields, "ENOVA_RESOURCE_BACKEND")
 	return nil
 }
 

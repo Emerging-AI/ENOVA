@@ -16,6 +16,7 @@ type TaskSpecInterface interface {
 	GetName() string
 	GetExporterServiceName() string
 	GetPreferGpuNum() int
+	GetScalingStrategy() ScalingStrategy
 }
 
 type ModelConfig struct {
@@ -74,11 +75,61 @@ type Volume struct {
 	HostPath  string `json:"hostPath"`
 }
 
+type Raw struct{}
+
+type Ingress struct {
+	Name  string `json:"name"`
+	Paths []Path `json:"paths"`
+	Raw   Raw    `json:"raw"`
+}
+
+type Path struct {
+	Path    string  `json:"path"`
+	Backend Backend `json:"backend"`
+}
+
+type Backend struct {
+	Service ServiceDetail `json:"service"`
+}
+
+type ServiceDetail struct {
+	Name string `json:"name"`
+	Port Port   `json:"port"`
+}
+
+type Port struct {
+	Number int32 `json:"number"`
+}
+
+type Service struct {
+	Name  string `json:"name"`
+	Ports []Port `json:"ports"`
+	Raw   Raw    `json:"raw"`
+}
+
+type Resources struct {
+	GPU     string `json:"gpu"`
+	GPUType string `json:"gpu_type"`
+}
+
+type Strategy string
+
+const (
+	StrategyManual = "manual"
+	StrategyAuto   = "auto"
+)
+
+type ScalingStrategy struct {
+	// +optional
+	Strategy string `json:"strategy,omitempty"`
+}
+
 type TaskSpec struct {
 	Name                string
 	Model               string
 	Host                string
 	Port                int
+	Image               string
 	Backend             string
 	ExporterEndpoint    string `json:"exporter_endpoint"`
 	ExporterServiceName string `json:"exporter_service_name"`
@@ -89,6 +140,12 @@ type TaskSpec struct {
 	Envs                []Env             `json:"envs"`
 	Gpus                string            `json:"gpus"`
 	Volumes             []Volume          `json:"volumes"`
+	Namespace           string            `json:"namespace"`
+	NodeSelector        map[string]string `json:"node_selector"`
+	Ingress             Ingress           `json:"ingress"`
+	Service             Service           `json:"service"`
+	Resources           Resources         `json:"resources"`
+	ScalingStrategy     ScalingStrategy   `json:"scaling_strategy"`
 }
 
 func (t *TaskSpec) GetName() string {
@@ -183,6 +240,10 @@ func (t *TaskSpec) UnmarshalJSON(data []byte) error {
 		Volumes:             aux.Volumes,
 	}
 	return nil
+}
+
+func (t *TaskSpec) GetScalingStrategy() ScalingStrategy {
+	return t.ScalingStrategy
 }
 
 type ContainerInfo struct {

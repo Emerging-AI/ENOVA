@@ -6,16 +6,16 @@ import (
 	"os/exec"
 	"strings"
 
-	"encoding/json"
 	"fmt"
 	"strconv"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
-	"github.com/Emerging-AI/ENOVA/escaler/pkg/docker"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/logger"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/redis"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/resource/docker"
+	rscutils "github.com/Emerging-AI/ENOVA/escaler/pkg/resource/utils"
 
 	"github.com/docker/docker/client"
 	"github.com/google/uuid"
@@ -223,35 +223,7 @@ func (d *DockerResourceClient) singleDeployByDocker(task *meta.TaskSpec) (string
 }
 
 func (d *DockerResourceClient) CreateSingleEnode(spec meta.TaskSpec, containerName string) (string, error) {
-	cmd := []string{
-		"enova", "enode", "run", "--model", spec.Model, "--port", strconv.Itoa(spec.Port), "--host", spec.Host,
-		"--backend", spec.Backend,
-		"--exporter_endpoint", spec.ExporterEndpoint,
-		"--exporter_service_name", containerName,
-	}
-
-	vllmBackendConfig, ok := spec.BackendConfig.(*meta.VllmBackendConfig)
-	if ok {
-		jsonBytes, err := json.Marshal(vllmBackendConfig)
-		if err != nil {
-
-		} else {
-			var vllmBackendConfigMap map[string]interface{}
-			err = json.Unmarshal(jsonBytes, &vllmBackendConfigMap)
-			if err != nil {
-
-			} else {
-				for k, v := range vllmBackendConfigMap {
-					cmd = append(cmd, []string{fmt.Sprintf("--%s", k), fmt.Sprintf("%v", v)}...)
-				}
-			}
-
-		}
-	}
-	// Add extra enode params
-	for k, v := range spec.BackendExtraConfig {
-		cmd = append(cmd, []string{fmt.Sprintf("--%s", k), fmt.Sprintf("%v", v)}...)
-	}
+	cmd := rscutils.BuildCmdFromTaskSpec(spec)
 	params := docker.CreateContainerParams{
 		ImageName:     config.GetEConfig().Enode.Image,
 		Cmd:           cmd,

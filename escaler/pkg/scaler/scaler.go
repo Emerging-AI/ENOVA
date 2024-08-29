@@ -13,24 +13,42 @@ import (
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/zmq"
 )
 
-type enovaServingScaler struct {
+type EnovaServingScaler struct {
 	Subscriber *zmq.ZmqSubscriber
 	Client     resource.ClientInterface
 }
 
-func NewLocalDockerServingScaler() *enovaServingScaler {
+func NewServingScaler() *EnovaServingScaler {
+	if config.GetEConfig().ResourceBackend.Type == config.ResourceBackendTypeK8s {
+		return NewK8sServingScaler()
+	}
+	return NewLocalDockerServingScaler()
+}
+
+func NewLocalDockerServingScaler() *EnovaServingScaler {
+	return &EnovaServingScaler{
+		Subscriber: NewZmqSubscriber(),
+		Client:     resource.NewDockerResourcClient(),
+	}
+}
+
+func NewK8sServingScaler() *EnovaServingScaler {
+	return &EnovaServingScaler{
+		Subscriber: NewZmqSubscriber(),
+		Client:     resource.Newk8sResourcClient(),
+	}
+}
+
+func NewZmqSubscriber() *zmq.ZmqSubscriber {
 	sub := zmq.ZmqSubscriber{
 		Host: config.GetEConfig().Zmq.Host,
 		Port: config.GetEConfig().Zmq.Port,
 	}
 	sub.Init()
-	return &enovaServingScaler{
-		Subscriber: &sub,
-		Client:     resource.NewDockerResourcClient(),
-	}
+	return &sub
 }
 
-func (s *enovaServingScaler) Run() {
+func (s *EnovaServingScaler) Run() {
 	if s.Subscriber == nil {
 		panic(errors.New("enovaServingScaler Subscriber is nil"))
 	}
@@ -57,11 +75,11 @@ func (s *enovaServingScaler) Run() {
 	}
 }
 
-func (s *enovaServingScaler) Stop() {
+func (s *EnovaServingScaler) Stop() {
 
 }
 
-func (s *enovaServingScaler) RunInWaitGroup(wg *sync.WaitGroup) {
+func (s *EnovaServingScaler) RunInWaitGroup(wg *sync.WaitGroup) {
 	defer wg.Done()
 	s.Run()
 }

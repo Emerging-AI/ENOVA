@@ -78,6 +78,26 @@ func NewDetector() *Detector {
 	}
 }
 
+func NewK8sDetector() *Detector {
+	pub := zmq.ZmqPublisher{
+		Host: config.GetEConfig().Zmq.Host,
+		Port: config.GetEConfig().Zmq.Port,
+	}
+	pub.Init()
+	return &Detector{
+		Publisher: pub,
+		PermCli:   PerformanceDetectorCli{},
+		TaskMap:   make(map[string]*meta.DetectTask),
+		Client:    resource.Newk8sResourcClient(),
+		DetectResultManager: &DetectResultManager{
+			RedisClient: redis.NewRedisClient(
+				config.GetEConfig().Redis.Addr, config.GetEConfig().Redis.Password, config.GetEConfig().Redis.Db,
+			),
+		},
+		stopped: false,
+	}
+}
+
 func (d *Detector) Stop() {
 	d.stopped = true
 }
@@ -183,8 +203,10 @@ func (d *Detector) DetectOneTaskSpec(taskName string, taskSpec meta.TaskSpecInte
 func (d *Detector) DetectOnce() {
 	logger.Infof("DetectOnce start detect once")
 	for taskName, task := range d.TaskMap {
-		if d.IsTaskRunning(taskName, task.TaskSpec) {
-			d.DetectOneTaskSpec(taskName, task.TaskSpec)
+		if task.TaskSpec.GetScalingStrategy().Strategy == meta.StrategyAuto {
+			if d.IsTaskRunning(taskName, task.TaskSpec) {
+				d.DetectOneTaskSpec(taskName, task.TaskSpec)
+			}
 		}
 	}
 }
@@ -225,14 +247,18 @@ func (d *Detector) RunDetector() {
 	}
 }
 
-// RegisterTask Register Task to taskmap
-func (d *Detector) RegisterTask(task meta.TaskSpec) {
+func (d *Detector) DeployTask(task meta.TaskSpec) {
 	if err := d.UpdateEnodeInitialBackendConfigByRemote(&task); err != nil {
 		logger.Errorf("UpdateEnodeInitialBackendConfigByRemote err: %v", err)
 		return
 	}
 
 	d.SendScaleTask(&task)
+	d.RegisterTask(task)
+}
+
+// RegisterTask Register Task to taskmap
+func (d *Detector) RegisterTask(task meta.TaskSpec) {
 	// register at last
 	d.TaskMap[task.Name] = &meta.DetectTask{
 		TaskSpec: &task,
