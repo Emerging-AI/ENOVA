@@ -41,26 +41,24 @@ func TestK8sEnovaServing(t *testing.T) {
 
 	time.Sleep(3 * time.Second)
 	envs := []meta.Env{
-		meta.Env{
+		{
 			Name:  "http_proxy",
 			Value: "http://192.168.3.2:7892",
 		},
-		meta.Env{
+		{
 			Name:  "https_proxy",
 			Value: "http://192.168.3.2:7892",
 		},
 	}
 
 	volumnes := []meta.Volume{
-		meta.Volume{
+		{
 			MountPath: "/root/.cache",
 			HostPath:  "/root/.cache",
 		},
 	}
 
 	extraConfig := make(map[string]string)
-	extraConfig["test"] = "test1"
-	extraConfig["test2"] = "test2"
 	taskName := "test-enova-serving"
 	testTask := meta.TaskSpec{
 		Name:                taskName,
@@ -68,7 +66,7 @@ func TestK8sEnovaServing(t *testing.T) {
 		Host:                "0.0.0.0",
 		Port:                9199,
 		Backend:             "vllm",
-		Image:               "emergingai/enova:v0.0.5",
+		Image:               "docker.io/emergingai/enova:v0.0.5",
 		ExporterEndpoint:    "192.168.3.2:32893",
 		ExporterServiceName: "enova-chatglm-5oQa",
 		ModelConfig: meta.ModelConfig{
@@ -87,7 +85,7 @@ func TestK8sEnovaServing(t *testing.T) {
 			// MaxNumSeqs:           1,
 			// TensorParallelSize:   1,
 			// GpuMemoryUtilization: 0.5,
-			VllmMode:        "normal",
+			VllmMode:        "openai",
 			TrustRemoteCode: true,
 		},
 		Replica:            1,
@@ -137,7 +135,7 @@ func TestK8sEnovaServing(t *testing.T) {
 	fmt.Printf("pResult: %s\n", string(bytesData))
 
 	bodyBytes, _ := json.Marshal(testTask)
-	req, _ := http.NewRequest("POST", "/api/escaler/v1/docker/deploy", bytes.NewBuffer(bodyBytes))
+	req, _ := http.NewRequest("POST", "/api/escaler/v1/deploy", bytes.NewBuffer(bodyBytes))
 	w := httptest.NewRecorder()
 	d.GetEngine().ServeHTTP(w, req)
 
@@ -150,7 +148,7 @@ func TestK8sEnovaServing(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// query task
-	req, _ = http.NewRequest("GET", fmt.Sprintf("/api/escaler/v1/docker/deploy?task_name=%s", taskName), nil)
+	req, _ = http.NewRequest("GET", fmt.Sprintf("/api/escaler/v1/deploy?task_name=%s", taskName), nil)
 	w = httptest.NewRecorder()
 	d.GetEngine().ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -176,7 +174,7 @@ func TestK8sEnovaServing(t *testing.T) {
 
 	// delete task
 	time.Sleep(30 * time.Second)
-	req, _ = http.NewRequest("DELETE", fmt.Sprintf("/api/escaler/v1/docker/deploy?task_name=%s", taskName), nil)
+	req, _ = http.NewRequest("DELETE", fmt.Sprintf("/api/escaler/v1/deploy?task_name=%s", taskName), nil)
 	w = httptest.NewRecorder()
 	d.GetEngine().ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -272,7 +270,7 @@ func TestPilot(t *testing.T) {
 	fmt.Printf("pResult: %s\n", string(bytesData))
 
 	bodyBytes, _ := json.Marshal(testTask)
-	req, _ := http.NewRequest("POST", "/api/escaler/v1/docker/deploy", bytes.NewBuffer(bodyBytes))
+	req, _ := http.NewRequest("POST", "/api/escaler/v1/deploy", bytes.NewBuffer(bodyBytes))
 	w := httptest.NewRecorder()
 	d.GetEngine().ServeHTTP(w, req)
 
@@ -285,7 +283,7 @@ func TestPilot(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// query task
-	req, _ = http.NewRequest("GET", fmt.Sprintf("/api/escaler/v1/docker/deploy?task_name=%s", taskName), nil)
+	req, _ = http.NewRequest("GET", fmt.Sprintf("/api/escaler/v1/deploy?task_name=%s", taskName), nil)
 	w = httptest.NewRecorder()
 	d.GetEngine().ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -311,7 +309,7 @@ func TestPilot(t *testing.T) {
 
 	// delete task
 	time.Sleep(30 * time.Second)
-	req, _ = http.NewRequest("DELETE", fmt.Sprintf("/api/escaler/v1/docker/deploy?task_name=%s", taskName), nil)
+	req, _ = http.NewRequest("DELETE", fmt.Sprintf("/api/escaler/v1/deploy?task_name=%s", taskName), nil)
 	w = httptest.NewRecorder()
 	d.GetEngine().ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)

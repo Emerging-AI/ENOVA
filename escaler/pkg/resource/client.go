@@ -98,7 +98,7 @@ func (d *DockerResourceClient) DeployTask(spec meta.TaskSpec) {
 }
 
 func (d *DockerResourceClient) DeleteTask(spec meta.TaskSpec) {
-
+	d.DeployTask(spec)
 }
 
 func (d *DockerResourceClient) LocalDeploy(task meta.TaskSpec) {

@@ -7,6 +7,7 @@ import (
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/logger"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
 	rscutils "github.com/Emerging-AI/ENOVA/escaler/pkg/resource/utils"
+	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -25,6 +26,55 @@ type K8sCli struct {
 type Workload struct {
 	K8sCli *K8sCli
 	Spec   *meta.TaskSpec
+}
+
+func (w *Workload) CreateOrUpdate() {
+	podList, err := w.GetPodsList()
+	if err != nil {
+		logger.Errorf("K8sResourceClient DeployTask check GetPodsList get error: %v", err)
+		return
+	}
+	if len(podList.Items) == 0 {
+		logger.Debug("workload.GetPodsList get empty podlist")
+		_, err := w.CreateWorkload()
+		if err != nil {
+			return
+		}
+	} else {
+		logger.Debug("workload.GetPodsList get podlist")
+		_, err := w.UpdateWorkload()
+		if err != nil {
+			return
+		}
+	}
+
+	_, err = w.GetService()
+	if err != nil {
+		logger.Debugf("K8sResourceClient DeployTask check service get error: %v", err)
+		_, err = w.CreateService()
+		if err != nil {
+			return
+		}
+	} else {
+		_, err = w.UpdateService()
+		if err != nil {
+			return
+		}
+	}
+
+	_, err = w.GetIngress()
+	if err != nil {
+		logger.Debugf("K8sResourceClient DeployTask check ingress get error: %v", err)
+		_, err = w.CreateIngress()
+		if err != nil {
+			return
+		}
+	} else {
+		_, err = w.UpdateIngress()
+		if err != nil {
+			return
+		}
+	}
 }
 
 // Create 1. create workload, 2. create ingress 3. create service
@@ -59,18 +109,9 @@ func (w *Workload) Update() {
 }
 
 func (w *Workload) Delete() {
-	err := w.DeleteWorkload()
-	if err != nil {
-		return
-	}
-	err = w.DeleteService()
-	if err != nil {
-		return
-	}
-	err = w.DeleteIngress()
-	if err != nil {
-		return
-	}
+	w.DeleteWorkload()
+	w.DeleteService()
+	w.DeleteIngress()
 }
 
 func (w *Workload) CreateWorkload() (*v1.Deployment, error) {
@@ -175,7 +216,7 @@ func (w *Workload) buildDeployment() v1.Deployment {
 	replicas := int32(w.Spec.Replica)
 	matchLabels := make(map[string]string)
 	matchLabels["enovaserving-name"] = w.Spec.Name
-	args := rscutils.BuildCmdFromTaskSpec(*w.Spec)
+	cmd := rscutils.BuildCmdFromTaskSpec(*w.Spec)
 
 	env := make([]corev1.EnvVar, len(w.Spec.Envs))
 	for i, e := range w.Spec.Envs {
@@ -201,12 +242,10 @@ func (w *Workload) buildDeployment() v1.Deployment {
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Image: w.Spec.Image,
-							Name:  w.Spec.Name,
-							Command: []string{
-								"/bin/bash",
-							},
-							Args: args,
+							Image:   w.Spec.Image,
+							Name:    w.Spec.Name,
+							Command: cmd[:1],
+							Args:    cmd[1:],
 							Ports: []corev1.ContainerPort{
 								{
 									ContainerPort: int32(w.Spec.Port),
@@ -231,10 +270,10 @@ func (w *Workload) buildDeployment() v1.Deployment {
 						Path: v.HostPath,
 					},
 				},
-				Name: fmt.Sprintf("hostPath%d", i),
+				Name: fmt.Sprintf("hostpath%d", i),
 			}
 			volumeMounts[i] = corev1.VolumeMount{
-				Name:      fmt.Sprintf("hostPath%d", i),
+				Name:      fmt.Sprintf("hostpath%d", i),
 				MountPath: v.MountPath,
 			}
 		}
@@ -244,6 +283,16 @@ func (w *Workload) buildDeployment() v1.Deployment {
 	if len(w.Spec.NodeSelector) > 0 {
 		deployment.Spec.Template.Spec.NodeSelector = w.Spec.NodeSelector
 	}
+
+	request := corev1.ResourceList{
+		corev1.ResourceName("nvidia.com/gpu"): k8sresource.MustParse(w.Spec.Resources.GPU),
+	}
+	deployment.Spec.Template.Spec.Containers[0].Resources = corev1.ResourceRequirements{
+		Limits:   request,
+		Requests: request,
+	}
+	deployment.Spec.Template.Labels = matchLabels
+	deployment.Labels = matchLabels
 	return deployment
 }
 
@@ -307,6 +356,7 @@ func (w *Workload) buildIngress() networkingv1.Ingress {
 			Rules:            rules,
 		},
 	}
+	ingress.Name = fmt.Sprintf("%s-ingress", w.Spec.Name)
 	return ingress
 }
 
@@ -315,4 +365,26 @@ func (w *Workload) GetPodsList() (*corev1.PodList, error) {
 		LabelSelector: fmt.Sprintf("enovaserving-name=%s", w.Spec.Name),
 	}
 	return w.K8sCli.K8sClient.CoreV1().Pods(w.Spec.Namespace).List(w.K8sCli.Ctx, opts)
+}
+
+func (w *Workload) GetService() (*corev1.Service, error) {
+	opts := metav1.GetOptions{}
+	service := w.buildService()
+	ret, err := w.K8sCli.K8sClient.CoreV1().Services(w.Spec.Namespace).Get(w.K8sCli.Ctx, service.Name, opts)
+	if err != nil {
+		logger.Errorf("Workload GetService error: %v", err)
+		return ret, err
+	}
+	return ret, nil
+}
+
+func (w *Workload) GetIngress() (*networkingv1.Ingress, error) {
+	opts := metav1.GetOptions{}
+	ingress := w.buildIngress()
+	ret, err := w.K8sCli.K8sClient.NetworkingV1().Ingresses(w.Spec.Namespace).Get(w.K8sCli.Ctx, ingress.Name, opts)
+	if err != nil {
+		logger.Errorf("Workload GetIngress error: %v", err)
+		return ret, err
+	}
+	return ret, nil
 }

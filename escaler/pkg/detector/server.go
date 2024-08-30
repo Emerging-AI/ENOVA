@@ -71,13 +71,13 @@ func (r TaskDetectResource) Get(c *gin.Context) {
 	}
 }
 
-type DockerDeployResource struct {
+type DeployResource struct {
 	server.BaseResource
 	Detector *Detector
 }
 
-func (r DockerDeployResource) Path() string {
-	return "/docker/deploy"
+func (r DeployResource) Path() string {
+	return "/deploy"
 }
 
 // Post godoc
@@ -87,10 +87,10 @@ func (r DockerDeployResource) Path() string {
 // @Produce      json
 // @Param  		 payload body meta.DockerDeployRequest true "request content"
 // @Success      200  {string}  "success"
-// @Router       /api/escaler/v1/docker/deploy [post]
-func (r DockerDeployResource) Post(c *gin.Context) {
-	var dockerDeployRequest meta.DockerDeployRequest
-	if err := c.ShouldBindJSON(&dockerDeployRequest); err != nil {
+// @Router       /api/escaler/v1/deploy [post]
+func (r DeployResource) Post(c *gin.Context) {
+	var deployRequest meta.DeployRequest
+	if err := c.ShouldBindJSON(&deployRequest); err != nil {
 		r.SetErrorResult(c, api.EnvoaResponse{
 			Message: fmt.Sprintf("参数解析失败：%s", err),
 			Code:    400100,
@@ -99,14 +99,14 @@ func (r DockerDeployResource) Post(c *gin.Context) {
 		return
 	}
 
-	logger.Infof("Get dockerDeployRequest: %v", dockerDeployRequest)
+	logger.Infof("Get deployRequest: %v", deployRequest)
 	var taskSpec meta.TaskSpec
-	if dockerDeployRequest.Backend == "vllm" {
+	if deployRequest.Backend == "vllm" {
 		var vllmConfig meta.VllmBackendConfig
 
-		resultData, err := json.Marshal(dockerDeployRequest.BackendConfig)
+		resultData, err := json.Marshal(deployRequest.BackendConfig)
 		if err != nil {
-			logger.Errorf("encode dockerDeployRequest.BackendConfig err: %v", err)
+			logger.Errorf("encode deployRequest.BackendConfig err: %v", err)
 			return
 		}
 
@@ -114,24 +114,34 @@ func (r DockerDeployResource) Post(c *gin.Context) {
 			logger.Errorf("encode VllmBackendConfig err: %v", err)
 			return
 		}
-		exporterServiceName := fmt.Sprintf("%s-%s-%s", config.GetEConfig().Enode.Name, dockerDeployRequest.ModelConfig.Llm.Framework, dockerDeployRequest.ModelConfig.Version)
+		exporterServiceName := fmt.Sprintf("%s-%s-%s", config.GetEConfig().Enode.Name, deployRequest.ModelConfig.Llm.Framework, deployRequest.ModelConfig.Version)
 
 		taskSpec = meta.TaskSpec{
-			Name:                dockerDeployRequest.Name,
-			Model:               dockerDeployRequest.Model,
-			Host:                dockerDeployRequest.Host,
-			Port:                dockerDeployRequest.Port,
-			Backend:             dockerDeployRequest.Backend,
-			ExporterEndpoint:    dockerDeployRequest.ExporterEndpoint,
+			Name:                deployRequest.Name,
+			Model:               deployRequest.Model,
+			Host:                deployRequest.Host,
+			Port:                deployRequest.Port,
+			Backend:             deployRequest.Backend,
+			ExporterEndpoint:    deployRequest.ExporterEndpoint,
 			ExporterServiceName: exporterServiceName,
-			ModelConfig:         dockerDeployRequest.ModelConfig,
+			ModelConfig:         deployRequest.ModelConfig,
 			BackendConfig:       &vllmConfig,
-			BackendExtraConfig:  dockerDeployRequest.BackendExtraConfig,
-			Replica:             dockerDeployRequest.Replica,
-			Envs:                dockerDeployRequest.Envs,
+			BackendExtraConfig:  deployRequest.BackendExtraConfig,
+			Replica:             deployRequest.Replica,
+			Envs:                deployRequest.Envs,
 			Gpus:                "all",
-			Volumes:             dockerDeployRequest.Volumes,
+			Volumes:             deployRequest.Volumes,
+			Namespace:           deployRequest.Namespace,
+			NodeSelector:        deployRequest.NodeSelector,
+			Ingress:             deployRequest.Ingress,
+			Service:             deployRequest.Service,
+			Resources:           deployRequest.Resources,
+			ScalingStrategy:     deployRequest.ScalingStrategy,
 		}
+	}
+
+	if deployRequest.Image != "" {
+		taskSpec.Image = deployRequest.Image
 	}
 
 	r.Detector.DeployTask(taskSpec)
@@ -146,7 +156,7 @@ func (r DockerDeployResource) Post(c *gin.Context) {
 // @Param        task_name      query  string false "Task Name"
 // @Success      200  {object}  	meta.DetectTaskSpecResponse
 // @Router       /api/escaler/v1/docker/deploy [get]
-func (r DockerDeployResource) Get(c *gin.Context) {
+func (r DeployResource) Get(c *gin.Context) {
 	taskName := c.Query("task_name")
 	detectTask, ok := r.Detector.TaskMap[taskName]
 	if !ok {
@@ -177,7 +187,7 @@ func (r DockerDeployResource) Get(c *gin.Context) {
 // @Param        task_name      query  string false "Task Name"
 // @Success      200  {string}  "Success"
 // @Router       /api/escaler/v1/docker/deploy [delete]
-func (r DockerDeployResource) Delete(c *gin.Context) {
+func (r DeployResource) Delete(c *gin.Context) {
 	taskName := c.Query("task_name")
 	r.Detector.DeleteTask(taskName)
 	r.SetResult(c, "Success")
@@ -187,7 +197,7 @@ func (d *DetectorServer) InitServer() {
 	middlewares := make([]gin.HandlerFunc, 0)
 
 	resources := make([]interface{}, 0)
-	resources = append(resources, DockerDeployResource{
+	resources = append(resources, DeployResource{
 		Detector: d.Detector,
 	})
 	resources = append(resources, TaskDetectResource{

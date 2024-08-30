@@ -49,12 +49,13 @@ func (v *VllmBackendConfig) Update(recommendResult api.ConfigRecommendResult) {
 	}
 }
 
-type DockerDeployRequest struct {
+type DeployRequest struct {
 	Name                string
 	Model               string
 	Host                string
 	Port                int
 	Backend             string
+	Image               string
 	ExporterEndpoint    string `json:"exporter_endpoint"`
 	ExporterServiceName string `json:"exporter_service_name"`
 	ModelConfig         ModelConfig
@@ -63,6 +64,12 @@ type DockerDeployRequest struct {
 	Replica             int               `json:"replica"`
 	Envs                []Env             `json:"envs"`
 	Volumes             []Volume          `json:"volumes"`
+	Namespace           string            `json:"namespace"`
+	NodeSelector        map[string]string `json:"node_selector"`
+	Ingress             Ingress           `json:"ingress"`
+	Service             Service           `json:"service"`
+	Resources           Resources         `json:"resources"`
+	ScalingStrategy     ScalingStrategy   `json:"scaling_strategy"`
 }
 
 type Env struct {
@@ -197,6 +204,7 @@ func (t *TaskSpec) UnmarshalJSON(data []byte) error {
 		Host                string
 		Port                int
 		Backend             string
+		Image               string
 		ExporterEndpoint    string `json:"exporter_endpoint"`
 		ExporterServiceName string `json:"exporter_service_name"`
 		ModelConfig         ModelConfig
@@ -206,6 +214,12 @@ func (t *TaskSpec) UnmarshalJSON(data []byte) error {
 		Envs                []Env             `json:"envs"`
 		Gpus                string            `json:"gpus"`
 		Volumes             []Volume          `json:"volumes"`
+		Namespace           string            `json:"namespace"`
+		NodeSelector        map[string]string `json:"node_selector"`
+		Ingress             Ingress           `json:"ingress"`
+		Service             Service           `json:"service"`
+		Resources           Resources         `json:"resources"`
+		ScalingStrategy     ScalingStrategy   `json:"scaling_strategy"`
 	}
 	var aux Alias
 	if err := json.Unmarshal(data, &aux); err != nil {
@@ -229,6 +243,7 @@ func (t *TaskSpec) UnmarshalJSON(data []byte) error {
 		Host:                aux.Host,
 		Port:                aux.Port,
 		Backend:             aux.Backend,
+		Image:               aux.Image,
 		ExporterEndpoint:    aux.ExporterEndpoint,
 		ExporterServiceName: aux.ExporterServiceName,
 		ModelConfig:         aux.ModelConfig,
@@ -238,6 +253,12 @@ func (t *TaskSpec) UnmarshalJSON(data []byte) error {
 		Envs:                aux.Envs,
 		Gpus:                aux.Gpus,
 		Volumes:             aux.Volumes,
+		Namespace:           aux.Namespace,
+		NodeSelector:        aux.NodeSelector,
+		Ingress:             aux.Ingress,
+		Service:             aux.Service,
+		Resources:           aux.Resources,
+		ScalingStrategy:     aux.ScalingStrategy,
 	}
 	return nil
 }

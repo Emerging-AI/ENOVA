@@ -25,14 +25,7 @@ func (c *K8sResourceClient) DeployTask(spec meta.TaskSpec) {
 		Spec:   &spec,
 	}
 
-	// if err, create deployment, else update deployment
-	_, err := workload.GetPodsList()
-	if err != nil {
-		logger.Debug("K8sResourceClient DeployTask check GetPodsList get error: %v", err)
-		workload.Create()
-	} else {
-		workload.Update()
-	}
+	workload.CreateOrUpdate()
 }
 
 func (c *K8sResourceClient) DeleteTask(spec meta.TaskSpec) {

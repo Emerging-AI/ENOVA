@@ -16,6 +16,7 @@ import (
 type EnovaServingScaler struct {
 	Subscriber *zmq.ZmqSubscriber
 	Client     resource.ClientInterface
+	stopped    bool
 }
 
 func NewServingScaler() *EnovaServingScaler {
@@ -29,6 +30,7 @@ func NewLocalDockerServingScaler() *EnovaServingScaler {
 	return &EnovaServingScaler{
 		Subscriber: NewZmqSubscriber(),
 		Client:     resource.NewDockerResourcClient(),
+		stopped:    false,
 	}
 }
 
@@ -70,8 +72,12 @@ func (s *EnovaServingScaler) Run() {
 			continue
 		}
 
-		// 执行 LocalDeploy 函数
-		s.Client.DeployTask(task)
+		if task.Replica == 0 {
+			s.Client.DeleteTask(task)
+		} else {
+			// 执行 LocalDeploy 函数
+			s.Client.DeployTask(task)
+		}
 	}
 }
 
