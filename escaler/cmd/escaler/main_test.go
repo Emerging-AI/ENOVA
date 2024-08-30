@@ -32,8 +32,9 @@ func TestK8sEnovaServing(t *testing.T) {
 
 	performaceCli := detector.PerformanceDetectorCli{}
 
-	d := detector.NewDetectorServer()
-	s := scaler.NewServingScaler()
+	ch := make(chan meta.TaskSpecInterface)
+	d := detector.NewDetectorServer(ch)
+	s := scaler.NewServingScaler(ch)
 
 	wg.Add(2)
 	go d.RunInWaitGroup(&wg)
@@ -184,7 +185,7 @@ func TestK8sEnovaServing(t *testing.T) {
 	assert.Equal(t, "Success", resp.Result.(string))
 
 	wg.Wait()
-
+	close(ch)
 	fmt.Println("All tasks finished.")
 }
 
@@ -198,8 +199,9 @@ func TestPilot(t *testing.T) {
 
 	performaceCli := detector.PerformanceDetectorCli{}
 
-	d := detector.NewDetectorServer()
-	s := scaler.NewLocalDockerServingScaler()
+	ch := make(chan meta.TaskSpecInterface)
+	d := detector.NewDetectorServer(ch)
+	s := scaler.NewLocalDockerServingScaler(ch)
 
 	wg.Add(2)
 	go d.RunInWaitGroup(&wg)

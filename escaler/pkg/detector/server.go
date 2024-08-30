@@ -20,14 +20,14 @@ type DetectorServer struct {
 	server   *server.APIServer
 }
 
-func NewDetectorServer() *DetectorServer {
+func NewDetectorServer(ch chan meta.TaskSpecInterface) *DetectorServer {
 
 	detectorServer := DetectorServer{}
 	if config.GetEConfig().ResourceBackend.Type == config.ResourceBackendTypeK8s {
-		detector := NewDetector()
+		detector := NewDetector(ch)
 		detectorServer.Detector = detector
 	} else {
-		detector := NewK8sDetector()
+		detector := NewK8sDetector(ch)
 		detectorServer.Detector = detector
 	}
 

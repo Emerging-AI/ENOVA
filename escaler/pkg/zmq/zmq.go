@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Emerging-AI/ENOVA/escaler/pkg/logger"
 	zmq "github.com/pebbe/zmq4"
 )
 
@@ -28,9 +27,6 @@ func (p *ZmqPublisher) Init() {
 	}
 	// 订阅所有消息
 	p.publisher = publisher
-	if err != nil {
-		logger.Error(err)
-	}
 	address := fmt.Sprintf("tcp://%s:%d", p.Host, p.Port)
 	err = p.publisher.Bind(address)
 	if err != nil {

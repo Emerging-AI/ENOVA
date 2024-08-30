@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/queue"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/resource"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/api"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/logger"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/redis"
-	"github.com/Emerging-AI/ENOVA/escaler/pkg/zmq"
 )
 
 type DetectResultManager struct {
@@ -50,7 +50,7 @@ func (t *DetectResultManager) GetHistoricalAnomalyRecommendResult(task meta.Task
 }
 
 type Detector struct {
-	Publisher           zmq.ZmqPublisher
+	Queue               *queue.InnerChanTaskQueue
 	PermCli             PerformanceDetectorCli
 	Client              resource.ClientInterface
 	TaskMap             map[string]*meta.DetectTask
@@ -58,17 +58,19 @@ type Detector struct {
 	stopped             bool
 }
 
-func NewDetector() *Detector {
-	pub := zmq.ZmqPublisher{
-		Host: config.GetEConfig().Zmq.Host,
-		Port: config.GetEConfig().Zmq.Port,
-	}
-	pub.Init()
+func NewDetector(ch chan meta.TaskSpecInterface) *Detector {
+	// pub := zmq.ZmqPublisher{
+	// 	Host: config.GetEConfig().Zmq.Host,
+	// 	Port: config.GetEConfig().Zmq.Port,
+	// }
+	// pub.Init()
 	return &Detector{
-		Publisher: pub,
-		PermCli:   PerformanceDetectorCli{},
-		TaskMap:   make(map[string]*meta.DetectTask),
-		Client:    resource.NewDockerResourcClient(),
+		Queue: &queue.InnerChanTaskQueue{
+			Ch: ch,
+		},
+		PermCli: PerformanceDetectorCli{},
+		TaskMap: make(map[string]*meta.DetectTask),
+		Client:  resource.NewDockerResourcClient(),
 		DetectResultManager: &DetectResultManager{
 			RedisClient: redis.NewRedisClient(
 				config.GetEConfig().Redis.Addr, config.GetEConfig().Redis.Password, config.GetEConfig().Redis.Db,
@@ -78,17 +80,19 @@ func NewDetector() *Detector {
 	}
 }
 
-func NewK8sDetector() *Detector {
-	pub := zmq.ZmqPublisher{
-		Host: config.GetEConfig().Zmq.Host,
-		Port: config.GetEConfig().Zmq.Port,
-	}
-	pub.Init()
+func NewK8sDetector(ch chan meta.TaskSpecInterface) *Detector {
+	// pub := zmq.ZmqPublisher{
+	// 	Host: config.GetEConfig().Zmq.Host,
+	// 	Port: config.GetEConfig().Zmq.Port,
+	// }
+	// pub.Init()
 	return &Detector{
-		Publisher: pub,
-		PermCli:   PerformanceDetectorCli{},
-		TaskMap:   make(map[string]*meta.DetectTask),
-		Client:    resource.Newk8sResourcClient(),
+		Queue: &queue.InnerChanTaskQueue{
+			Ch: ch,
+		},
+		PermCli: PerformanceDetectorCli{},
+		TaskMap: make(map[string]*meta.DetectTask),
+		Client:  resource.Newk8sResourcClient(),
 		DetectResultManager: &DetectResultManager{
 			RedisClient: redis.NewRedisClient(
 				config.GetEConfig().Redis.Addr, config.GetEConfig().Redis.Password, config.GetEConfig().Redis.Db,
@@ -103,16 +107,17 @@ func (d *Detector) Stop() {
 }
 
 func (d *Detector) SendScaleTask(task meta.TaskSpecInterface) {
-	scaleTaskJson, err := json.Marshal(task)
-	if err != nil {
-		logger.Errorf("DetectOnce json Marshal err: %v", err)
-		return
-	}
+	d.Queue.Append(task)
+	// scaleTaskJson, err := json.Marshal(task)
+	// if err != nil {
+	// 	logger.Errorf("DetectOnce json Marshal err: %v", err)
+	// 	return
+	// }
 
-	if ok, err := d.Publisher.Send(string(scaleTaskJson)); err != nil {
-		logger.Errorf("DetectOnce Publisher Send err: %v, ok: %v", err, ok)
-		return
-	}
+	// if ok, err := d.Publisher.Send(string(scaleTaskJson)); err != nil {
+	// 	logger.Errorf("DetectOnce Publisher Send err: %v, ok: %v", err, ok)
+	// 	return
+	// }
 }
 
 func (d *Detector) AnomalyDetect(spec meta.TaskSpecInterface) (bool, error) {
