@@ -223,7 +223,7 @@ func (d *Detector) IsTaskRunning(taskName string, task meta.TaskSpecInterface) b
 		d.TaskMap[taskName].Status = meta.TaskStatusRunning
 		return true
 	}
-	containerInfos := d.Client.GetContainerinfos(*t)
+	containerInfos := d.Client.GetRuntimeInfos(*t)
 	for _, containerInfo := range containerInfos {
 		if containerInfo.Status == "exited" {
 			d.TaskMap[taskName].Status = meta.TaskStatusError

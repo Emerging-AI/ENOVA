@@ -163,7 +163,7 @@ func (r DeployResource) Get(c *gin.Context) {
 		r.SetErrorResult(c, fmt.Errorf("taskName: %s, can not be found", taskName))
 	} else {
 		taskSpec := detectTask.TaskSpec.(*meta.TaskSpec)
-		containerInfos := r.Detector.Client.GetContainerinfos(*taskSpec)
+		containerInfos := r.Detector.Client.GetRuntimeInfos(*taskSpec)
 
 		// compute current detect task status
 		for _, containerInfo := range containerInfos {

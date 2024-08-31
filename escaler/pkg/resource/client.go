@@ -49,7 +49,7 @@ type ClientInterface interface {
 	DeployTask(spec meta.TaskSpec)
 	DeleteTask(spec meta.TaskSpec)
 	IsTaskRunning(spec meta.TaskSpec) bool
-	GetContainerinfos(spec meta.TaskSpec) []meta.ContainerInfo
+	GetRuntimeInfos(spec meta.TaskSpec) []meta.RuntimeInfo
 }
 
 type ContainerIds []string
@@ -282,8 +282,8 @@ func (d *DockerResourceClient) IsTaskRunning(task meta.TaskSpec) bool {
 	return ret
 }
 
-func (d *DockerResourceClient) GetContainerinfos(spec meta.TaskSpec) []meta.ContainerInfo {
-	ret := []meta.ContainerInfo{}
+func (d *DockerResourceClient) GetRuntimeInfos(spec meta.TaskSpec) []meta.RuntimeInfo {
+	ret := []meta.RuntimeInfo{}
 	containerIds, ok := d.TaskManager.GetTaskContainerIds(spec)
 	if !ok {
 		logger.Infof("GetTaskInfo GetTaskContainerIds failed")
@@ -295,7 +295,7 @@ func (d *DockerResourceClient) GetContainerinfos(spec meta.TaskSpec) []meta.Cont
 			logger.Errorf("IsTaskRunning GetContainerStatus error: %v", err)
 			continue
 		}
-		ret = append(ret, meta.ContainerInfo{
+		ret = append(ret, meta.RuntimeInfo{
 			Name:        containerJson.Name,
 			ContainerId: containerId,
 			Status:      containerJson.State.Status,

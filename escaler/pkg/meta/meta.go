@@ -267,16 +267,16 @@ func (t *TaskSpec) GetScalingStrategy() ScalingStrategy {
 	return t.ScalingStrategy
 }
 
-type ContainerInfo struct {
+type RuntimeInfo struct {
 	ContainerId string
 	Name        string
 	Status      string
 }
 
 type DetectTaskSpecResponse struct {
-	TaskSpec       TaskSpec        `json:"task_spec"`
-	Status         string          `json:"status"`
-	ContainerInfos []ContainerInfo `json:"container_infos"`
+	TaskSpec       TaskSpec      `json:"task_spec"`
+	Status         string        `json:"status"`
+	ContainerInfos []RuntimeInfo `json:"container_infos"`
 }
 
 type TaskDetectHistoryRequest struct {

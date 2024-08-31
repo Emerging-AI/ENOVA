@@ -52,8 +52,36 @@ func (c *K8sResourceClient) IsTaskRunning(spec meta.TaskSpec) bool {
 	return false
 }
 
-func (c *K8sResourceClient) GetContainerinfos(spec meta.TaskSpec) []meta.ContainerInfo {
-	return []meta.ContainerInfo{}
+func (c *K8sResourceClient) GetRuntimeInfos(spec meta.TaskSpec) []meta.RuntimeInfo {
+	workload := k8s.Workload{
+		K8sCli: c.K8sCli,
+		Spec:   &spec,
+	}
+	podList, err := workload.GetPodsList()
+	if err != nil {
+		logger.Errorf("GetRuntimeInfos GetPodsList error: %v", err)
+		return []meta.RuntimeInfo{
+			{
+				Status: "Error",
+			},
+		}
+	}
+	if len(podList.Items) == 0 {
+		return []meta.RuntimeInfo{
+			{
+				Status: "NotFound",
+			},
+		}
+	}
+	ret := make([]meta.RuntimeInfo, len(podList.Items))
+	for i, pod := range podList.Items {
+		ret[i] = meta.RuntimeInfo{
+			ContainerId: pod.Name,
+			Name:        pod.Name,
+			Status:      string(pod.Status.Phase),
+		}
+	}
+	return ret
 }
 
 func NewK8sClient() (*kubernetes.Clientset, error) {
