@@ -60,18 +60,10 @@ func (c *K8sResourceClient) GetRuntimeInfos(spec meta.TaskSpec) []meta.RuntimeIn
 	podList, err := workload.GetPodsList()
 	if err != nil {
 		logger.Errorf("GetRuntimeInfos GetPodsList error: %v", err)
-		return []meta.RuntimeInfo{
-			{
-				Status: "Error",
-			},
-		}
+		return []meta.RuntimeInfo{}
 	}
 	if len(podList.Items) == 0 {
-		return []meta.RuntimeInfo{
-			{
-				Status: "NotFound",
-			},
-		}
+		return []meta.RuntimeInfo{}
 	}
 	ret := make([]meta.RuntimeInfo, len(podList.Items))
 	for i, pod := range podList.Items {
