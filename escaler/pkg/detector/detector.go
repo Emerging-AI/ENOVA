@@ -253,9 +253,11 @@ func (d *Detector) RunDetector() {
 }
 
 func (d *Detector) DeployTask(task meta.TaskSpec) {
-	if err := d.UpdateEnodeInitialBackendConfigByRemote(&task); err != nil {
-		logger.Errorf("UpdateEnodeInitialBackendConfigByRemote err: %v", err)
-		return
+	if task.GetScalingStrategy().Strategy == meta.StrategyAuto {
+		if err := d.UpdateEnodeInitialBackendConfigByRemote(&task); err != nil {
+			logger.Errorf("UpdateEnodeInitialBackendConfigByRemote err: %v", err)
+			return
+		}
 	}
 
 	d.SendScaleTask(&task)
