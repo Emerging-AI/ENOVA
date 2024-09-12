@@ -45,7 +45,7 @@ class APIParamsError(EmergingAIBaseError):
     ERROR_MESSAGE: str = "response error"
 
 
-# --- enode backend api ---
+# --- serving backend api ---
 class EScalerApiResponseError(EmergingAIBaseError):
     ERROR_CODE: str = "101"
     ERROR_MESSAGE: str = "node api response error"

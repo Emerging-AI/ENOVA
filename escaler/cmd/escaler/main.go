@@ -37,7 +37,7 @@ func main() {
 	var wg sync.WaitGroup
 
 	ch := make(chan meta.TaskSpecInterface)
-	d := detector.NewDetectorServer(ch)
+	d := detector.NewDetectorServer(ch, nil, nil)
 	d.GetEngine().GET("/api/escaler/docs/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	s := scaler.NewServingScaler(ch)

@@ -3,7 +3,7 @@
 set -x
 IMAGE_VERSION=v`cat VERSION`
 ENOVA_VERSION=`cat VERSION`
-LLMO_VERSION="0.0.5"
+LLMO_VERSION="0.0.6"
 
 echo "Runing build image enova:${IMAGE_VERSION} using ${PWD}"
 

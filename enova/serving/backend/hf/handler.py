@@ -15,11 +15,11 @@ REMOTE_FUNC_TAG = "__remote_func__"
 
 
 @dataclasses.dataclass
-class Enode:
+class HuggingFaceHandler:
     """"""
 
     model: str
-    name: str = 'enode'
+    name: str = "serving"
 
     @classmethod
     def remote_func(cls, method, path=None, **kwarg):

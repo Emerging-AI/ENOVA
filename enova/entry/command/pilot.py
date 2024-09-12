@@ -17,7 +17,7 @@ asyncio.set_event_loop(cli_new_loop)
 cli_loop = asyncio.get_event_loop()
 
 
-class EnodeProxyNginx:
+class ServingProxyNginx:
     def __init__(self, is_run_by_compose=True) -> None:
         self._svc_name = "enova-nginx"
         self.docker_services = ["nginx"]  # start up by order
@@ -106,7 +106,7 @@ class EnovaService:
 
     @cached_property
     def nginx(self):
-        return EnodeProxyNginx()
+        return ServingProxyNginx()
 
     @cached_property
     def webui_nginx(self):
@@ -217,24 +217,24 @@ class EnovaPilot:
             raise e
 
         app_params = {
-            "instance_name": kwargs.get("name") or "enova-enode",
+            "instance_name": kwargs.get("name") or "enova-serving",
             "model": kwargs["model"],
             "backend_config": kwargs,
         }
-        enode_ret = cli_loop.run_until_complete(EnovaAppApi.enode.create(params=app_params))
+        serving_ret = cli_loop.run_until_complete(EnovaAppApi.serving.create(params=app_params))
 
-        LOGGER.info(f"pilot create enode result: {enode_ret}")
+        LOGGER.info(f"pilot create serving result: {serving_ret}")
 
         time.sleep(3)
 
         # TODO: handle enova-escaler's errors
-        instance_id = enode_ret["instance_id"]
+        instance_id = serving_ret["instance_id"]
         get_params = {"instance_id": instance_id}
-        enode_info = cli_loop.run_until_complete(EnovaAppApi.enode.get(params=get_params))
-        LOGGER.info(f"enode_info: {enode_info}")
+        serving_info = cli_loop.run_until_complete(EnovaAppApi.serving.get(params=get_params))
+        LOGGER.info(f"serving_info: {serving_info}")
 
         # TODO:
-        container_infos = enode_info.get("extra", {}).get("get_deploy_ret", {}).get("ret", {}).get("result", {}).get("container_infos")
+        container_infos = serving_info.get("extra", {}).get("get_deploy_ret", {}).get("ret", {}).get("result", {}).get("container_infos")
         LOGGER.info(f"container_infos: {container_infos}")
 
         if not container_infos:
@@ -248,9 +248,9 @@ class EnovaPilot:
             LOGGER.error(f"container info of instance '{instance_id}' get failed ")
             return
 
-        LOGGER.info(f"enode container id: {container_id}")
+        LOGGER.info(f"serving container id: {container_id}")
 
-        # show logs of enode startup, enode not run in compose
+        # show logs of serving startup, serving not run in compose
         command = ["docker", "logs", "-f", container_id]
         cmd_str = " ".join(command)
         LOGGER.debug("Command: {}".format(cmd_str))
@@ -259,21 +259,21 @@ class EnovaPilot:
     def stop(self, instance_id=None, service=None, *args, **kwargs):
         from enova.api.app_api import EnovaAppApi
 
-        def delete_enode(enode_id):
+        def delete_serving(serving_id):
             try:
-                delete_ret = cli_loop.run_until_complete(EnovaAppApi.enode.delete(params={"instance_id": enode_id}))
-                LOGGER.info(f"enode delete ret: {delete_ret}")
+                delete_ret = cli_loop.run_until_complete(EnovaAppApi.serving.delete(params={"instance_id": serving_id}))
+                LOGGER.info(f"serving delete ret: {delete_ret}")
             except Exception as e:
-                LOGGER.warning(f"enode delete error: {str(e)}")
+                LOGGER.warning(f"serving delete error: {str(e)}")
 
         if instance_id in ["all", None]:
-            enode_list = cli_loop.run_until_complete(EnovaAppApi.enode.list(params={}))["data"]
-            for enode_info in enode_list:
-                delete_enode(enode_info["instance_id"])
+            serving_list = cli_loop.run_until_complete(EnovaAppApi.serving.list(params={}))["data"]
+            for serving_info in serving_list:
+                delete_serving(serving_info["instance_id"])
         else:
-            delete_enode(instance_id)
+            delete_serving(instance_id)
 
-        # magic number, stop 2 sec that pilot can delete enode asynchronously
+        # magic number, stop 2 sec that pilot can delete serving asynchronously
         time.sleep(2)
         if service == "all":
             EnovaService().stop()

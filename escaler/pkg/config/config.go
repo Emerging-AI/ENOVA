@@ -69,7 +69,7 @@ type ZmqConfig struct {
 	Port int
 }
 
-type EnodeConfig struct {
+type ServingConfig struct {
 	Image        string   `json:"image"`
 	StartCmd     []string `json:"start_cmd"`
 	Network      string   `json:"network"`
@@ -106,7 +106,7 @@ type EConfig struct {
 	Redis           RedisConfig
 	Logger          LoggerConfig
 	K8s             K8sConfig
-	Enode           EnodeConfig           `json:"enode"`
+	Serving         ServingConfig         `json:"serving"`
 	EnovaAlgo       EnovaAlgoConfig       `json:"enova_algo"`
 	ResourceBackend ResourceBackendConfig `json:"resource_backend"`
 }
@@ -163,8 +163,8 @@ func (c *EConfig) Init(configPath string) error {
 		}
 	}
 
-	allFields := utils.GetAllField(c.Enode)
-	v := reflect.ValueOf(&c.Enode).Elem()
+	allFields := utils.GetAllField(c.Serving)
+	v := reflect.ValueOf(&c.Serving).Elem()
 	c.DynamicUpdateConfig(&v, allFields, "ENOVA_ENODE")
 
 	allFields = utils.GetAllField(c.Logger)

@@ -2,10 +2,10 @@ from typing import Annotated, Dict
 from fastapi import Body, Depends
 
 from enova.app.serializer import (
-    EnodeCreateSLZ,
-    QueryEnodeParameterSLZ,
-    QueryEnodeResponseSLZ,
-    SingleQueryEnodeResponseSLZ,
+    ServingCreateSLZ,
+    QueryServingParameterSLZ,
+    QueryServingResponseSLZ,
+    SingleQueryServingResponseSLZ,
     SingleQueryTestResponseSLZ,
     ListTestResponseSLZ,
     TestCreateSLZ,
@@ -29,27 +29,25 @@ class HealthzResource(BaseResource):
         return {"status": "running"}
 
 
-class EnodeResource(BaseResource):
-    PATH = "/enode"
+class ServingResource(BaseResource):
+    PATH = "/serving"
     GET_INCLUDE_IN_SCHEMA = True
-    GET_RESPONSE_MODEL = QueryEnodeResponseSLZ
-    POST_RESPONSE_MODEL = SingleQueryEnodeResponseSLZ
-    TAGS = ["enode serve"]
+    GET_RESPONSE_MODEL = QueryServingResponseSLZ
+    POST_RESPONSE_MODEL = SingleQueryServingResponseSLZ
+    TAGS = ["serving serve"]
 
-    async def post(
-        self, params: Annotated[EnodeCreateSLZ, Body(openapi_examples=EnodeCreateSLZ.Extra.openapi_examples)]
-    ) -> Dict:
+    async def post(self, params: Annotated[ServingCreateSLZ, Body(openapi_examples=ServingCreateSLZ.Extra.openapi_examples)]) -> Dict:
         """"""
         return await self.service.create_instance(params.dict())
 
-    async def get(self, params: Annotated[QueryEnodeParameterSLZ, Depends(QueryEnodeParameterSLZ)]):
+    async def get(self, params: Annotated[QueryServingParameterSLZ, Depends(QueryServingParameterSLZ)]):
         """"""
         return await self.service.list_instance(params.dict())
 
 
-class SingleEnodeResource(BaseResource):
-    PATH = "/enode/{instance_id}"
-    TAGS = ["enode serve"]
+class SingleServingResource(BaseResource):
+    PATH = "/serving/{instance_id}"
+    TAGS = ["serving serve"]
 
     async def delete(self, instance_id: str):
         """"""
@@ -61,14 +59,12 @@ class SingleEnodeResource(BaseResource):
 
 
 class TestResource(BaseResource):
-    PATH = "/enode/instance/test"
+    PATH = "/serving/instance/test"
     GET_RESPONSE_MODEL = ListTestResponseSLZ
     POST_RESPONSE_MODEL = SingleQueryTestResponseSLZ
     TAGS = ["test inject"]
 
-    async def post(
-        self, params: Annotated[TestCreateSLZ, Body(openapi_examples=TestCreateSLZ.Extra.openapi_examples)]
-    ):
+    async def post(self, params: Annotated[TestCreateSLZ, Body(openapi_examples=TestCreateSLZ.Extra.openapi_examples)]):
         return await self.service.create_test(params.dict())
 
     async def get(self, params: Annotated[QueryTestParameterSLZ, Depends(QueryTestParameterSLZ)]):
@@ -76,7 +72,7 @@ class TestResource(BaseResource):
 
 
 class SingleTestResource(BaseResource):
-    PATH = "/enode/instance/test/{test_id}"
+    PATH = "/serving/instance/test/{test_id}"
     GET_RESPONSE_MODEL = SingleQueryTestResponseSLZ
     TAGS = ["test inject"]
 

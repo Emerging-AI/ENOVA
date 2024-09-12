@@ -9,7 +9,6 @@ receivers:
         endpoint: localhost:12345
 
 
-
 exporters:
   debug:
     verbosity: detailed

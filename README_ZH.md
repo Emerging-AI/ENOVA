@@ -97,7 +97,7 @@ Options:
 Commands:
   algo      Run the autoscaling service.
   app       Start ENOVA application server.
-  enode     Deploy the target LLM and launch the LLM API service.
+  serving     Deploy the target LLM and launch the LLM API service.
   injector  Run the autoscaling service.
   mon       Run the monitors of LLM server
   pilot     Start an all-in-one LLM server with deployment, monitoring,...
@@ -195,14 +195,14 @@ LLM 部署服务简化了 LLM 的部署，并提供了稳定的 API 以实现无
 ### 运行 LLM
 
 ```bash
-enova enode run --model mistralai/Mistral-7B-Instruct-v0.1
+enova serving run --model mistralai/Mistral-7B-Instruct-v0.1
 ```
 
 > [!NOTE]
 > 
 > LLM 服务器使用默认的 vllm 后端启动。OpenAI API 和 Generate API 均受支持。可以使用命令行参数指定 vllm 配置，例如:
 ```bash
-enova enode run --model mistralai/Mistral-7B-Instruct-v0.1 --host 127.0.0.1 --port 9199
+enova serving run --model mistralai/Mistral-7B-Instruct-v0.1 --host 127.0.0.1 --port 9199
 ```
 
 

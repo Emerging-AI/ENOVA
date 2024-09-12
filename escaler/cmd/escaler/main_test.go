@@ -22,6 +22,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type TestSyncer struct {
+}
+
+func (s *TestSyncer) Sync(task meta.TaskSpecInterface) error {
+	logger.Infof("TestSyncer Sync, task Name: %s", task.GetName())
+	return nil
+}
+
 func TestK8sEnovaServing(t *testing.T) {
 	// start mock enova algo server
 	go StartMockEnovaAlgoServer()
@@ -33,7 +41,7 @@ func TestK8sEnovaServing(t *testing.T) {
 	performaceCli := detector.PerformanceDetectorCli{}
 
 	ch := make(chan meta.TaskSpecInterface)
-	d := detector.NewDetectorServer(ch)
+	d := detector.NewDetectorServer(ch, &TestSyncer{}, nil)
 	s := scaler.NewServingScaler(ch)
 
 	wg.Add(2)
@@ -67,7 +75,7 @@ func TestK8sEnovaServing(t *testing.T) {
 		Host:                "0.0.0.0",
 		Port:                9199,
 		Backend:             "vllm",
-		Image:               "docker.io/emergingai/enova:v0.0.5",
+		Image:               "docker.io/emergingai/enova:v0.0.6",
 		ExporterEndpoint:    "192.168.3.2:32893",
 		ExporterServiceName: "enova-chatglm-5oQa",
 		ModelConfig: meta.ModelConfig{
@@ -124,6 +132,9 @@ func TestK8sEnovaServing(t *testing.T) {
 		},
 		ScalingStrategy: meta.ScalingStrategy{
 			Strategy: meta.StrategyManual,
+		},
+		Collector: meta.CollectorConfig{
+			Enable: true,
 		},
 	}
 
@@ -200,7 +211,7 @@ func TestPilot(t *testing.T) {
 	performaceCli := detector.PerformanceDetectorCli{}
 
 	ch := make(chan meta.TaskSpecInterface)
-	d := detector.NewDetectorServer(ch)
+	d := detector.NewDetectorServer(ch, nil, nil)
 	s := scaler.NewLocalDockerServingScaler(ch)
 
 	wg.Add(2)
@@ -229,7 +240,7 @@ func TestPilot(t *testing.T) {
 	extraConfig := make(map[string]string)
 	extraConfig["test"] = "test1"
 	extraConfig["test2"] = "test2"
-	taskName := "test-enode"
+	taskName := "test-serving"
 	testTask := meta.TaskSpec{
 		Name:                taskName,
 		Model:               "THUDM/chatglm3-6b",

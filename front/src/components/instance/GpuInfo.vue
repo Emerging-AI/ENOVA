@@ -144,7 +144,7 @@ import { storeToRefs } from 'pinia'
 import { getDetectHistory, getMonitorData } from '@/api/instance'
 import { watch } from 'vue'
 
-const { chartQuery, activeEnodeId } = storeToRefs(useInstanceStore())
+const { chartQuery, activeServingId } = storeToRefs(useInstanceStore())
 
 const { t } = useI18n()
 const containerRef1 = ref<HTMLElement | null>(null)
@@ -558,7 +558,7 @@ const getTableData = async () => {
 
 const detectList = ref([])
 const getDetect = async () => {
-  const params = `task_name=${activeEnodeId.value}`
+  const params = `task_name=${activeServingId.value}`
   try {
     const res = await getDetectHistory(params)
     detectList.value = res.data

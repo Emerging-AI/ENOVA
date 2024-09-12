@@ -61,7 +61,7 @@ class Config:
 
     # defualt value of whole service
     default_map = {
-        "pkg": {"version": "0.0.5"},
+        "pkg": {"version": "0.0.6"},
         "app_name": "",
         "api": {
             "docs_url": "/api/docs",
@@ -145,11 +145,11 @@ class Config:
             "app_api_host": "http://127.0.0.1:8182",
             "prom_api_host": "http://enova-prometheus:9090",
             "prom_time_step": "1m",
-            "enode_api_host": "http://enova-enode:9199",
+            "serving_api_host": "http://enova-serving:9199",
             "model_dir": "/workspace/model",
             "dataset_dir_container": "/opt/enova/enova/template/deployment/docker-compose/traffic-injector/data",
         },
-        "enova_enode": {},
+        "enova_serving": {},
         "cli": {
             "default_app_healthz_check_count": 10,
             "context_settings": {"help_option_names": ["-h", "--help"]},
@@ -164,7 +164,7 @@ class Config:
             "cache_dir": "/tmp/traffic_injector",
             "dataset_dir": "traffic_injector_dataset",
             "dataset_host_dir": "/home/traffic_injector_dataset",
-            "default_enode_host": "enova-enode",
+            "default_serving_host": "enova-serving",
         },
     }
 
@@ -212,7 +212,7 @@ class Config:
                 v = proc_val(v)
 
                 has_updated = False
-                for special_key_prefix in ["api", "enova_app", "enova_algo", "traffic_injector", "cli", "enova_enode"]:
+                for special_key_prefix in ["api", "enova_app", "enova_algo", "traffic_injector", "cli", "enova_serving"]:
                     if k.startswith(f"{special_key_prefix}_"):
                         k = k.replace(f"{special_key_prefix}_", "", 1)
                         if isinstance(v, dict) and isinstance(self.config_map[special_key_prefix].get(k), dict):

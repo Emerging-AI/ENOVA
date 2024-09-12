@@ -15,12 +15,70 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/mitchellh/mapstructure"
+	otalpha1 "github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
 
+var collectorServiceAccount = "otel-collector"
+var collectorConfig = `
+receivers:
+    otlp:
+        protocols:
+          grpc:
+            endpoint: "0.0.0.0:4317"
+          http:
+            endpoint: "0.0.0.0:4318"
+    prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'enovaserving'
+              scrape_interval: 5s
+              static_configs:
+              - targets: ['enovaserving-demo.emergingai.svc.cluster.local:9199']
+
+exporters:
+    kafka:
+        brokers: ["35.225.82.201:30096", "34.46.58.9:30094", "35.222.98.229:30096"]
+        topic: k8s-common-collector
+        protocol_version: 2.0.0
+        auth:
+          sasl:
+            mechanism: PLAIN
+            username: "ekafka"
+            password: "emergingai2024"
+processors:
+    batch:
+    attributes/metrics:
+        actions:
+          - key: cluster_id
+            action: insert
+            value: "c-m-kxp67g4h"
+    attributes/http:
+        actions:
+          - action: delete
+            key: "http.server_name"
+          - action: delete
+            key: "http.host"
+service:
+    pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [kafka]
+    metrics:
+          receivers: [prometheus, otlp]
+          processors: [attributes/metrics, attributes/http, batch]
+          exporters: [kafka]
+`
+
 type K8sCli struct {
-	K8sClient *kubernetes.Clientset
-	Ctx       context.Context
+	K8sClient     *kubernetes.Clientset
+	DynamicClient *dynamic.DynamicClient
+	Ctx           context.Context
 }
 
 type Workload struct {
@@ -75,6 +133,21 @@ func (w *Workload) CreateOrUpdate() {
 			return
 		}
 	}
+
+	if w.Spec.Collector.Enable {
+		_, err = w.GetCollector()
+		if err != nil {
+			_, err = w.CreateCollector()
+			if err != nil {
+				return
+			}
+		} else {
+			_, err = w.UpdateCollector()
+			if err != nil {
+				return
+			}
+		}
+	}
 }
 
 // Create 1. create workload, 2. create ingress 3. create service
@@ -112,6 +185,7 @@ func (w *Workload) Delete() {
 	w.DeleteWorkload()
 	w.DeleteService()
 	w.DeleteIngress()
+	w.DeleteCollector()
 }
 
 func (w *Workload) CreateWorkload() (*v1.Deployment, error) {
@@ -360,6 +434,18 @@ func (w *Workload) buildIngress() networkingv1.Ingress {
 	return ingress
 }
 
+func (w *Workload) buildCollector() otalpha1.OpenTelemetryCollector {
+	collector := otalpha1.OpenTelemetryCollector{
+		Spec: otalpha1.OpenTelemetryCollectorSpec{
+			Config:         collectorConfig,
+			ServiceAccount: collectorServiceAccount,
+		},
+	}
+	collector.Name = w.Spec.Name
+	collector.Namespace = w.Spec.Namespace
+	return collector
+}
+
 func (w *Workload) GetPodsList() (*corev1.PodList, error) {
 	opts := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("enovaserving-name=%s", w.Spec.Name),
@@ -387,4 +473,82 @@ func (w *Workload) GetIngress() (*networkingv1.Ingress, error) {
 		return ret, err
 	}
 	return ret, nil
+}
+
+func (w *Workload) GetCollector() (otalpha1.OpenTelemetryCollector, error) {
+	collector := w.buildCollector()
+	opts := metav1.GetOptions{}
+	rsc := w.GetOtCollectorResource()
+	ret, err := rsc.Namespace(w.Spec.Namespace).Get(w.K8sCli.Ctx, collector.Name, opts)
+	if err != nil {
+		logger.Errorf("GetCollector Get error: %v", err)
+		return collector, err
+	}
+	mapstructure.Decode(ret.Object, &collector)
+	return collector, err
+}
+
+func (w *Workload) CreateCollector() (otalpha1.OpenTelemetryCollector, error) {
+	collector := w.buildCollector()
+	opts := metav1.CreateOptions{}
+	obj := w.buildCollectorUnstructued(collector)
+
+	rsc := w.GetOtCollectorResource()
+	ret, err := rsc.Namespace(w.Spec.Namespace).Create(w.K8sCli.Ctx, &obj, opts)
+	if err != nil {
+		logger.Errorf("CreateCollector Create error: %v", err)
+		return collector, err
+	}
+	mapstructure.Decode(&ret.Object, &collector)
+	return collector, err
+}
+
+func (w *Workload) DeleteCollector() error {
+	collector := w.buildCollector()
+	opts := metav1.DeleteOptions{}
+
+	rsc := w.GetOtCollectorResource()
+	err := rsc.Namespace(w.Spec.Namespace).Delete(w.K8sCli.Ctx, collector.Name, opts)
+	return err
+}
+
+func (w *Workload) UpdateCollector() (otalpha1.OpenTelemetryCollector, error) {
+	collector := w.buildCollector()
+	opts := metav1.UpdateOptions{}
+	obj := w.buildCollectorUnstructued(collector)
+
+	rsc := w.GetOtCollectorResource()
+	ret, err := rsc.Namespace(w.Spec.Namespace).Update(w.K8sCli.Ctx, &obj, opts)
+	if err != nil {
+		logger.Errorf("UpdateCollector Update error: %v", err)
+		return collector, err
+	}
+	mapstructure.Decode(&ret.Object, &collector)
+	return collector, err
+}
+
+func (w *Workload) buildCollectorUnstructued(collector otalpha1.OpenTelemetryCollector) unstructured.Unstructured {
+	return unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "opentelemetry.io/v1alpha1",
+			"kind":       "OpenTelemetryCollector",
+			"metadata": map[string]interface{}{
+				"name":      collector.Name,
+				"namespace": collector.Namespace,
+			},
+			"spec": map[string]interface{}{
+				"serviceAccount": collector.Spec.ServiceAccount,
+				"config":         collector.Spec.Config,
+			},
+		},
+	}
+}
+
+func (w *Workload) GetOtCollectorResource() dynamic.NamespaceableResourceInterface {
+	gvr := schema.GroupVersionResource{
+		Group:    "opentelemetry.io",
+		Version:  "v1alpha1",
+		Resource: "opentelemetrycollectors",
+	}
+	return w.K8sCli.DynamicClient.Resource(gvr)
 }

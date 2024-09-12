@@ -7,6 +7,7 @@ import (
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/logger"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/resource/k8s"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -76,6 +77,11 @@ func (c *K8sResourceClient) GetRuntimeInfos(spec meta.TaskSpec) []meta.RuntimeIn
 	return ret
 }
 
+// SyncStatus sync node relation to
+func (c *K8sResourceClient) SyncStatus(spec meta.TaskSpec) {
+
+}
+
 func NewK8sClient() (*kubernetes.Clientset, error) {
 	if config.GetEConfig().K8s.InCluster {
 		config, err := rest.InClusterConfig()
@@ -90,16 +96,36 @@ func NewK8sClient() (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(config)
 }
 
+func NewK8sDynamicClient() (*dynamic.DynamicClient, error) {
+	if config.GetEConfig().K8s.InCluster {
+		config, err := rest.InClusterConfig()
+		if err != nil {
+		}
+		return dynamic.NewForConfig(config)
+	}
+	config, err := clientcmd.BuildConfigFromFlags("", config.GetEConfig().K8s.KubeConfigPath)
+	if err != nil {
+	}
+
+	return dynamic.NewForConfig(config)
+}
+
 func Newk8sResourcClient() *K8sResourceClient {
 	cli, err := NewK8sClient()
 	if err != nil {
 		panic(err)
 	}
 
+	dynamicCli, err := NewK8sDynamicClient()
+	if err != nil {
+		panic(err)
+	}
+
 	return &K8sResourceClient{
 		K8sCli: &k8s.K8sCli{
-			K8sClient: cli,
-			Ctx:       context.Background(),
+			K8sClient:     cli,
+			DynamicClient: dynamicCli,
+			Ctx:           context.Background(),
 		},
 	}
 }

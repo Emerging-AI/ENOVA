@@ -70,6 +70,7 @@ type DeployRequest struct {
 	Service             Service           `json:"service"`
 	Resources           Resources         `json:"resources"`
 	ScalingStrategy     ScalingStrategy   `json:"scaling_strategy"`
+	Collector           CollectorConfig   `json:"collector"`
 }
 
 type Env struct {
@@ -131,6 +132,10 @@ type ScalingStrategy struct {
 	Strategy string `json:"strategy,omitempty"`
 }
 
+type CollectorConfig struct {
+	Enable bool
+}
+
 type TaskSpec struct {
 	Name                string
 	Model               string
@@ -153,6 +158,7 @@ type TaskSpec struct {
 	Service             Service           `json:"service"`
 	Resources           Resources         `json:"resources"`
 	ScalingStrategy     ScalingStrategy   `json:"scaling_strategy"`
+	Collector           CollectorConfig   `json:"collector"`
 }
 
 func (t *TaskSpec) GetName() string {
@@ -220,6 +226,7 @@ func (t *TaskSpec) UnmarshalJSON(data []byte) error {
 		Service             Service           `json:"service"`
 		Resources           Resources         `json:"resources"`
 		ScalingStrategy     ScalingStrategy   `json:"scaling_strategy"`
+		Collector           CollectorConfig   `json:"collector"`
 	}
 	var aux Alias
 	if err := json.Unmarshal(data, &aux); err != nil {
@@ -259,6 +266,7 @@ func (t *TaskSpec) UnmarshalJSON(data []byte) error {
 		Service:             aux.Service,
 		Resources:           aux.Resources,
 		ScalingStrategy:     aux.ScalingStrategy,
+		Collector:           aux.Collector,
 	}
 	return nil
 }

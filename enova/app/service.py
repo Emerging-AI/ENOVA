@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 from tzlocal import get_localzone
 
 from enova.algo.service import LLMConfig
-from enova.api.enode_api import EnodeApi
+from enova.api.serving_api import ServingApi
 from enova.api.escaler_api import EScalerApiWrapper
 from enova.api.prom_api import PromApi
 from enova.app.db_modles import DeploymentInstanceInfoTable, TestInfoTable
@@ -36,7 +36,7 @@ from enova.common.error import (
 from enova.common.logger import LOGGER
 from enova.common.utils import gen_ulid, get_machine_spec, short_uuid, tokenize_size
 from enova.database.relation.transaction.session import get_async_session
-from enova.enode.utils import hf_model_params_size
+from enova.serving.backend.utils import hf_model_params_size
 from enova.server.restful.service import BaseApiService
 
 
@@ -213,12 +213,12 @@ class EScalerActionHandler:
 
     def form_envs(self):
         # TODO: get CUDA_VISIBLE_DEVICES in os.envs or contaienr's os.envs
-        enode_envs = []
+        serving_envs = []
 
         hf_proxy = CONFIG.enova_app.get("hf_proxy")
         # TODO: It shouldn't be set hf_proxy to env proxy in container, it will mess named nework' dns in docker-compose
         if hf_proxy:
-            enode_envs += [
+            serving_envs += [
                 {
                     "name": "http_proxy",
                     "value": hf_proxy,
@@ -229,10 +229,10 @@ class EScalerActionHandler:
                 },
                 {
                     "name": "no_proxy",
-                    "value": "otel-collector,enova-escaler,enova-prometheus,enova-enode,grafana,dcgm-exporter,tempo,enova-app,enova-escaler,enova-algo,localhost,127.0.0.1",
+                    "value": "otel-collector,enova-escaler,enova-prometheus,enova-serving,grafana,dcgm-exporter,tempo,enova-app,enova-escaler,enova-algo,localhost,127.0.0.1",
                 },
             ]
-        return enode_envs
+        return serving_envs
 
     def form_volumes(self):
         volume_lst = [
@@ -253,7 +253,7 @@ class EScalerActionHandler:
 
         return volume_lst
 
-    async def deploy_enode(self, instance_info):
+    async def deploy_serving(self, instance_info):
         # TODO: remove user_args
         user_args = CONFIG.get_user_args()
 
@@ -290,7 +290,7 @@ class EScalerActionHandler:
             if k in user_args.keys():
                 llmo_args[k] = user_args[k]
 
-        enode_info = {
+        serving_info = {
             "backend": backend,
             "backendConfig": backendConfig,
             "envs": self.form_envs(),
@@ -303,39 +303,39 @@ class EScalerActionHandler:
                 "llm": llm_config,
                 "version": short_uuid(4),
             },
-            "name": instance_info["enode_id"],
+            "name": instance_info["serving_id"],
             "port": serving_args["port"],
             "replica": serving_args["replica"],
             "volumes": self.form_volumes(),
         }
         instance_info_extra = instance_info.get("extra", {})
-        instance_info_extra["create_deploy_payload"] = enode_info
+        instance_info_extra["create_deploy_payload"] = serving_info
         try:
-            ret = await self.escaler_api.create_deploy(enode_info)
+            ret = await self.escaler_api.create_deploy(serving_info)
             instance_info_extra["create_deploy_return"] = ret
 
         except Exception as e:
-            LOGGER.error(f"call enode api 'deploy_enode' failed: Error {e}")
+            LOGGER.error(f"call serving api 'deploy_serving' failed: Error {e}")
             return None
 
         instance_info["extra"] = instance_info_extra
         return instance_info
 
-    async def check_enode(self, instance_info):
+    async def check_serving(self, instance_info):
         pass  # TODO
 
-    async def sync_enode_status(self, instance_info: Dict):
+    async def sync_serving_status(self, instance_info: Dict):
         instance_info_extra = instance_info.extra or {}
         try:
             # TODO:
             get_deploy_ret = await self.escaler_api.get_deploy(
                 {
-                    "task_name": instance_info.enode_id,
+                    "task_name": instance_info.serving_id,
                 }
             )
             instance_info_extra["get_deploy_ret"] = get_deploy_ret
-            LOGGER.info(f"sync_enode_status get_deploy_ret: {get_deploy_ret}")
-            engine_args = await EnodeApi.engine_args(params={})
+            LOGGER.info(f"sync_serving_status get_deploy_ret: {get_deploy_ret}")
+            engine_args = await ServingApi.engine_args(params={})
             LOGGER.info(f"engine_args: {engine_args}")
 
             if get_deploy_ret.get("ret", {}).get("result", {}).get("status"):
@@ -364,17 +364,17 @@ class EScalerActionHandler:
                 instance_info.deploy_status = DeployStatus.UNKNOWN.value
             instance_info.extra = instance_info_extra
         except Exception as e:
-            LOGGER.exception(f"call enode api 'sync_enode_status' failed: Error {e}")
+            LOGGER.exception(f"call serving api 'sync_serving_status' failed: Error {e}")
 
         return instance_info
 
-    async def shutdown_enode(self, instance_info: Dict):
+    async def shutdown_serving(self, instance_info: Dict):
         instance_info_extra = instance_info.extra or {}
-        LOGGER.info(f"start shutdown enode: {instance_info}")
+        LOGGER.info(f"start shutdown serving: {instance_info}")
         try:
             delete_deploay_ret = await self.escaler_api.delete_deploy(
                 {
-                    "task_name": instance_info.enode_id,
+                    "task_name": instance_info.serving_id,
                 }
             )
             instance_info_extra["delete_deploay_ret"] = delete_deploay_ret
@@ -382,7 +382,7 @@ class EScalerActionHandler:
             instance_info.deploy_status = DeployStatus.FINISHED.value
             instance_info.extra = instance_info_extra
         except Exception as e:
-            LOGGER.exception(f"call enode api failed: Error {e}")
+            LOGGER.exception(f"call serving api failed: Error {e}")
             return None
 
         return instance_info
@@ -399,7 +399,7 @@ class AppService(BaseApiService):
         self.test_handler = TestActionHandler()
 
     async def create_instance(self, params):
-        await self.check_enode_existed()
+        await self.check_serving_existed()
 
         # TODO: use no_proxy, no need to pass proxies in hf's api
         hf_proxy = CONFIG.enova_app.get("hf_proxy")
@@ -442,10 +442,10 @@ class AppService(BaseApiService):
             or "unknown"
         )
         instance_info["updater"] = instance_info["creator"]
-        instance_info["enode_id"] = gen_ulid()
+        instance_info["serving_id"] = gen_ulid()
 
         async with get_async_session() as async_session:
-            instance_info = await self.escaler_handler.deploy_enode(instance_info)
+            instance_info = await self.escaler_handler.deploy_serving(instance_info)
 
             if not instance_info:
                 raise DeploymentInstanceCreateFailedError()
@@ -458,7 +458,7 @@ class AppService(BaseApiService):
             instance_info = instance_info_orm.dict
         return instance_info
 
-    async def check_enode_existed(self):
+    async def check_serving_existed(self):
         async with get_async_session() as async_session:
             smt = select(DeploymentInstanceInfoTable).filter(
                 DeploymentInstanceInfoTable.deploy_status.in_(
@@ -492,7 +492,7 @@ class AppService(BaseApiService):
             query_result = await async_session.execute(query)
             for instance_info in query_result:
                 instance_info = instance_info[0]
-                instance_info = await self.escaler_handler.sync_enode_status(instance_info)
+                instance_info = await self.escaler_handler.sync_serving_status(instance_info)
                 await async_session.merge(instance_info)
                 await async_session.flush()
 
@@ -513,7 +513,7 @@ class AppService(BaseApiService):
                 raise DeploymentInstanceNotExistError()
 
             instance_info = instance_info[0]
-            instance_info = await self.escaler_handler.shutdown_enode(instance_info)
+            instance_info = await self.escaler_handler.shutdown_serving(instance_info)
             if instance_info is None:
                 return "failed"
 
@@ -532,7 +532,7 @@ class AppService(BaseApiService):
             query_result = await async_session.execute(query)
             for instance_info in query_result:
                 instance_info = instance_info[0]
-                instance_info = await self.escaler_handler.shutdown_enode(instance_info)
+                instance_info = await self.escaler_handler.shutdown_serving(instance_info)
                 if instance_info is None:
                     continue
 
@@ -556,7 +556,7 @@ class AppService(BaseApiService):
                 raise DeploymentInstanceNotExistError()
 
             instance_info = instance_info[0]
-            instance_info = await self.escaler_handler.sync_enode_status(instance_info)
+            instance_info = await self.escaler_handler.sync_serving_status(instance_info)
 
             await async_session.merge(instance_info)
             await async_session.flush()
@@ -615,9 +615,9 @@ class AppService(BaseApiService):
             if c > 0:
                 raise TestStartError("test is running, please wait for finished")
 
-            # TODO: just one local enode service
+            # TODO: just one local serving service
             success = self.test_handler.start(
-                CONFIG.traffic_injector["default_enode_host"],
+                CONFIG.traffic_injector["default_serving_host"],
                 instance_info["extra"]["create_deploy_payload"]["port"],
                 test_info,
                 instance_info,

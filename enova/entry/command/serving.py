@@ -4,24 +4,20 @@ import click
 from enova.common.cli_helper import ArgumentHelper, parse_extra_args
 from enova.common.config import CONFIG
 from enova.common.constant import ServingBackend
-from enova.enode.hf import HFText2TextEnode
 from enova.entry.command.webui import Webui
 from enova.serving.apiserver import EApiServer
 
 
-class EnodeHandler:
+class ServingHandler:
     """
-    enode handler
+    serving handler
     """
 
     def __init__(self, host, port, model, backend):
         self.host = host
         self.port = port
         self.model = model
-        self.enode = HFText2TextEnode(model)
-        if backend == ServingBackend.HF.value:
-            self.enode.init()
-        self.apiserver = EApiServer(host, port, self.enode, backend)
+        self.apiserver = EApiServer(host, port, self.model, backend)
 
     def start(self, **kwargs):
         self.apiserver.local_run(**kwargs)
@@ -30,7 +26,7 @@ class EnodeHandler:
         """"""
 
 
-class EnovaEnode:
+class EnovaServing:
     def run(
         self,
         model,
@@ -49,26 +45,26 @@ class EnovaEnode:
         from enova.llmo import start as llmo_start
 
         CONFIG.update_config({backend: kwargs})
-        # CONFIG.print_config()
+        CONFIG.print_config()
         llmo_start(otlp_exporter_endpoint=exporter_endpoint, service_name=exporter_service_name)
         if include_webui:
             Webui().run(daemon=False)
-        EnodeHandler(host, port, model, backend).start()
+        ServingHandler(host, port, model, backend).start()
 
 
-pass_enova_enode = click.make_pass_decorator(EnovaEnode)
+pass_enova_serving = click.make_pass_decorator(EnovaServing)
 
 
-@click.group(name="enode")
+@click.group(name="serving")
 @click.pass_context
-def enode_cli(ctx):
+def serving_cli(ctx):
     """
     Deploy the target LLM and launch the LLM API service.
     """
-    ctx.obj = EnovaEnode()
+    ctx.obj = EnovaServing()
 
 
-@enode_cli.command(name="run", context_settings=CONFIG.cli["subcmd_context_settings"])
+@serving_cli.command(name="run", context_settings=CONFIG.cli["subcmd_context_settings"])
 @click.option("--model", type=str)
 @click.option("--host", type=str, default=CONFIG.serving["host"])
 @click.option("--port", type=int, default=CONFIG.serving["port"])
@@ -89,11 +85,11 @@ def enode_cli(ctx):
 )
 @click.option("--include-webui", "--include_webui", "include_webui", type=bool, default=True)
 @click.option("--hf-proxy", "--hf_proxy", "hf_proxy", type=str, default=None)
-@pass_enova_enode
+@pass_enova_serving
 @click.pass_context
-def enode_run(
+def serving_run(
     ctx,
-    enova_enode,
+    enova_serving,
     model,
     host,
     port,
@@ -103,7 +99,7 @@ def enode_run(
     include_webui,
     hf_proxy,
 ):
-    enova_enode.run(
+    enova_serving.run(
         model=model,
         host=host,
         port=port,

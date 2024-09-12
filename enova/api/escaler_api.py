@@ -132,18 +132,18 @@ class _EScalerApi:
         # self.xxx = ASyncAPI()
         LOGGER.debug(f"pilot api init: ESCALER_API_HOST={ESCALER_API_HOST}")
         self.get_deploy = ASyncAPI(
-            url=ESCALER_API_HOST + "/api/escaler/v1/docker/deploy",
+            url=ESCALER_API_HOST + "/api/escaler/v1/deploy",
             method=HttpMethod.GET.value,
             header_builder=self.get_request_header,
         )
         self.create_deploy = ASyncAPI(
-            url=ESCALER_API_HOST + "/api/escaler/v1/docker/deploy",
+            url=ESCALER_API_HOST + "/api/escaler/v1/deploy",
             method=HttpMethod.POST.value,
             post_send=self.post_send,
             header_builder=self.get_request_header,
         )
         self.delete_deploy = ASyncAPI(
-            url=ESCALER_API_HOST + "/api/escaler/v1/docker/deploy",
+            url=ESCALER_API_HOST + "/api/escaler/v1/deploy",
             method=HttpMethod.DELETE.value,
             header_builder=self.get_request_header,
         )

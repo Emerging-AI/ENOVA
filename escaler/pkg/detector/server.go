@@ -20,14 +20,17 @@ type DetectorServer struct {
 	server   *server.APIServer
 }
 
-func NewDetectorServer(ch chan meta.TaskSpecInterface) *DetectorServer {
+func NewDetectorServer(
+	ch chan meta.TaskSpecInterface,
+	multiclusterStatusSyncer MulticlusterStatusSyncer,
+	multiclusterScaler MulticlusterScaler) *DetectorServer {
 
 	detectorServer := DetectorServer{}
 	if config.GetEConfig().ResourceBackend.Type == config.ResourceBackendTypeK8s {
-		detector := NewDetector(ch)
+		detector := NewK8sDetector(ch, multiclusterStatusSyncer, multiclusterScaler)
 		detectorServer.Detector = detector
 	} else {
-		detector := NewK8sDetector(ch)
+		detector := NewDetector(ch)
 		detectorServer.Detector = detector
 	}
 
@@ -114,7 +117,7 @@ func (r DeployResource) Post(c *gin.Context) {
 			logger.Errorf("encode VllmBackendConfig err: %v", err)
 			return
 		}
-		exporterServiceName := fmt.Sprintf("%s-%s-%s", config.GetEConfig().Enode.Name, deployRequest.ModelConfig.Llm.Framework, deployRequest.ModelConfig.Version)
+		exporterServiceName := fmt.Sprintf("%s-%s-%s", config.GetEConfig().Serving.Name, deployRequest.ModelConfig.Llm.Framework, deployRequest.ModelConfig.Version)
 
 		taskSpec = meta.TaskSpec{
 			Name:                deployRequest.Name,
@@ -137,6 +140,7 @@ func (r DeployResource) Post(c *gin.Context) {
 			Service:             deployRequest.Service,
 			Resources:           deployRequest.Resources,
 			ScalingStrategy:     deployRequest.ScalingStrategy,
+			Collector:           deployRequest.Collector,
 		}
 	}
 

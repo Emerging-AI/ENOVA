@@ -50,6 +50,7 @@ type ClientInterface interface {
 	DeleteTask(spec meta.TaskSpec)
 	IsTaskRunning(spec meta.TaskSpec) bool
 	GetRuntimeInfos(spec meta.TaskSpec) []meta.RuntimeInfo
+	SyncStatus(spec meta.TaskSpec)
 }
 
 type ContainerIds []string
@@ -129,8 +130,8 @@ func (d *DockerResourceClient) DeployByDocker(task meta.TaskSpec) {
 		// delete all container when replica = 0
 		if task.Replica == 0 {
 			for _, containerId := range containerIds {
-				if err := d.DeleteSingleEnode(containerId); err != nil {
-					logger.Errorf("DeleteSingleEnode containerId: %s, err: %v", containerId, err)
+				if err := d.DeleteSingleServing(containerId); err != nil {
+					logger.Errorf("DeleteSingleServing containerId: %s, err: %v", containerId, err)
 				}
 				gpuStrList := d.ContainerIDGpusMap[containerId]
 				for _, gpuIdStr := range gpuStrList {
@@ -157,8 +158,8 @@ func (d *DockerResourceClient) DeployByDocker(task meta.TaskSpec) {
 				logger.Infof("start to scale down task: %s, removeCnt: %d", task.Name, removeCnt)
 				for i := 0; i < removeCnt; i++ {
 					containerId := containerIds[i]
-					if err := d.DeleteSingleEnode(containerId); err != nil {
-						logger.Errorf("DeleteSingleEnode containerId: %s, err: %v", containerIds[0], err)
+					if err := d.DeleteSingleServing(containerId); err != nil {
+						logger.Errorf("DeleteSingleServing containerId: %s, err: %v", containerIds[0], err)
 					}
 					gpuStrList := d.ContainerIDGpusMap[containerId]
 					for _, gpuIdStr := range gpuStrList {
@@ -213,7 +214,7 @@ func (d *DockerResourceClient) singleDeployByDocker(task *meta.TaskSpec) (string
 	}
 	logger.Infof("after deploy d.LocalGpuStats: %v, gpuStrList: %v", d.LocalGpuStats, gpuStrList)
 	task.Gpus = strings.Join(gpuStrList, ",")
-	containerID, err := d.CreateSingleEnode(*task, d.CreateContainerName(task.ExporterServiceName))
+	containerID, err := d.CreateSingleServing(*task, d.CreateContainerName(task.ExporterServiceName))
 	if err != nil {
 		logger.Errorf("singleDeployByDocker err: %v", err)
 	} else {
@@ -222,14 +223,14 @@ func (d *DockerResourceClient) singleDeployByDocker(task *meta.TaskSpec) (string
 	return containerID, err
 }
 
-func (d *DockerResourceClient) CreateSingleEnode(spec meta.TaskSpec, containerName string) (string, error) {
+func (d *DockerResourceClient) CreateSingleServing(spec meta.TaskSpec, containerName string) (string, error) {
 	cmd := rscutils.BuildCmdFromTaskSpec(spec)
 	params := docker.CreateContainerParams{
-		ImageName:     config.GetEConfig().Enode.Image,
+		ImageName:     config.GetEConfig().Serving.Image,
 		Cmd:           cmd,
-		NetworkName:   config.GetEConfig().Enode.Network,
+		NetworkName:   config.GetEConfig().Serving.Network,
 		Ports:         []int{spec.Port},
-		NetworkAlias:  config.GetEConfig().Enode.NetworkAlias,
+		NetworkAlias:  config.GetEConfig().Serving.NetworkAlias,
 		ContainerName: containerName,
 		Envs:          d.BuildDockerEnvs(spec.Envs),
 		Gpus:          spec.Gpus,
@@ -254,7 +255,7 @@ func (d *DockerResourceClient) BuildDockerVolumes(volumes []meta.Volume) []strin
 	return ret
 }
 
-func (d *DockerResourceClient) DeleteSingleEnode(containerId string) error {
+func (d *DockerResourceClient) DeleteSingleServing(containerId string) error {
 	return d.DockerClient.StopContainer(containerId)
 }
 
@@ -302,6 +303,10 @@ func (d *DockerResourceClient) GetRuntimeInfos(spec meta.TaskSpec) []meta.Runtim
 		})
 	}
 	return ret
+}
+
+func (d *DockerResourceClient) SyncStatus(spec meta.TaskSpec) {
+
 }
 
 func NewDockerResourcClient() *DockerResourceClient {

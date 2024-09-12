@@ -3,14 +3,16 @@ import locate
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from enova.common.config import CONFIG
-from enova.enode.enode import Enode
 from enova.serving.middlewares.base import EnovaAIMultiMiddlewares
 from enova.serving.backend.base import BaseBackend
+from enova.serving.backend.hf.hf import HFText2TextHandler
 
 
 @dataclasses.dataclass
 class TransformersBackend(BaseBackend):
-    enode: Enode
+
+    def __post_init__(self):
+        self.hf = HFText2TextHandler()
 
     def _create_apiserver(self):
         self._create_app()
@@ -48,18 +50,18 @@ class TransformersBackend(BaseBackend):
         async def healthz():
             return {"status": "ok"}
 
-        self.register_enode_api()
+        self.register_serving_api()
 
     def _create_app(self):
         """"""
         self.app = FastAPI(
-            title=self.enode.name,
-            description=(self.__doc__ if self.__doc__ else f"Enova {self.enode.name}"),
+            title=self.name,
+            description=(self.__doc__ if self.__doc__ else f"Enova {self.name}"),
         )
 
-    def register_enode_api(self):
+    def register_serving_api(self):
         """
-        register_api from enode
+        register_api from serving
         """
-        self.enode.register_api_router(self.api_router)
+        self.hf.register_api_router(self.api_router)
         self.app.include_router(self.api_router)

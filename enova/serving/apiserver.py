@@ -1,7 +1,6 @@
 import dataclasses
 from enova.common.constant import ServingBackend
 from enova.common.config import CONFIG
-from enova.enode.enode import Enode
 from enova.serving.backend.transformers import TransformersBackend
 from enova.serving.backend.vllm import VllmBackend
 
@@ -15,7 +14,7 @@ class EApiServer:
 
     host: str
     port: int
-    enode: Enode
+    model: str
     backend: str
 
     def __post_init__(self):
@@ -25,7 +24,7 @@ class EApiServer:
         engine_map = {ServingBackend.HF.value: TransformersBackend, ServingBackend.VLLM.value: VllmBackend}
         if self.backend not in engine_map:
             raise ValueError(f"serving.backend: {CONFIG.serving['backend']} is not in {ServingBackend.values()}")
-        return engine_map[self.backend](self.enode)
+        return engine_map[self.backend](self.backend, self.model)
 
     def local_run(self):
         """"""

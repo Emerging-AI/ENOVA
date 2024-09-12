@@ -7,7 +7,7 @@ from enova.server.restful.serializer import (
 )
 
 
-class EnodeStartupArgs(EmergingAIBaseModel):
+class ServingStartupArgs(EmergingAIBaseModel):
     exported_job: str
     dtype: str
     load_format: str
@@ -34,13 +34,13 @@ class CPUSpec(EmergingAIBaseModel):
     core_amount: int
 
 
-class EnodeInstanceSpec(EmergingAIBaseModel):
+class ServingInstanceSpec(EmergingAIBaseModel):
     gpu: GPUSpec
     cpu: CPUSpec
     memory: str
 
 
-class EnodeCreateSLZ(EmergingAIBaseModel):
+class ServingCreateSLZ(EmergingAIBaseModel):
     instance_name: str | None
     model: str
     backend_config: dict | None
@@ -48,7 +48,7 @@ class EnodeCreateSLZ(EmergingAIBaseModel):
 
     class Extra:
         openapi_examples = {
-            "Enode Instance 1": {
+            "Serving Instance 1": {
                 "value": {
                     "instance_name": "enova_test",
                     "model": "THUDM/chatglm3-6b",
@@ -58,7 +58,7 @@ class EnodeCreateSLZ(EmergingAIBaseModel):
         }
 
 
-class QueryEnodeParameterSLZ(EmergingAIBaseModel):
+class QueryServingParameterSLZ(EmergingAIBaseModel):
     instance_id: str | None = None
     # TODO: limit in 1 instance running
     # deploy_status: DeployStatus | None = None
@@ -119,20 +119,20 @@ class TestCreateSLZ(EmergingAIBaseModel):
         }
 
 
-class SingleQueryEnodeResponseSLZ(EmergingAIBaseModel):
+class SingleQueryServingResponseSLZ(EmergingAIBaseModel):
     instance_id: str
     instance_name: str | None
     instance_spec: dict | None
     mdl_cfg: dict | None  # TODO: pydantic 2.7 not suggest model_* as property
     startup_args: dict | None
-    enode_id: str
+    serving_id: str
     deploy_status: str
     create_time: str
     extra: dict | None
 
 
-class QueryEnodeResponseSLZ(EmergingAIBaseModel):
-    data: List[SingleQueryEnodeResponseSLZ]
+class QueryServingResponseSLZ(EmergingAIBaseModel):
+    data: List[SingleQueryServingResponseSLZ]
 
 
 class SingleQueryTestResponseSLZ(EmergingAIBaseModel):

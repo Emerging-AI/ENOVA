@@ -3,14 +3,31 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
 )
 
+func shouldAppend(v interface{}) bool {
+	switch v := v.(type) {
+	case int, int32, int64:
+		return v != 0
+	case float32, float64:
+		return v != 0.0
+	case string:
+		return v != ""
+	case bool:
+		return v // no need to check, because false is the zero value and means "not set"
+	default:
+		// This case is for types not explicitly checked above; assumes non-zero by default
+		return !reflect.DeepEqual(v, reflect.Zero(reflect.TypeOf(v)).Interface())
+	}
+}
+
 func BuildCmdFromTaskSpec(spec meta.TaskSpec) []string {
 	cmd := []string{
-		"enova", "enode", "run", "--model", spec.Model, "--port", strconv.Itoa(spec.Port), "--host", spec.Host,
+		"enova", "serving", "run", "--model", spec.Model, "--port", strconv.Itoa(spec.Port), "--host", spec.Host,
 		"--backend", spec.Backend,
 		"--exporter_endpoint", spec.ExporterEndpoint,
 		"--exporter_service_name", spec.ExporterServiceName,
@@ -27,14 +44,17 @@ func BuildCmdFromTaskSpec(spec meta.TaskSpec) []string {
 			if err != nil {
 
 			} else {
+				// if there is not valid value, dont append to cmd params
 				for k, v := range vllmBackendConfigMap {
-					cmd = append(cmd, []string{fmt.Sprintf("--%s", k), fmt.Sprintf("%v", v)}...)
+					if shouldAppend(v) {
+						cmd = append(cmd, []string{fmt.Sprintf("--%s", k), fmt.Sprintf("%v", v)}...)
+					}
 				}
 			}
 
 		}
 	}
-	// Add extra enode params
+	// Add extra serving params
 	for k, v := range spec.BackendExtraConfig {
 		cmd = append(cmd, []string{fmt.Sprintf("--%s", k), fmt.Sprintf("%v", v)}...)
 	}

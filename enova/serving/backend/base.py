@@ -2,12 +2,12 @@ import abc
 import dataclasses
 import uvicorn
 from enova.common.logger import LOGGER
-from enova.enode.enode import Enode
 
 
 @dataclasses.dataclass
 class BaseBackend(metaclass=abc.ABCMeta):
-    enode: Enode
+    name: str
+    model: str
 
     @abc.abstractmethod
     def _create_app(self):

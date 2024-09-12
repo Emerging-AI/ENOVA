@@ -49,13 +49,23 @@ func (t *DetectResultManager) GetHistoricalAnomalyRecommendResult(task meta.Task
 	return ret
 }
 
+type MulticlusterStatusSyncer interface {
+	Sync(meta.TaskSpecInterface) error
+}
+
+type MulticlusterScaler interface {
+	Scale(meta.TaskSpecInterface) error
+}
+
 type Detector struct {
-	Queue               *queue.InnerChanTaskQueue
-	PermCli             PerformanceDetectorCli
-	Client              resource.ClientInterface
-	TaskMap             map[string]*meta.DetectTask
-	DetectResultManager *DetectResultManager
-	stopped             bool
+	Queue                    *queue.InnerChanTaskQueue
+	PermCli                  PerformanceDetectorCli
+	Client                   resource.ClientInterface
+	TaskMap                  map[string]*meta.DetectTask
+	DetectResultManager      *DetectResultManager
+	stopped                  bool
+	MulticlusterStatusSyncer MulticlusterStatusSyncer
+	MulticlusterScaler       MulticlusterScaler
 }
 
 func NewDetector(ch chan meta.TaskSpecInterface) *Detector {
@@ -80,7 +90,10 @@ func NewDetector(ch chan meta.TaskSpecInterface) *Detector {
 	}
 }
 
-func NewK8sDetector(ch chan meta.TaskSpecInterface) *Detector {
+func NewK8sDetector(
+	ch chan meta.TaskSpecInterface,
+	multiclusterStatusSyncer MulticlusterStatusSyncer,
+	multiclusterScaler MulticlusterScaler) *Detector {
 	// pub := zmq.ZmqPublisher{
 	// 	Host: config.GetEConfig().Zmq.Host,
 	// 	Port: config.GetEConfig().Zmq.Port,
@@ -98,7 +111,9 @@ func NewK8sDetector(ch chan meta.TaskSpecInterface) *Detector {
 				config.GetEConfig().Redis.Addr, config.GetEConfig().Redis.Password, config.GetEConfig().Redis.Db,
 			),
 		},
-		stopped: false,
+		stopped:                  false,
+		MulticlusterStatusSyncer: multiclusterStatusSyncer,
+		MulticlusterScaler:       multiclusterScaler,
 	}
 }
 
@@ -205,12 +220,18 @@ func (d *Detector) DetectOneTaskSpec(taskName string, taskSpec meta.TaskSpecInte
 }
 
 // DetectOnce Detect anomaly from remote
+// Sync Status to MulticlusterEnovaServing
 func (d *Detector) DetectOnce() {
 	logger.Infof("DetectOnce start detect once")
 	for taskName, task := range d.TaskMap {
 		if task.TaskSpec.GetScalingStrategy().Strategy == meta.StrategyAuto {
 			if d.IsTaskRunning(taskName, task.TaskSpec) {
 				d.DetectOneTaskSpec(taskName, task.TaskSpec)
+			}
+		}
+		if d.MulticlusterStatusSyncer != nil {
+			if err := d.MulticlusterStatusSyncer.Sync(task.TaskSpec); err != nil {
+				logger.Errorf("MulticlusterStatusSyncer.Sync error: %v", err)
 			}
 		}
 	}
@@ -254,8 +275,8 @@ func (d *Detector) RunDetector() {
 
 func (d *Detector) DeployTask(task meta.TaskSpec) {
 	if task.GetScalingStrategy().Strategy == meta.StrategyAuto {
-		if err := d.UpdateEnodeInitialBackendConfigByRemote(&task); err != nil {
-			logger.Errorf("UpdateEnodeInitialBackendConfigByRemote err: %v", err)
+		if err := d.UpdateServingInitialBackendConfigByRemote(&task); err != nil {
+			logger.Errorf("UpdateServingInitialBackendConfigByRemote err: %v", err)
 			return
 		}
 	}
@@ -284,8 +305,8 @@ func (d *Detector) DeleteTask(taskName string) {
 	d.SendScaleTask(task.TaskSpec)
 }
 
-// UpdateEnodeInitialBackendConfigByRemote Get Remote recommending backendCOnfig When first deploy,
-func (d *Detector) UpdateEnodeInitialBackendConfigByRemote(spec meta.TaskSpecInterface) error {
+// UpdateServingngInitialBackendConfigByRemote Get Remote recommending backendCOnfig When first deploy,
+func (d *Detector) UpdateServingInitialBackendConfigByRemote(spec meta.TaskSpecInterface) error {
 	params := api.ConfigRecommendRequest{
 		Llm: spec.GetModelConfig().Llm,
 		Gpu: spec.GetModelConfig().Gpu,
