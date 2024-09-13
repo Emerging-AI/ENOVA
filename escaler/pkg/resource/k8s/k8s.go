@@ -1,8 +1,11 @@
 package k8s
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"html/template"
+	"strings"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/logger"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
@@ -24,7 +27,7 @@ import (
 )
 
 var collectorServiceAccount = "otel-collector"
-var collectorConfig = `
+var collectorConfigTemplate = `
 receivers:
     otlp:
         protocols:
@@ -42,21 +45,21 @@ receivers:
 
 exporters:
     kafka:
-        brokers: ["35.225.82.201:30096", "34.46.58.9:30094", "35.222.98.229:30096"]
+        brokers: {{ .KafkaBrokers }}
         topic: k8s-common-collector
         protocol_version: 2.0.0
         auth:
           sasl:
             mechanism: PLAIN
-            username: "ekafka"
-            password: "emergingai2024"
+            username: "{{ .KafkaUsername }}"
+            password: "{{ .KafkaPassword }}"
 processors:
     batch:
     attributes/metrics:
         actions:
           - key: cluster_id
             action: insert
-            value: "c-m-kxp67g4h"
+            value: "{{ .ClusterId }}"
     attributes/http:
         actions:
           - action: delete
@@ -72,7 +75,7 @@ service:
     metrics:
           receivers: [prometheus, otlp]
           processors: [attributes/metrics, attributes/http, batch]
-          exporters: [kafka]
+          exporters: [kafka] 
 `
 
 type K8sCli struct {
@@ -434,7 +437,48 @@ func (w *Workload) buildIngress() networkingv1.Ingress {
 	return ingress
 }
 
-func (w *Workload) buildCollector() otalpha1.OpenTelemetryCollector {
+func formatBrokers(brokers []string) string {
+	if len(brokers) == 0 {
+		return "[]"
+	}
+	formatted := `["`
+	for i, broker := range brokers {
+		if i > 0 {
+			formatted += `", "`
+		}
+		formatted += broker
+	}
+	formatted += `"]`
+	return formatted
+}
+
+func (w *Workload) buildCollector() (otalpha1.OpenTelemetryCollector, error) {
+	tmpl, err := template.New("collectorConfig").Parse(collectorConfigTemplate)
+	if err != nil {
+		return otalpha1.OpenTelemetryCollector{}, err
+	}
+
+	// 创建一个数据结构供模板使用
+	data := struct {
+		KafkaBrokers  string
+		KafkaUsername string
+		KafkaPassword string
+		ClusterId     string
+	}{
+		KafkaBrokers:  formatBrokers(w.Spec.Collector.Kafka.Brokers),
+		KafkaUsername: w.Spec.Collector.Kafka.Username,
+		KafkaPassword: w.Spec.Collector.Kafka.Password,
+		ClusterId:     w.Spec.Collector.ClusterId,
+	}
+
+	var tmplBuffer bytes.Buffer
+	err = tmpl.Execute(&tmplBuffer, data)
+	if err != nil {
+		return otalpha1.OpenTelemetryCollector{}, err
+	}
+	collectorConfig := tmplBuffer.String()
+	collectorConfig = strings.ReplaceAll(collectorConfig, "&#34;", "\"")
+
 	collector := otalpha1.OpenTelemetryCollector{
 		Spec: otalpha1.OpenTelemetryCollectorSpec{
 			Config:         collectorConfig,
@@ -443,7 +487,7 @@ func (w *Workload) buildCollector() otalpha1.OpenTelemetryCollector {
 	}
 	collector.Name = w.Spec.Name
 	collector.Namespace = w.Spec.Namespace
-	return collector
+	return collector, nil
 }
 
 func (w *Workload) GetPodsList() (*corev1.PodList, error) {
@@ -476,7 +520,11 @@ func (w *Workload) GetIngress() (*networkingv1.Ingress, error) {
 }
 
 func (w *Workload) GetCollector() (otalpha1.OpenTelemetryCollector, error) {
-	collector := w.buildCollector()
+	collector, err := w.buildCollector()
+	if err != nil {
+		logger.Errorf("GetCollector buildCollector error: %v", err)
+		return collector, err
+	}
 	opts := metav1.GetOptions{}
 	rsc := w.GetOtCollectorResource()
 	ret, err := rsc.Namespace(w.Spec.Namespace).Get(w.K8sCli.Ctx, collector.Name, opts)
@@ -489,7 +537,11 @@ func (w *Workload) GetCollector() (otalpha1.OpenTelemetryCollector, error) {
 }
 
 func (w *Workload) CreateCollector() (otalpha1.OpenTelemetryCollector, error) {
-	collector := w.buildCollector()
+	collector, err := w.buildCollector()
+	if err != nil {
+		logger.Errorf("CreateCollector buildCollector error: %v", err)
+		return collector, err
+	}
 	opts := metav1.CreateOptions{}
 	obj := w.buildCollectorUnstructued(collector)
 
@@ -504,16 +556,24 @@ func (w *Workload) CreateCollector() (otalpha1.OpenTelemetryCollector, error) {
 }
 
 func (w *Workload) DeleteCollector() error {
-	collector := w.buildCollector()
+	collector, err := w.buildCollector()
+	if err != nil {
+		logger.Errorf("DeleteCollector buildCollector error: %v", err)
+		return err
+	}
 	opts := metav1.DeleteOptions{}
 
 	rsc := w.GetOtCollectorResource()
-	err := rsc.Namespace(w.Spec.Namespace).Delete(w.K8sCli.Ctx, collector.Name, opts)
+	err = rsc.Namespace(w.Spec.Namespace).Delete(w.K8sCli.Ctx, collector.Name, opts)
 	return err
 }
 
 func (w *Workload) UpdateCollector() (otalpha1.OpenTelemetryCollector, error) {
-	collector := w.buildCollector()
+	collector, err := w.buildCollector()
+	if err != nil {
+		logger.Errorf("UpdateCollector buildCollector error: %v", err)
+		return collector, err
+	}
 	opts := metav1.UpdateOptions{}
 	obj := w.buildCollectorUnstructued(collector)
 

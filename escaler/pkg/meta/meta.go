@@ -132,8 +132,16 @@ type ScalingStrategy struct {
 	Strategy string `json:"strategy,omitempty"`
 }
 
+type KafkaConfig struct {
+	Brokers  []string
+	Username string
+	Password string
+}
+
 type CollectorConfig struct {
-	Enable bool
+	Enable    bool
+	ClusterId string
+	Kafka     KafkaConfig
 }
 
 type TaskSpec struct {
