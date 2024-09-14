@@ -8,6 +8,7 @@ import (
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/queue"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/resource"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/resource/k8s"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/api"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
@@ -49,23 +50,24 @@ func (t *DetectResultManager) GetHistoricalAnomalyRecommendResult(task meta.Task
 	return ret
 }
 
-type MulticlusterStatusSyncer interface {
-	Sync(meta.TaskSpecInterface) error
+// StatusSyncer for EnovaServing CR status reconcile
+type StatusSyncer interface {
+	Sync(k8s.Workload) error
 }
 
 type MulticlusterScaler interface {
-	Scale(meta.TaskSpecInterface) error
+	Scale(k8s.Workload) error
 }
 
 type Detector struct {
-	Queue                    *queue.InnerChanTaskQueue
-	PermCli                  PerformanceDetectorCli
-	Client                   resource.ClientInterface
-	TaskMap                  map[string]*meta.DetectTask
-	DetectResultManager      *DetectResultManager
-	stopped                  bool
-	MulticlusterStatusSyncer MulticlusterStatusSyncer
-	MulticlusterScaler       MulticlusterScaler
+	Queue               *queue.InnerChanTaskQueue
+	PermCli             PerformanceDetectorCli
+	Client              resource.ClientInterface
+	TaskMap             map[string]*meta.DetectTask
+	DetectResultManager *DetectResultManager
+	stopped             bool
+	StatusSyncer        StatusSyncer
+	MulticlusterScaler  MulticlusterScaler
 }
 
 func NewDetector(ch chan meta.TaskSpecInterface) *Detector {
@@ -92,7 +94,7 @@ func NewDetector(ch chan meta.TaskSpecInterface) *Detector {
 
 func NewK8sDetector(
 	ch chan meta.TaskSpecInterface,
-	multiclusterStatusSyncer MulticlusterStatusSyncer,
+	statusSyncer StatusSyncer,
 	multiclusterScaler MulticlusterScaler) *Detector {
 	// pub := zmq.ZmqPublisher{
 	// 	Host: config.GetEConfig().Zmq.Host,
@@ -111,9 +113,9 @@ func NewK8sDetector(
 				config.GetEConfig().Redis.Addr, config.GetEConfig().Redis.Password, config.GetEConfig().Redis.Db,
 			),
 		},
-		stopped:                  false,
-		MulticlusterStatusSyncer: multiclusterStatusSyncer,
-		MulticlusterScaler:       multiclusterScaler,
+		stopped:            false,
+		StatusSyncer:       statusSyncer,
+		MulticlusterScaler: multiclusterScaler,
 	}
 }
 
@@ -229,8 +231,12 @@ func (d *Detector) DetectOnce() {
 				d.DetectOneTaskSpec(taskName, task.TaskSpec)
 			}
 		}
-		if d.MulticlusterStatusSyncer != nil {
-			if err := d.MulticlusterStatusSyncer.Sync(task.TaskSpec); err != nil {
+		if config.GetEConfig().ResourceBackend.Type == config.ResourceBackendTypeK8s && d.StatusSyncer != nil {
+			k8sClient := d.Client.(*resource.K8sResourceClient)
+			if err := d.StatusSyncer.Sync(k8s.Workload{
+				K8sCli: k8sClient.K8sCli,
+				Spec:   task.TaskSpec.(*meta.TaskSpec),
+			}); err != nil {
 				logger.Errorf("MulticlusterStatusSyncer.Sync error: %v", err)
 			}
 		}
