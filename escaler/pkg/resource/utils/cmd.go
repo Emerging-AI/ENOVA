@@ -34,7 +34,7 @@ func BuildCmdFromTaskSpec(spec meta.TaskSpec) []string {
 		"--exporter_service_name", spec.ExporterServiceName,
 	}
 	if config.GetEConfig().ResourceBackend.Type == config.ResourceBackendTypeK8s {
-		cmd = append(cmd, "--exporter_endpoint", spec.Name+"-collector:4318")
+		cmd = append(cmd, "--exporter_endpoint", spec.Name+"-collector:4317")
 	} else {
 		cmd = append(cmd, "--exporter_endpoint", spec.ExporterEndpoint)
 	}
