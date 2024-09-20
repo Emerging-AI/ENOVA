@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
 	"reflect"
 	"strconv"
 
@@ -26,11 +27,16 @@ func shouldAppend(v interface{}) bool {
 }
 
 func BuildCmdFromTaskSpec(spec meta.TaskSpec) []string {
+
 	cmd := []string{
 		"enova", "serving", "run", "--model", spec.Model, "--port", strconv.Itoa(spec.Port), "--host", spec.Host,
 		"--backend", spec.Backend,
-		"--exporter_endpoint", spec.ExporterEndpoint,
 		"--exporter_service_name", spec.ExporterServiceName,
+	}
+	if config.GetEConfig().ResourceBackend.Type == config.ResourceBackendTypeK8s {
+		cmd = append(cmd, "--exporter_endpoint", spec.Name+"-collector")
+	} else {
+		cmd = append(cmd, "--exporter_endpoint", spec.ExporterEndpoint)
 	}
 
 	vllmBackendConfig, ok := spec.BackendConfig.(*meta.VllmBackendConfig)
