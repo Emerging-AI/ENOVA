@@ -86,9 +86,10 @@ type Volume struct {
 type Raw struct{}
 
 type Ingress struct {
-	Name  string `json:"name"`
-	Paths []Path `json:"paths"`
-	Raw   Raw    `json:"raw"`
+	Name        string            `json:"name"`
+	Paths       []Path            `json:"paths"`
+	Raw         Raw               `json:"raw"`
+	Annotations map[string]string `json:"annotations"`
 }
 
 type Path struct {

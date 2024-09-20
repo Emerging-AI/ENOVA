@@ -381,7 +381,7 @@ func (w *Workload) buildService() corev1.Service {
 	for i, p := range w.Spec.Service.Ports {
 		ports[i] = corev1.ServicePort{
 			Name:     fmt.Sprintf("tcp%d", i),
-			Protocol: corev1.ProtocolSCTP,
+			Protocol: corev1.ProtocolTCP,
 			Port:     p.Number,
 			TargetPort: intstr.IntOrString{
 				IntVal: p.Number,
@@ -435,6 +435,7 @@ func (w *Workload) buildIngress() networkingv1.Ingress {
 		},
 	}
 	ingress.Name = fmt.Sprintf("%s-ingress", w.Spec.Name)
+	ingress.Annotations = w.Spec.Ingress.Annotations
 	return ingress
 }
 
