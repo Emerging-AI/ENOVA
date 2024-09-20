@@ -319,10 +319,11 @@ func (w *Workload) buildDeployment() v1.Deployment {
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Image:   w.Spec.Image,
-							Name:    w.Spec.Name,
-							Command: cmd[:1],
-							Args:    cmd[1:],
+							Image:           w.Spec.Image,
+							ImagePullPolicy: corev1.PullAlways,
+							Name:            w.Spec.Name,
+							Command:         cmd[:1],
+							Args:            cmd[1:],
 							Ports: []corev1.ContainerPort{
 								{
 									ContainerPort: int32(w.Spec.Port),
