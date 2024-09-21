@@ -41,7 +41,7 @@ receivers:
             - job_name: 'enovaserving'
               scrape_interval: 5s
               static_configs:
-              - targets: ['enovaserving-demo.emergingai.svc.cluster.local:9199']
+              - targets: ['{{ .EnovaServingName }}.emergingai.svc.cluster.local:9199']
 
 exporters:
     kafka:
@@ -462,15 +462,17 @@ func (w *Workload) buildCollector() (otalpha1.OpenTelemetryCollector, error) {
 
 	// 创建一个数据结构供模板使用
 	data := struct {
-		KafkaBrokers  string
-		KafkaUsername string
-		KafkaPassword string
-		ClusterId     string
+		EnovaServingName string
+		KafkaBrokers     string
+		KafkaUsername    string
+		KafkaPassword    string
+		ClusterId        string
 	}{
-		KafkaBrokers:  formatBrokers(w.Spec.Collector.Kafka.Brokers),
-		KafkaUsername: w.Spec.Collector.Kafka.Username,
-		KafkaPassword: w.Spec.Collector.Kafka.Password,
-		ClusterId:     w.Spec.Collector.ClusterId,
+		EnovaServingName: w.Spec.Name,
+		KafkaBrokers:     formatBrokers(w.Spec.Collector.Kafka.Brokers),
+		KafkaUsername:    w.Spec.Collector.Kafka.Username,
+		KafkaPassword:    w.Spec.Collector.Kafka.Password,
+		ClusterId:        w.Spec.Collector.ClusterId,
 	}
 
 	var tmplBuffer bytes.Buffer
