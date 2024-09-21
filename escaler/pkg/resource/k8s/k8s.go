@@ -338,10 +338,9 @@ func (w *Workload) buildDeployment() v1.Deployment {
 			},
 		},
 	}
-
+	volumes := make([]corev1.Volume, len(w.Spec.Volumes))
+	volumeMounts := make([]corev1.VolumeMount, len(w.Spec.Volumes))
 	if len(w.Spec.Volumes) > 0 {
-		volumes := make([]corev1.Volume, len(w.Spec.Volumes))
-		volumeMounts := make([]corev1.VolumeMount, len(w.Spec.Volumes))
 		for i, v := range w.Spec.Volumes {
 			volumes[i] = corev1.Volume{
 				VolumeSource: corev1.VolumeSource{
@@ -359,6 +358,21 @@ func (w *Workload) buildDeployment() v1.Deployment {
 		deployment.Spec.Template.Spec.Volumes = volumes
 		deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumeMounts
 	}
+	// if will add shm by default
+	shmLimitSize := k8sresource.MustParse("1Gi")
+	volumes = append(volumes, corev1.Volume{
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{
+				Medium:    corev1.StorageMediumMemory,
+				SizeLimit: &shmLimitSize,
+			},
+		},
+		Name: "shm",
+	})
+	volumeMounts = append(volumeMounts, corev1.VolumeMount{
+		Name:      "shm",
+		MountPath: "/dev/shm",
+	})
 	if len(w.Spec.NodeSelector) > 0 {
 		deployment.Spec.Template.Spec.NodeSelector = w.Spec.NodeSelector
 	}
