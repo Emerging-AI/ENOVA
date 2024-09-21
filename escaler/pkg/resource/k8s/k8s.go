@@ -72,7 +72,7 @@ service:
           receivers: [otlp]
           processors: [batch]
           exporters: [kafka]
-    metrics:
+    	metrics:
           receivers: [prometheus, otlp]
           processors: [attributes/metrics, attributes/http, batch]
           exporters: [kafka] 
