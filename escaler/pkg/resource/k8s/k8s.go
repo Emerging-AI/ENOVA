@@ -75,7 +75,8 @@ service:
     	metrics:
           receivers: [prometheus, otlp]
           processors: [attributes/metrics, attributes/http, batch]
-          exporters: [kafka] 
+          exporters: [kafka]
+
 `
 
 type K8sCli struct {
@@ -395,7 +396,7 @@ func (w *Workload) buildService() corev1.Service {
 			Ports:    ports,
 		},
 	}
-	service.Name = w.Spec.Service.Name
+	service.Name = fmt.Sprintf("%s-svc", w.Spec.Name)
 	service.Namespace = w.Spec.Namespace
 	return service
 }
@@ -413,7 +414,7 @@ func (w *Workload) buildIngress() networkingv1.Ingress {
 			PathType: &pathType,
 			Backend: networkingv1.IngressBackend{
 				Service: &networkingv1.IngressServiceBackend{
-					Name: p.Backend.Service.Name,
+					Name: fmt.Sprintf("%s-svc", w.Spec.Name),
 					Port: networkingv1.ServiceBackendPort{
 						Number: p.Backend.Service.Port.Number,
 					},
@@ -468,7 +469,7 @@ func (w *Workload) buildCollector() (otalpha1.OpenTelemetryCollector, error) {
 		KafkaPassword    string
 		ClusterId        string
 	}{
-		EnovaServingName: w.Spec.Name,
+		EnovaServingName: fmt.Sprintf("%s-svc", w.Spec.Name),
 		KafkaBrokers:     formatBrokers(w.Spec.Collector.Kafka.Brokers),
 		KafkaUsername:    w.Spec.Collector.Kafka.Username,
 		KafkaPassword:    w.Spec.Collector.Kafka.Password,
