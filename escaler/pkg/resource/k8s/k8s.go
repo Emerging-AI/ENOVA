@@ -29,53 +29,53 @@ import (
 var collectorServiceAccount = "otel-collector"
 var collectorConfigTemplate = `
 receivers:
-    otlp:
-        protocols:
-          grpc:
-            endpoint: "0.0.0.0:4317"
-          http:
-            endpoint: "0.0.0.0:4318"
-    prometheus:
-        config:
-          scrape_configs:
-            - job_name: 'enovaserving'
-              scrape_interval: 5s
-              static_configs:
-              - targets: ['{{ .EnovaServingName }}.emergingai.svc.cluster.local:9199']
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'enovaserving'
+          scrape_interval: 5s
+          static_configs:
+          - targets: ['{{ .EnovaServingName }}.emergingai.svc.cluster.local:9199']
 
 exporters:
-    kafka:
-        brokers: {{ .KafkaBrokers }}
-        topic: k8s-common-collector
-        protocol_version: 2.0.0
-        auth:
-          sasl:
-            mechanism: PLAIN
-            username: "{{ .KafkaUsername }}"
-            password: "{{ .KafkaPassword }}"
+  kafka:
+    brokers: {{ .KafkaBrokers }}
+    topic: k8s-common-collector
+    protocol_version: 2.0.0
+    auth:
+      sasl:
+        mechanism: PLAIN
+        username: "{{ .KafkaUsername }}"
+        password: "{{ .KafkaPassword }}"
 processors:
-    batch:
-    attributes/metrics:
-        actions:
-          - key: cluster_id
-            action: insert
-            value: "{{ .ClusterId }}"
-    attributes/http:
-        actions:
-          - action: delete
-            key: "http.server_name"
-          - action: delete
-            key: "http.host"
+  batch:
+  attributes/metrics:
+    actions:
+      - key: cluster_id
+        action: insert
+        value: "{{ .ClusterId }}"
+  attributes/http:
+    actions:
+      - action: delete
+        key: "http.server_name"
+      - action: delete
+        key: "http.host"
 service:
-    pipelines:
-        traces:
-          receivers: [otlp]
-          processors: [batch]
-          exporters: [kafka]
-    	metrics:
-          receivers: [prometheus, otlp]
-          processors: [attributes/metrics, attributes/http, batch]
-          exporters: [kafka]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [kafka]
+    metrics:
+      receivers: [prometheus, otlp]
+      processors: [attributes/metrics, attributes/http, batch]
+      exporters: [kafka]
 
 `
 
