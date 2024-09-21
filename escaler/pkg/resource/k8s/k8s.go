@@ -355,8 +355,6 @@ func (w *Workload) buildDeployment() v1.Deployment {
 				MountPath: v.MountPath,
 			}
 		}
-		deployment.Spec.Template.Spec.Volumes = volumes
-		deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumeMounts
 	}
 	// if will add shm by default
 	shmLimitSize := k8sresource.MustParse("1Gi")
@@ -373,6 +371,8 @@ func (w *Workload) buildDeployment() v1.Deployment {
 		Name:      "shm",
 		MountPath: "/dev/shm",
 	})
+	deployment.Spec.Template.Spec.Volumes = volumes
+	deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumeMounts
 	if len(w.Spec.NodeSelector) > 0 {
 		deployment.Spec.Template.Spec.NodeSelector = w.Spec.NodeSelector
 	}
