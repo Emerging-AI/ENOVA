@@ -243,6 +243,12 @@ func (d *Detector) DetectOnce() {
 	}
 }
 
+func (d *Detector) IsTaskExisted(task meta.TaskSpecInterface) bool {
+	t := task.(*meta.TaskSpec)
+	rtInfos := d.Client.GetRuntimeInfos(*t)
+	return len(rtInfos) > 0
+}
+
 // IsTaskRunning TODO: add GetTaskMap
 func (d *Detector) IsTaskRunning(taskName string, task meta.TaskSpecInterface) bool {
 	t := task.(*meta.TaskSpec)
