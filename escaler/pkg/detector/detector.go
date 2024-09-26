@@ -246,8 +246,7 @@ func (d *Detector) DetectOnce() {
 func (d *Detector) IsTaskExisted(task meta.TaskSpecInterface) bool {
 	// check whether deployment is existed
 	t := task.(*meta.TaskSpec)
-	rtInfos := d.Client.GetRuntimeInfos(*t)
-	return len(rtInfos) > 0
+	return d.Client.IsTaskExist(*t)
 }
 
 // IsTaskRunning TODO: add GetTaskMap
