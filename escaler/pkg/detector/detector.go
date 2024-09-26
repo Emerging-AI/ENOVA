@@ -274,7 +274,7 @@ func (d *Detector) UpdateTaskSpec(task meta.TaskSpecInterface, resp api.ConfigRe
 }
 
 func (d *Detector) RunDetector() {
-	ticker := time.NewTicker(time.Duration(time.Duration(config.GetEConfig().Detector.DetectInterval) * time.Second))
+	ticker := time.NewTicker(time.Duration(config.GetEConfig().Detector.DetectInterval) * time.Second)
 	for {
 		if d.stopped {
 			break

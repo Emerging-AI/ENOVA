@@ -3,6 +3,8 @@ package resource
 import (
 	"context"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/logger"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
@@ -35,6 +37,23 @@ func (c *K8sResourceClient) DeleteTask(spec meta.TaskSpec) {
 		Spec:   &spec,
 	}
 	workload.Delete()
+}
+
+func (c *K8sResourceClient) IsTaskExist(spec meta.TaskSpec) bool {
+	workload := k8s.Workload{
+		K8sCli: c.K8sCli,
+		Spec:   &spec,
+	}
+	_, err := workload.GetDeployment()
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return false
+		} else {
+			logger.Errorf("K8sResourceClient get ENOVA error: %v", err)
+			return false
+		}
+	}
+	return true
 }
 
 func (c *K8sResourceClient) IsTaskRunning(spec meta.TaskSpec) bool {

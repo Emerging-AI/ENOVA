@@ -48,6 +48,7 @@ func (t *TaskManager) DeleteTaskContainerIds(task meta.TaskSpec) {
 type ClientInterface interface {
 	DeployTask(spec meta.TaskSpec)
 	DeleteTask(spec meta.TaskSpec)
+	IsTaskExist(spec meta.TaskSpec) bool
 	IsTaskRunning(spec meta.TaskSpec) bool
 	GetRuntimeInfos(spec meta.TaskSpec) []meta.RuntimeInfo
 	SyncStatus(spec meta.TaskSpec)
@@ -257,6 +258,11 @@ func (d *DockerResourceClient) BuildDockerVolumes(volumes []meta.Volume) []strin
 
 func (d *DockerResourceClient) DeleteSingleServing(containerId string) error {
 	return d.DockerClient.StopContainer(containerId)
+}
+
+func (d *DockerResourceClient) IsTaskExist(spec meta.TaskSpec) bool {
+	// TODO: Not implemented
+	return false
 }
 
 // IsTaskRunning: check all containers running

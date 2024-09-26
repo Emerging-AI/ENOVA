@@ -509,6 +509,10 @@ func (w *Workload) buildCollector() (otalpha1.OpenTelemetryCollector, error) {
 	return collector, nil
 }
 
+func (w *Workload) GetDeployment() (*v1.Deployment, error) {
+	return w.K8sCli.K8sClient.AppsV1().Deployments(w.Spec.Namespace).Get(w.K8sCli.Ctx, w.Spec.Name, metav1.GetOptions{})
+}
+
 func (w *Workload) GetPodsList() (*corev1.PodList, error) {
 	opts := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("enovaserving-name=%s", w.Spec.Name),
