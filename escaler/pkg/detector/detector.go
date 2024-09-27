@@ -50,11 +50,6 @@ func (t *DetectResultManager) GetHistoricalAnomalyRecommendResult(task meta.Task
 	return ret
 }
 
-// StatusSyncer for EnovaServing CR status reconcile
-type StatusSyncer interface {
-	Sync(k8s.Workload) error
-}
-
 type MulticlusterScaler interface {
 	Scale(k8s.Workload) error
 }
@@ -66,7 +61,6 @@ type Detector struct {
 	TaskMap             map[string]*meta.DetectTask
 	DetectResultManager *DetectResultManager
 	stopped             bool
-	StatusSyncer        StatusSyncer
 	MulticlusterScaler  MulticlusterScaler
 }
 
@@ -92,10 +86,7 @@ func NewDetector(ch chan meta.TaskSpecInterface) *Detector {
 	}
 }
 
-func NewK8sDetector(
-	ch chan meta.TaskSpecInterface,
-	statusSyncer StatusSyncer,
-	multiclusterScaler MulticlusterScaler) *Detector {
+func NewK8sDetector(ch chan meta.TaskSpecInterface, multiclusterScaler MulticlusterScaler) *Detector {
 	// pub := zmq.ZmqPublisher{
 	// 	Host: config.GetEConfig().Zmq.Host,
 	// 	Port: config.GetEConfig().Zmq.Port,
@@ -114,8 +105,19 @@ func NewK8sDetector(
 			),
 		},
 		stopped:            false,
-		StatusSyncer:       statusSyncer,
 		MulticlusterScaler: multiclusterScaler,
+	}
+}
+
+func (d *Detector) Stop() {
+	d.stopped = true
+}
+
+func (d *Detector) SendScaleTask(task meta.TaskSpecInterface) {
+	scaleTaskJson, err := json.Marshal(task)
+	if err != nil {
+		logger.Errorf("DetectOnce json Marshal err: %v", err)
+		return
 	}
 }
 
@@ -229,15 +231,6 @@ func (d *Detector) DetectOnce() {
 		if task.TaskSpec.GetScalingStrategy().Strategy == meta.StrategyAuto {
 			if d.IsTaskRunning(taskName, task.TaskSpec) {
 				d.DetectOneTaskSpec(taskName, task.TaskSpec)
-			}
-		}
-		if config.GetEConfig().ResourceBackend.Type == config.ResourceBackendTypeK8s && d.StatusSyncer != nil {
-			k8sClient := d.Client.(*resource.K8sResourceClient)
-			if err := d.StatusSyncer.Sync(k8s.Workload{
-				K8sCli: k8sClient.K8sCli,
-				Spec:   task.TaskSpec.(*meta.TaskSpec),
-			}); err != nil {
-				logger.Errorf("MulticlusterStatusSyncer.Sync error: %v", err)
 			}
 		}
 	}
