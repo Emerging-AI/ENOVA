@@ -114,18 +114,6 @@ func (d *Detector) Stop() {
 }
 
 func (d *Detector) SendScaleTask(task meta.TaskSpecInterface) {
-	scaleTaskJson, err := json.Marshal(task)
-	if err != nil {
-		logger.Errorf("DetectOnce json Marshal err: %v", err)
-		return
-	}
-}
-
-func (d *Detector) Stop() {
-	d.stopped = true
-}
-
-func (d *Detector) SendScaleTask(task meta.TaskSpecInterface) {
 	d.Queue.Append(task)
 	// scaleTaskJson, err := json.Marshal(task)
 	// if err != nil {
