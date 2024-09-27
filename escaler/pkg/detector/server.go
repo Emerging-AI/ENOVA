@@ -20,14 +20,10 @@ type DetectorServer struct {
 	server   *server.APIServer
 }
 
-func NewDetectorServer(
-	ch chan meta.TaskSpecInterface,
-	statusSyncer StatusSyncer,
-	multiclusterScaler MulticlusterScaler) *DetectorServer {
-
+func NewDetectorServer(ch chan meta.TaskSpecInterface, multiclusterScaler MulticlusterScaler) *DetectorServer {
 	detectorServer := DetectorServer{}
 	if config.GetEConfig().ResourceBackend.Type == config.ResourceBackendTypeK8s {
-		detector := NewK8sDetector(ch, statusSyncer, multiclusterScaler)
+		detector := NewK8sDetector(ch, multiclusterScaler)
 		detectorServer.Detector = detector
 	} else {
 		detector := NewDetector(ch)
