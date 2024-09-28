@@ -31,7 +31,7 @@ func NewLocalDockerServingScaler(ch chan meta.TaskSpecInterface) *EnovaServingSc
 		Queue: &queue.InnerChanTaskQueue{
 			Ch: ch,
 		},
-		Client:  resource.NewDockerResourcClient(),
+		Client:  resource.NewDockerResourceClient(),
 		stopped: false,
 	}
 }

@@ -50,8 +50,7 @@ type ClientInterface interface {
 	DeleteTask(spec meta.TaskSpec)
 	IsTaskExist(spec meta.TaskSpec) bool
 	IsTaskRunning(spec meta.TaskSpec) bool
-	GetRuntimeInfos(spec meta.TaskSpec) []meta.RuntimeInfo
-	SyncStatus(spec meta.TaskSpec)
+	GetRuntimeInfos(spec meta.TaskSpec) *meta.RuntimeInfo
 }
 
 type ContainerIds []string
@@ -289,8 +288,8 @@ func (d *DockerResourceClient) IsTaskRunning(task meta.TaskSpec) bool {
 	return ret
 }
 
-func (d *DockerResourceClient) GetRuntimeInfos(spec meta.TaskSpec) []meta.RuntimeInfo {
-	ret := []meta.RuntimeInfo{}
+func (d *DockerResourceClient) GetRuntimeInfos(spec meta.TaskSpec) *meta.RuntimeInfo {
+	ret := &meta.RuntimeInfo{Source: meta.DockerSource}
 	containerIds, ok := d.TaskManager.GetTaskContainerIds(spec)
 	if !ok {
 		logger.Infof("GetTaskInfo GetTaskContainerIds failed")
@@ -302,20 +301,12 @@ func (d *DockerResourceClient) GetRuntimeInfos(spec meta.TaskSpec) []meta.Runtim
 			logger.Errorf("IsTaskRunning GetContainerStatus error: %v", err)
 			continue
 		}
-		ret = append(ret, meta.RuntimeInfo{
-			Name:        containerJson.Name,
-			ContainerId: containerId,
-			Status:      containerJson.State.Status,
-		})
+		*ret.Containers = append(*ret.Containers, containerJson)
 	}
 	return ret
 }
 
-func (d *DockerResourceClient) SyncStatus(spec meta.TaskSpec) {
-
-}
-
-func NewDockerResourcClient() *DockerResourceClient {
+func NewDockerResourceClient() *DockerResourceClient {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		panic(err)
