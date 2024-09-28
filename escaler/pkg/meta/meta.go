@@ -4,6 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/docker/docker/api/types"
+
+	v2 "k8s.io/api/core/v1"
+
+	v1 "k8s.io/api/apps/v1"
+
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/api"
 )
 
@@ -284,16 +290,24 @@ func (t *TaskSpec) GetScalingStrategy() ScalingStrategy {
 	return t.ScalingStrategy
 }
 
+type InfoSource string
+
+const (
+	DockerSource InfoSource = "Docker"
+	K8sSource    InfoSource = "K8s"
+)
+
 type RuntimeInfo struct {
-	ContainerId string
-	Name        string
-	Status      string
+	Source     InfoSource             `json:"source"`
+	Deployment *v1.Deployment         `json:"deployment,omitempty"`
+	PodList    *v2.PodList            `json:"podList,omitempty"`
+	Containers *[]types.ContainerJSON `json:"containers,omitempty"`
 }
 
 type DetectTaskSpecResponse struct {
-	TaskSpec       TaskSpec      `json:"task_spec"`
-	Status         string        `json:"status"`
-	ContainerInfos []RuntimeInfo `json:"container_infos"`
+	TaskSpec       TaskSpec    `json:"task_spec"`
+	Status         string      `json:"status"`
+	ContainerInfos RuntimeInfo `json:"container_infos"`
 }
 
 type TaskDetectHistoryRequest struct {

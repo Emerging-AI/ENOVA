@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/queue"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/resource"
@@ -76,7 +78,7 @@ func NewDetector(ch chan meta.TaskSpecInterface) *Detector {
 		},
 		PermCli: PerformanceDetectorCli{},
 		TaskMap: make(map[string]*meta.DetectTask),
-		Client:  resource.NewDockerResourcClient(),
+		Client:  resource.NewDockerResourceClient(),
 		DetectResultManager: &DetectResultManager{
 			RedisClient: redis.NewRedisClient(
 				config.GetEConfig().Redis.Addr, config.GetEConfig().Redis.Password, config.GetEConfig().Redis.Db,
@@ -237,11 +239,20 @@ func (d *Detector) IsTaskRunning(taskName string, task meta.TaskSpecInterface) b
 		d.TaskMap[taskName].Status = meta.TaskStatusRunning
 		return true
 	}
-	containerInfos := d.Client.GetRuntimeInfos(*t)
-	for _, containerInfo := range containerInfos {
-		if containerInfo.Status == "exited" {
-			d.TaskMap[taskName].Status = meta.TaskStatusError
-			return false
+	runtimeInfos := d.Client.GetRuntimeInfos(*t)
+	if runtimeInfos.Source == meta.DockerSource {
+		for _, container := range *runtimeInfos.Containers {
+			if container.State.Status == "exited" {
+				d.TaskMap[taskName].Status = meta.TaskStatusError
+				return false
+			}
+		}
+	} else if runtimeInfos.Source == meta.K8sSource {
+		for _, pod := range runtimeInfos.PodList.Items {
+			if pod.Status.Phase == v1.PodFailed {
+				d.TaskMap[taskName].Status = meta.TaskStatusError
+				return false
+			}
 		}
 	}
 	d.TaskMap[taskName].Status = meta.TaskStatusScheduling

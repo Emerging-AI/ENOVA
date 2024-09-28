@@ -72,33 +72,29 @@ func (c *K8sResourceClient) IsTaskRunning(spec meta.TaskSpec) bool {
 	return false
 }
 
-func (c *K8sResourceClient) GetRuntimeInfos(spec meta.TaskSpec) []meta.RuntimeInfo {
+func (c *K8sResourceClient) GetRuntimeInfos(spec meta.TaskSpec) *meta.RuntimeInfo {
 	workload := k8s.Workload{
 		K8sCli: c.K8sCli,
 		Spec:   &spec,
 	}
+	ret := &meta.RuntimeInfo{Source: meta.K8sSource}
+	dp, err := workload.GetDeployment()
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			logger.Errorf("GetRuntimeInfos GetPodsList error: %v", err)
+		}
+		return ret
+	}
+	ret.Deployment = dp
 	podList, err := workload.GetPodsList()
 	if err != nil {
-		logger.Errorf("GetRuntimeInfos GetPodsList error: %v", err)
-		return []meta.RuntimeInfo{}
-	}
-	if len(podList.Items) == 0 {
-		return []meta.RuntimeInfo{}
-	}
-	ret := make([]meta.RuntimeInfo, len(podList.Items))
-	for i, pod := range podList.Items {
-		ret[i] = meta.RuntimeInfo{
-			ContainerId: pod.Name,
-			Name:        pod.Name,
-			Status:      string(pod.Status.Phase),
+		if !apierrors.IsNotFound(err) {
+			logger.Errorf("GetRuntimeInfos GetPodsList error: %v", err)
 		}
+		return ret
 	}
+	ret.PodList = podList
 	return ret
-}
-
-// SyncStatus sync node relation to
-func (c *K8sResourceClient) SyncStatus(spec meta.TaskSpec) {
-
 }
 
 func NewK8sClient() (*kubernetes.Clientset, error) {
