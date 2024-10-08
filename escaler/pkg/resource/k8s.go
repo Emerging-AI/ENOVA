@@ -3,6 +3,9 @@ package resource
 import (
 	"context"
 
+	v1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
@@ -77,7 +80,7 @@ func (c *K8sResourceClient) GetRuntimeInfos(spec meta.TaskSpec) *meta.RuntimeInf
 		K8sCli: c.K8sCli,
 		Spec:   &spec,
 	}
-	ret := &meta.RuntimeInfo{Source: meta.K8sSource}
+	ret := &meta.RuntimeInfo{Source: meta.K8sSource, Deployment: &v1.Deployment{}, PodList: &corev1.PodList{}}
 	dp, err := workload.GetDeployment()
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
