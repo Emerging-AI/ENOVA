@@ -1,6 +1,10 @@
 package queue
 
-import "github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
+import (
+	"sync"
+
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
+)
 
 type TaskQueue interface {
 	Append(meta.TaskSpec)
@@ -8,11 +12,18 @@ type TaskQueue interface {
 }
 
 type InnerChanTaskQueue struct {
-	Ch chan meta.TaskSpecInterface
+	Ch   chan meta.TaskSpecInterface
+	seen map[meta.TaskSpecInterface]struct{}
+	mu   sync.Mutex
 }
 
 func (q *InnerChanTaskQueue) Append(task meta.TaskSpecInterface) {
-	q.Ch <- task
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	if _, exists := q.seen[task]; !exists {
+		q.seen[task] = struct{}{}
+		q.Ch <- task
+	}
 }
 
 func (q *InnerChanTaskQueue) Pop() (meta.TaskSpecInterface, bool) {
