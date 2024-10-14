@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 import pydantic
 from enova.common.logger import LOGGER
 from enova.common.config import CONFIG
-from enova.enode.enode import Enode, REMOTE_FUNC_TAG
+from enova.serving.backend.hf.handler import HuggingFaceHandler, REMOTE_FUNC_TAG
 
 hf_no_attention_mask_models = {"microsoft/phi-1", "microsoft/phi-1_5"}
 
@@ -19,8 +19,8 @@ def _create_hf_transformers_pipeline(task, model, revision):
     kwargs = {}
     if CONFIG.TRUST_REMOTE_CODE:
         kwargs["trust_remote_code"] = CONFIG.TRUST_REMOTE_CODE
-    if CONFIG.enova_enode.get("hf_proxy"):
-        hf_proxy = CONFIG.enova_enode["hf_proxy"]
+    if CONFIG.enova_serving.get("hf_proxy"):
+        hf_proxy = CONFIG.enova_serving["hf_proxy"]
         kwargs["proxies"] = {
             "http": hf_proxy,
             "https": hf_proxy,
@@ -53,9 +53,7 @@ def _create_hf_transformers_pipeline(task, model, revision):
                     # kwargs
                     tokenizer.model_input_names.remove("attention_mask")
 
-                    model_obj = AutoModelForCausalLM.from_pretrained(
-                        model, revision=revision, **kwargs, **model_kwargs
-                    )
+                    model_obj = AutoModelForCausalLM.from_pretrained(model, revision=revision, **kwargs, **model_kwargs)
 
                     def patch_model_obj(model_obj):
                         orig_generate = model_obj.generate
@@ -189,7 +187,7 @@ def _get_generated_text(res):
 
 
 @dataclasses.dataclass
-class HFText2TextEnode(Enode):
+class HFText2TextHandler(HuggingFaceHandler):
     def __post_init__(self):
         self.pipeline = None
 
@@ -200,7 +198,7 @@ class HFText2TextEnode(Enode):
         """"""
         self.pipeline = _create_hf_transformers_pipeline("text-generation", self.model, None)
 
-    @Enode.remote_func(method="POST", path="generate")
+    @HuggingFaceHandler.remote_func(method="POST", path="generate")
     async def generate(
         self,
         inputs: Union[str, List[str]],
@@ -334,9 +332,7 @@ class HFText2TextEnode(Enode):
             attr_val = getattr(self, attr_name)
             if hasattr(attr_val, REMOTE_FUNC_TAG) and callable(attr_val):
                 remote_func_ins = getattr(attr_val, REMOTE_FUNC_TAG)
-                typed_handler, typed_handler_kwargs = self._create_typed_handler(
-                    remote_func_ins.path, remote_func_ins.method.lower(), attr_val, {}
-                )
+                typed_handler, typed_handler_kwargs = self._create_typed_handler(remote_func_ins.path, remote_func_ins.method.lower(), attr_val, {})
                 api_router.add_api_route(
                     f"/{remote_func_ins.path}",
                     typed_handler,

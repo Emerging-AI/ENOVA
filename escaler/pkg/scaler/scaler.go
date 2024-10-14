@@ -1,11 +1,10 @@
 package scaler
 
 import (
-	"encoding/json"
-	"errors"
 	"sync"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/queue"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/resource"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
@@ -13,55 +12,87 @@ import (
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/zmq"
 )
 
-type enovaServingScaler struct {
-	Subscriber *zmq.ZmqSubscriber
-	Client     resource.ClientInterface
+type EnovaServingScaler struct {
+	// Subscriber *zmq.ZmqSubscriber
+	Queue   *queue.InnerChanTaskQueue
+	Client  resource.ClientInterface
+	stopped bool
 }
 
-func NewLocalDockerServingScaler() *enovaServingScaler {
+func NewServingScaler(ch chan meta.TaskSpecInterface) *EnovaServingScaler {
+	if config.GetEConfig().ResourceBackend.Type == config.ResourceBackendTypeK8s {
+		return NewK8sServingScaler(ch)
+	}
+	return NewLocalDockerServingScaler(ch)
+}
+
+func NewLocalDockerServingScaler(ch chan meta.TaskSpecInterface) *EnovaServingScaler {
+	return &EnovaServingScaler{
+		Queue: &queue.InnerChanTaskQueue{
+			Ch: ch,
+		},
+		Client:  resource.NewDockerResourceClient(),
+		stopped: false,
+	}
+}
+
+func NewK8sServingScaler(ch chan meta.TaskSpecInterface) *EnovaServingScaler {
+	return &EnovaServingScaler{
+		Queue: &queue.InnerChanTaskQueue{
+			Ch: ch,
+		},
+		Client: resource.Newk8sResourcClient(),
+	}
+}
+
+func NewZmqSubscriber() *zmq.ZmqSubscriber {
 	sub := zmq.ZmqSubscriber{
 		Host: config.GetEConfig().Zmq.Host,
 		Port: config.GetEConfig().Zmq.Port,
 	}
 	sub.Init()
-	return &enovaServingScaler{
-		Subscriber: &sub,
-		Client:     resource.NewDockerResourcClient(),
-	}
+	return &sub
 }
 
-func (s *enovaServingScaler) Run() {
-	if s.Subscriber == nil {
-		panic(errors.New("enovaServingScaler Subscriber is nil"))
-	}
-	defer s.Subscriber.Close()
+func (s *EnovaServingScaler) Run() {
+	// if s.Subscriber == nil {
+	// 	panic(errors.New("enovaServingScaler Subscriber is nil"))
+	// }
+	// defer s.Subscriber.Close()
 
 	for {
 		// 接收消息
 		logger.Infof("enovaServingScaler start Recv message")
-		msg, err := s.Subscriber.Recv()
-		logger.Infof("enovaServingScaler Recv message: %s", msg)
-		if err != nil {
-			logger.Infof("enovaServingScaler Error receiving message: %s", err)
+		task, ok := s.Queue.Pop()
+		if !ok {
 			continue
 		}
-		var task meta.TaskSpec
+		// logger.Infof("enovaServingScaler Recv message: %s", msg)
+		// if err != nil {
+		// 	logger.Infof("enovaServingScaler Error receiving message: %s", err)
+		// 	continue
+		// }
+		acutalTask := task.(*meta.TaskSpec)
 
-		if err := json.Unmarshal([]byte(msg), &task); err != nil {
-			logger.Errorf("enovaServingScaler Error parsing JSON response: %v, msg: %s", err, msg)
-			continue
+		// if err := json.Unmarshal([]byte(msg), &task); err != nil {
+		// 	logger.Errorf("enovaServingScaler Error parsing JSON response: %v, msg: %s", err, msg)
+		// 	continue
+		// }
+
+		if acutalTask.Replica == 0 {
+			s.Client.DeleteTask(*acutalTask)
+		} else {
+			// 执行 LocalDeploy 函数
+			s.Client.DeployTask(*acutalTask)
 		}
-
-		// 执行 LocalDeploy 函数
-		s.Client.DeployTask(task)
 	}
 }
 
-func (s *enovaServingScaler) Stop() {
+func (s *EnovaServingScaler) Stop() {
 
 }
 
-func (s *enovaServingScaler) RunInWaitGroup(wg *sync.WaitGroup) {
+func (s *EnovaServingScaler) RunInWaitGroup(wg *sync.WaitGroup) {
 	defer wg.Done()
 	s.Run()
 }

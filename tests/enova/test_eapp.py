@@ -20,43 +20,43 @@ class TestEApp:
 
 @pytest.mark.asyncio
 class TestEServe:
-    async def test_list_enode(self, eapp):
+    async def test_list_serving(self, eapp):
         async with AsyncClient(app=eapp, base_url="http://test") as ac:
-            response = await ac.get(f"/{CONFIG.enova_app['url_prefix']}/v1/enode")
+            response = await ac.get(f"/{CONFIG.enova_app['url_prefix']}/v1/serving")
             assert response.status_code == 200
             # TODO: some test of biz flow
 
-    # async def test_create_enode_with_escalar(self, eapp):
+    # async def test_create_serving_with_escalar(self, eapp):
     #     post_params = {}
     #     async with AsyncClient(app=eapp, base_url="http://test") as ac:
     #         response = await ac.post(
-    #             f"/{CONFIG.enova_app['url_prefix']}/v1/enode",
+    #             f"/{CONFIG.enova_app['url_prefix']}/v1/serving",
     #             json=post_params,
     #         )
     #         assert response.status_code == 200
     #         # TODO: some test of biz flow
 
-    # async def test_create_enode_missing_escalar(self, eapp):
+    # async def test_create_serving_missing_escalar(self, eapp):
     #     post_params = {}
     #     async with AsyncClient(app=eapp, base_url="http://test") as ac:
     #         response = await ac.post(
-    #             f"/{CONFIG.enova_app['url_prefix']}/v1/enode",
+    #             f"/{CONFIG.enova_app['url_prefix']}/v1/serving",
     #             json=post_params,
     #         )
     #         assert response.status_code == 200
     #         # TODO: some test of biz flow
 
-    # async def test_get_enode(self, eapp):
+    # async def test_get_serving(self, eapp):
     #     eserve_id = ""
     #     async with AsyncClient(app=eapp, base_url="http://test") as ac:
-    #         response = await ac.get(f"/{CONFIG.enova_app['url_prefix']}/v1/enode/{eserve_id}")
+    #         response = await ac.get(f"/{CONFIG.enova_app['url_prefix']}/v1/serving/{eserve_id}")
     #         assert response.status_code == 200
     #         # TODO: some test of biz flow
 
-    # async def test_delete_enode(self, eapp):
+    # async def test_delete_serving(self, eapp):
     #     eserve_id = ""
     #     async with AsyncClient(app=eapp, base_url="http://test") as ac:
-    #         response = await ac.delete(f"/{CONFIG.enova_app['url_prefix']}/v1/enode/{eserve_id}")
+    #         response = await ac.delete(f"/{CONFIG.enova_app['url_prefix']}/v1/serving/{eserve_id}")
     #         assert response.status_code == 200
     #         # TODO: some test of biz flow
 

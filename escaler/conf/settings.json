@@ -1,4 +1,7 @@
 {
+    "resource_backend": {
+        "type": "docker"
+    },
     "docker": {
 
     },
@@ -28,14 +31,14 @@
     "enova_algo": {
         "host": "127.0.0.1:8181"
     },
-    "enode": {
-        "image": "emergingai/enova:v0.0.5",
+    "serving": {
+        "image": "emergingai/enova:v0.0.6",
         "start_cmd": [
             "sleep",
             "inf"
         ],
         "network": "enova-mon_enova-net",
-        "network_alias": "enova-enode",
+        "network_alias": "enova-serving",
         "name": "enova"
     },
     "logger": {

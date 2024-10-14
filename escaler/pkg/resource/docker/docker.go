@@ -9,6 +9,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
@@ -32,7 +33,7 @@ type CreateContainerParams struct {
 }
 
 func (d *DockerCli) CheckOrPullImage(imageName string) {
-	images, err := d.Cli.ImageList(d.Ctx, types.ImageListOptions{})
+	images, err := d.Cli.ImageList(d.Ctx, image.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
@@ -53,7 +54,7 @@ func (d *DockerCli) CheckOrPullImage(imageName string) {
 	// 如果镜像不存在，拉取镜像
 	if !imageExists {
 		logger.Infof("Image %s not found. Pulling...\n", imageName)
-		out, err := d.Cli.ImagePull(d.Ctx, imageName, types.ImagePullOptions{})
+		out, err := d.Cli.ImagePull(d.Ctx, imageName, image.PullOptions{})
 		if err != nil {
 			panic(err)
 		}

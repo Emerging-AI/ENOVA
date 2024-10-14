@@ -6,16 +6,16 @@ import (
 	"os/exec"
 	"strings"
 
-	"encoding/json"
 	"fmt"
 	"strconv"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
-	"github.com/Emerging-AI/ENOVA/escaler/pkg/docker"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/logger"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/redis"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/resource/docker"
+	rscutils "github.com/Emerging-AI/ENOVA/escaler/pkg/resource/utils"
 
 	"github.com/docker/docker/client"
 	"github.com/google/uuid"
@@ -48,8 +48,9 @@ func (t *TaskManager) DeleteTaskContainerIds(task meta.TaskSpec) {
 type ClientInterface interface {
 	DeployTask(spec meta.TaskSpec)
 	DeleteTask(spec meta.TaskSpec)
+	IsTaskExist(spec meta.TaskSpec) bool
 	IsTaskRunning(spec meta.TaskSpec) bool
-	GetContainerinfos(spec meta.TaskSpec) []meta.ContainerInfo
+	GetRuntimeInfos(spec meta.TaskSpec) *meta.RuntimeInfo
 }
 
 type ContainerIds []string
@@ -98,7 +99,7 @@ func (d *DockerResourceClient) DeployTask(spec meta.TaskSpec) {
 }
 
 func (d *DockerResourceClient) DeleteTask(spec meta.TaskSpec) {
-
+	d.DeployTask(spec)
 }
 
 func (d *DockerResourceClient) LocalDeploy(task meta.TaskSpec) {
@@ -129,8 +130,8 @@ func (d *DockerResourceClient) DeployByDocker(task meta.TaskSpec) {
 		// delete all container when replica = 0
 		if task.Replica == 0 {
 			for _, containerId := range containerIds {
-				if err := d.DeleteSingleEnode(containerId); err != nil {
-					logger.Errorf("DeleteSingleEnode containerId: %s, err: %v", containerId, err)
+				if err := d.DeleteSingleServing(containerId); err != nil {
+					logger.Errorf("DeleteSingleServing containerId: %s, err: %v", containerId, err)
 				}
 				gpuStrList := d.ContainerIDGpusMap[containerId]
 				for _, gpuIdStr := range gpuStrList {
@@ -157,8 +158,8 @@ func (d *DockerResourceClient) DeployByDocker(task meta.TaskSpec) {
 				logger.Infof("start to scale down task: %s, removeCnt: %d", task.Name, removeCnt)
 				for i := 0; i < removeCnt; i++ {
 					containerId := containerIds[i]
-					if err := d.DeleteSingleEnode(containerId); err != nil {
-						logger.Errorf("DeleteSingleEnode containerId: %s, err: %v", containerIds[0], err)
+					if err := d.DeleteSingleServing(containerId); err != nil {
+						logger.Errorf("DeleteSingleServing containerId: %s, err: %v", containerIds[0], err)
 					}
 					gpuStrList := d.ContainerIDGpusMap[containerId]
 					for _, gpuIdStr := range gpuStrList {
@@ -213,7 +214,7 @@ func (d *DockerResourceClient) singleDeployByDocker(task *meta.TaskSpec) (string
 	}
 	logger.Infof("after deploy d.LocalGpuStats: %v, gpuStrList: %v", d.LocalGpuStats, gpuStrList)
 	task.Gpus = strings.Join(gpuStrList, ",")
-	containerID, err := d.CreateSingleEnode(*task, d.CreateContainerName(task.ExporterServiceName))
+	containerID, err := d.CreateSingleServing(*task, d.CreateContainerName(task.ExporterServiceName))
 	if err != nil {
 		logger.Errorf("singleDeployByDocker err: %v", err)
 	} else {
@@ -222,42 +223,14 @@ func (d *DockerResourceClient) singleDeployByDocker(task *meta.TaskSpec) (string
 	return containerID, err
 }
 
-func (d *DockerResourceClient) CreateSingleEnode(spec meta.TaskSpec, containerName string) (string, error) {
-	cmd := []string{
-		"enova", "enode", "run", "--model", spec.Model, "--port", strconv.Itoa(spec.Port), "--host", spec.Host,
-		"--backend", spec.Backend,
-		"--exporter_endpoint", spec.ExporterEndpoint,
-		"--exporter_service_name", containerName,
-	}
-
-	vllmBackendConfig, ok := spec.BackendConfig.(*meta.VllmBackendConfig)
-	if ok {
-		jsonBytes, err := json.Marshal(vllmBackendConfig)
-		if err != nil {
-
-		} else {
-			var vllmBackendConfigMap map[string]interface{}
-			err = json.Unmarshal(jsonBytes, &vllmBackendConfigMap)
-			if err != nil {
-
-			} else {
-				for k, v := range vllmBackendConfigMap {
-					cmd = append(cmd, []string{fmt.Sprintf("--%s", k), fmt.Sprintf("%v", v)}...)
-				}
-			}
-
-		}
-	}
-	// Add extra enode params
-	for k, v := range spec.BackendExtraConfig {
-		cmd = append(cmd, []string{fmt.Sprintf("--%s", k), fmt.Sprintf("%v", v)}...)
-	}
+func (d *DockerResourceClient) CreateSingleServing(spec meta.TaskSpec, containerName string) (string, error) {
+	cmd := rscutils.BuildCmdFromTaskSpec(spec)
 	params := docker.CreateContainerParams{
-		ImageName:     config.GetEConfig().Enode.Image,
+		ImageName:     config.GetEConfig().Serving.Image,
 		Cmd:           cmd,
-		NetworkName:   config.GetEConfig().Enode.Network,
+		NetworkName:   config.GetEConfig().Serving.Network,
 		Ports:         []int{spec.Port},
-		NetworkAlias:  config.GetEConfig().Enode.NetworkAlias,
+		NetworkAlias:  config.GetEConfig().Serving.NetworkAlias,
 		ContainerName: containerName,
 		Envs:          d.BuildDockerEnvs(spec.Envs),
 		Gpus:          spec.Gpus,
@@ -282,8 +255,13 @@ func (d *DockerResourceClient) BuildDockerVolumes(volumes []meta.Volume) []strin
 	return ret
 }
 
-func (d *DockerResourceClient) DeleteSingleEnode(containerId string) error {
+func (d *DockerResourceClient) DeleteSingleServing(containerId string) error {
 	return d.DockerClient.StopContainer(containerId)
+}
+
+func (d *DockerResourceClient) IsTaskExist(spec meta.TaskSpec) bool {
+	// TODO: Not implemented
+	return false
 }
 
 // IsTaskRunning: check all containers running
@@ -310,8 +288,8 @@ func (d *DockerResourceClient) IsTaskRunning(task meta.TaskSpec) bool {
 	return ret
 }
 
-func (d *DockerResourceClient) GetContainerinfos(spec meta.TaskSpec) []meta.ContainerInfo {
-	ret := []meta.ContainerInfo{}
+func (d *DockerResourceClient) GetRuntimeInfos(spec meta.TaskSpec) *meta.RuntimeInfo {
+	ret := &meta.RuntimeInfo{Source: meta.DockerSource}
 	containerIds, ok := d.TaskManager.GetTaskContainerIds(spec)
 	if !ok {
 		logger.Infof("GetTaskInfo GetTaskContainerIds failed")
@@ -323,16 +301,12 @@ func (d *DockerResourceClient) GetContainerinfos(spec meta.TaskSpec) []meta.Cont
 			logger.Errorf("IsTaskRunning GetContainerStatus error: %v", err)
 			continue
 		}
-		ret = append(ret, meta.ContainerInfo{
-			Name:        containerJson.Name,
-			ContainerId: containerId,
-			Status:      containerJson.State.Status,
-		})
+		*ret.Containers = append(*ret.Containers, containerJson)
 	}
 	return ret
 }
 
-func NewDockerResourcClient() *DockerResourceClient {
+func NewDockerResourceClient() *DockerResourceClient {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		panic(err)

@@ -18,19 +18,15 @@ class DeploymentInstanceInfoTable(DBModelBase):
 
     @declared_attr
     def __table_args__(cls):
-        return table_args(cls, {"comment": "table of enode's deployment instance"})
+        return table_args(cls, {"comment": "table of serving's deployment instance"})
 
     instance_id = Column(String(256), primary_key=True, nullable=False, comment="instance id", default=gen_ulid)
     instance_name = Column(String(64), nullable=False, comment="instance name")
     instance_spec = Column(JSON, comment="instance specification")
-    startup_args = Column(JSON, comment="the arguments of starting up of model serve by enode")
+    startup_args = Column(JSON, comment="the arguments of starting up of model serve by serving")
     mdl_cfg = Column(JSON, comment="the config of llm model")
-    enode_id = Column(
-        String(256), nullable=False, comment="enode's unique id, allow use it get the status by polit api"
-    )
-    deploy_status = Column(
-        String(32), nullable=False, default=DeployStatus.UNKNOWN.value, comment="status of deployment"
-    )
+    serving_id = Column(String(256), nullable=False, comment="serving's unique id, allow use it get the status by polit api")
+    deploy_status = Column(String(32), nullable=False, default=DeployStatus.UNKNOWN.value, comment="status of deployment")
     extra = Column(JSON)
     create_time = Column(DateTime, default=datetime.datetime.now)
     update_time = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
@@ -47,9 +43,9 @@ class TestInfoTable(DBModelBase):
         return table_args(cls, {"comment": "Inject Test record"})
 
     test_id = Column(String(256), primary_key=True, nullable=False, comment="test ID", default=gen_ulid)
-    instance_id = Column(String(256), nullable=False, comment="instance_id in enode's deployment")
+    instance_id = Column(String(256), nullable=False, comment="instance_id in serving's deployment")
     data_set = Column(String(64), nullable=False, comment="name of dataset")
-    param_spec = Column(JSON, comment="enode's startup parameters")
+    param_spec = Column(JSON, comment="serving's startup parameters")
     test_spec = Column(JSON, comment="test specification")
     test_status = Column(String(32), nullable=False, default=TestStatus.UNKNOWN.value)
     prompt_tps = Column(Float, default=0, comment="throughput of prompt tokens")

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { InstanceType } from './config'
-import { getEnode } from '@/api/instance'
+import { getServing } from '@/api/instance'
 interface instanceStoreState {
   instanceList: InstanceType[]
   currentId: string
@@ -43,17 +43,17 @@ export const useInstanceStore = defineStore('instance', {
         step: '15s'
       }
     },
-    activeEnodeId(): string {
-      return this.activeInstance != null ? this.activeInstance.enode_id : this.instanceList[0]?.enode_id ?? ''
+    activeServingId(): string {
+      return this.activeInstance != null ? this.activeInstance.serving_id : this.instanceList[0]?.serving_id ?? ''
     },
-    activeEnodeJob(): string {
+    activeServingJob(): string {
       return this.activeInstance != null ? this.activeInstance.startup_args.exported_job : this.instanceList[0]?.startup_args.exported_job ?? ''
     },
   },
   actions: {
     getInstanceList(): void {
       this.tableLoading = true
-      getEnode().then((res) => {
+      getServing().then((res) => {
         this.instanceList = res.data
       }).catch((err) => {
         console.error(err)

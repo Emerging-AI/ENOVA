@@ -146,7 +146,7 @@ import Drawer from '@/components/Drawer.vue'
 import InstanceDetail from '@/components/instance/InstanceDetail.vue'
 import TestConfig from '@/components/instance/TestConfig.vue'
 import { useInstanceStore } from '@/stores/instance'
-import { deleteEnode, getDetectHistory } from '@/api/instance'
+import { deleteServing, getDetectHistory } from '@/api/instance'
 import { useDateFormat } from '@vueuse/core'
 import { useInitQueryRange } from '@/hooks/useInitQueryRange'
 import { useIntervalFn } from '@vueuse/core'
@@ -254,7 +254,7 @@ const showDetail = (row: any, type: string) => {
 }
 
 const deleteInstance = (id: string) => {
-  deleteEnode(id).then(() => {
+  deleteServing(id).then(() => {
     instanceStore.getInstanceList()
   })
 }

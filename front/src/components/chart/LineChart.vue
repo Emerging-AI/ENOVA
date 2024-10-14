@@ -44,7 +44,7 @@ echarts.use([
   UniversalTransition
 ])
 
-const { chartQuery, activeEnodeJob } = storeToRefs(useInstanceStore())
+const { chartQuery, activeServingJob } = storeToRefs(useInstanceStore())
 
 const props = defineProps({
   chartTitle: {
@@ -215,11 +215,11 @@ const initChart = async (): Promise<void> => {
   if (data != null && data.length > 0) {
     const _data1 =
       props.seriesName === 'exported_job'
-        ? data.filter((i: any) => i.metric.exported_job != null ? i.metric.exported_job?.includes(activeEnodeJob.value) : i)
+        ? data.filter((i: any) => i.metric.exported_job != null ? i.metric.exported_job?.includes(activeServingJob.value) : i)
         : data
     const _data2 =
       props.seriesName === 'exported_job'
-        ? data2.filter((i: any) => i.metric.exported_job != null ? i.metric.exported_job?.includes(activeEnodeJob.value) : i)
+        ? data2.filter((i: any) => i.metric.exported_job != null ? i.metric.exported_job?.includes(activeServingJob.value) : i)
         : data2
     const series1 = _data1.map((i: any) => {
       return {

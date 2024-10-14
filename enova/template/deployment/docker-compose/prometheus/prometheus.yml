@@ -29,6 +29,6 @@ scrape_configs:
   static_configs:
   - targets: ['dcgm-exporter:9400']
 
-- job_name: 'enode'
+- job_name: 'enovaserving'
   static_configs:
-  - targets: ['enova-enode:9199']
+  - targets: ['enova-serving:9199']

@@ -4,6 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/docker/docker/api/types"
+
+	v2 "k8s.io/api/core/v1"
+
+	v1 "k8s.io/api/apps/v1"
+
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/api"
 )
 
@@ -16,6 +22,7 @@ type TaskSpecInterface interface {
 	GetName() string
 	GetExporterServiceName() string
 	GetPreferGpuNum() int
+	GetScalingStrategy() ScalingStrategy
 }
 
 type ModelConfig struct {
@@ -48,12 +55,13 @@ func (v *VllmBackendConfig) Update(recommendResult api.ConfigRecommendResult) {
 	}
 }
 
-type DockerDeployRequest struct {
+type DeployRequest struct {
 	Name                string
 	Model               string
 	Host                string
 	Port                int
 	Backend             string
+	Image               string
 	ExporterEndpoint    string `json:"exporter_endpoint"`
 	ExporterServiceName string `json:"exporter_service_name"`
 	ModelConfig         ModelConfig
@@ -62,6 +70,13 @@ type DockerDeployRequest struct {
 	Replica             int               `json:"replica"`
 	Envs                []Env             `json:"envs"`
 	Volumes             []Volume          `json:"volumes"`
+	Namespace           string            `json:"namespace"`
+	NodeSelector        map[string]string `json:"node_selector"`
+	Ingress             Ingress           `json:"ingress"`
+	Service             Service           `json:"service"`
+	Resources           Resources         `json:"resources"`
+	ScalingStrategy     ScalingStrategy   `json:"scaling_strategy"`
+	Collector           CollectorConfig   `json:"collector"`
 }
 
 type Env struct {
@@ -74,11 +89,74 @@ type Volume struct {
 	HostPath  string `json:"hostPath"`
 }
 
+type Raw struct{}
+
+type Ingress struct {
+	Name        string            `json:"name"`
+	Paths       []Path            `json:"paths"`
+	Raw         Raw               `json:"raw"`
+	Annotations map[string]string `json:"annotations"`
+}
+
+type Path struct {
+	Path    string  `json:"path"`
+	Backend Backend `json:"backend"`
+}
+
+type Backend struct {
+	Service ServiceDetail `json:"service"`
+}
+
+type ServiceDetail struct {
+	Name string `json:"name"`
+	Port Port   `json:"port"`
+}
+
+type Port struct {
+	Number int32 `json:"number"`
+}
+
+type Service struct {
+	Name  string `json:"name"`
+	Ports []Port `json:"ports"`
+	Raw   Raw    `json:"raw"`
+}
+
+type Resources struct {
+	GPU     string `json:"gpu"`
+	GPUType string `json:"gpu_type"`
+}
+
+type Strategy string
+
+const (
+	StrategyManual = "manual"
+	StrategyAuto   = "auto"
+)
+
+type ScalingStrategy struct {
+	// +optional
+	Strategy string `json:"strategy,omitempty"`
+}
+
+type KafkaConfig struct {
+	Brokers  []string
+	Username string
+	Password string
+}
+
+type CollectorConfig struct {
+	Enable    bool
+	ClusterId string
+	Kafka     KafkaConfig
+}
+
 type TaskSpec struct {
 	Name                string
 	Model               string
 	Host                string
 	Port                int
+	Image               string
 	Backend             string
 	ExporterEndpoint    string `json:"exporter_endpoint"`
 	ExporterServiceName string `json:"exporter_service_name"`
@@ -89,6 +167,13 @@ type TaskSpec struct {
 	Envs                []Env             `json:"envs"`
 	Gpus                string            `json:"gpus"`
 	Volumes             []Volume          `json:"volumes"`
+	Namespace           string            `json:"namespace"`
+	NodeSelector        map[string]string `json:"node_selector"`
+	Ingress             Ingress           `json:"ingress"`
+	Service             Service           `json:"service"`
+	Resources           Resources         `json:"resources"`
+	ScalingStrategy     ScalingStrategy   `json:"scaling_strategy"`
+	Collector           CollectorConfig   `json:"collector"`
 }
 
 func (t *TaskSpec) GetName() string {
@@ -140,6 +225,7 @@ func (t *TaskSpec) UnmarshalJSON(data []byte) error {
 		Host                string
 		Port                int
 		Backend             string
+		Image               string
 		ExporterEndpoint    string `json:"exporter_endpoint"`
 		ExporterServiceName string `json:"exporter_service_name"`
 		ModelConfig         ModelConfig
@@ -149,6 +235,13 @@ func (t *TaskSpec) UnmarshalJSON(data []byte) error {
 		Envs                []Env             `json:"envs"`
 		Gpus                string            `json:"gpus"`
 		Volumes             []Volume          `json:"volumes"`
+		Namespace           string            `json:"namespace"`
+		NodeSelector        map[string]string `json:"node_selector"`
+		Ingress             Ingress           `json:"ingress"`
+		Service             Service           `json:"service"`
+		Resources           Resources         `json:"resources"`
+		ScalingStrategy     ScalingStrategy   `json:"scaling_strategy"`
+		Collector           CollectorConfig   `json:"collector"`
 	}
 	var aux Alias
 	if err := json.Unmarshal(data, &aux); err != nil {
@@ -172,6 +265,7 @@ func (t *TaskSpec) UnmarshalJSON(data []byte) error {
 		Host:                aux.Host,
 		Port:                aux.Port,
 		Backend:             aux.Backend,
+		Image:               aux.Image,
 		ExporterEndpoint:    aux.ExporterEndpoint,
 		ExporterServiceName: aux.ExporterServiceName,
 		ModelConfig:         aux.ModelConfig,
@@ -181,20 +275,39 @@ func (t *TaskSpec) UnmarshalJSON(data []byte) error {
 		Envs:                aux.Envs,
 		Gpus:                aux.Gpus,
 		Volumes:             aux.Volumes,
+		Namespace:           aux.Namespace,
+		NodeSelector:        aux.NodeSelector,
+		Ingress:             aux.Ingress,
+		Service:             aux.Service,
+		Resources:           aux.Resources,
+		ScalingStrategy:     aux.ScalingStrategy,
+		Collector:           aux.Collector,
 	}
 	return nil
 }
 
-type ContainerInfo struct {
-	ContainerId string
-	Name        string
-	Status      string
+func (t *TaskSpec) GetScalingStrategy() ScalingStrategy {
+	return t.ScalingStrategy
+}
+
+type InfoSource string
+
+const (
+	DockerSource InfoSource = "Docker"
+	K8sSource    InfoSource = "K8s"
+)
+
+type RuntimeInfo struct {
+	Source     InfoSource             `json:"source"`
+	Deployment *v1.Deployment         `json:"deployment,omitempty"`
+	PodList    *v2.PodList            `json:"podList,omitempty"`
+	Containers *[]types.ContainerJSON `json:"containers,omitempty"`
 }
 
 type DetectTaskSpecResponse struct {
-	TaskSpec       TaskSpec        `json:"task_spec"`
-	Status         string          `json:"status"`
-	ContainerInfos []ContainerInfo `json:"container_infos"`
+	TaskSpec       TaskSpec    `json:"task_spec"`
+	Status         string      `json:"status"`
+	ContainerInfos RuntimeInfo `json:"container_infos"`
 }
 
 type TaskDetectHistoryRequest struct {

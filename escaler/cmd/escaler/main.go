@@ -8,6 +8,7 @@ import (
 	"github.com/Emerging-AI/ENOVA/escaler/cmd/escaler/docs"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/detector"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/scaler"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
@@ -35,15 +36,17 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	d := detector.NewDetectorServer()
+	ch := make(chan meta.TaskSpecInterface)
+	d := detector.NewDetectorServer(ch, nil)
 	d.GetEngine().GET("/api/escaler/docs/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-	s := scaler.NewLocalDockerServingScaler()
+	s := scaler.NewServingScaler(ch)
 
 	wg.Add(2)
 	go d.RunInWaitGroup(&wg)
 	go s.RunInWaitGroup(&wg)
 
 	wg.Wait()
+	close(ch)
 	fmt.Println("All tasks finished.")
 }

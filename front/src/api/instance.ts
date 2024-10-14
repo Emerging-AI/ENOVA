@@ -1,16 +1,16 @@
 import service from '@/utils/request'
 enum API {
-  ENODE = '/v1/enode',
+  ENODE = '/v1/serving',
   MONITOR = '/api/v1/query_range',
   PILOT = '/api/escaler/v1'
 }
 
-export const getEnode = () => service({
+export const getServing = () => service({
   url: API.ENODE,
   method: 'get',
 });
 
-export const addEnode = () => service({
+export const addServing = () => service({
   url: API.ENODE,
   method: 'post',
   data: {
@@ -19,7 +19,7 @@ export const addEnode = () => service({
   },
 })
 
-export const deleteEnode = (id: string) => service({
+export const deleteServing = (id: string) => service({
   url: `${API.ENODE}/${id}`,
   method: 'delete',
 });

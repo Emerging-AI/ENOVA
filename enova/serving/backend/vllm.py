@@ -24,12 +24,12 @@ class VllmBackend(BaseBackend):
         if vllm_mode == VllmMode.NORMAL.value:
             from vllm.entrypoints import api_server
 
-            engine_args = AsyncEngineArgs(model=self.enode.model, **CONFIG.vllm)
+            engine_args = AsyncEngineArgs(model=self.model, **CONFIG.vllm)
             engine = AsyncLLMEngine.from_engine_args(engine_args)
             engine_model_config = asyncio.run(engine.get_model_config())
             max_model_len = engine_model_config.max_model_len
 
-            api_server.served_model = self.enode.model
+            api_server.served_model = self.model
             api_server.engine = engine
             api_server.max_model_len = max_model_len
             api_server.tokenizer = get_tokenizer(
@@ -41,13 +41,13 @@ class VllmBackend(BaseBackend):
             from vllm.entrypoints.openai import api_server
             from addict import Dict as AddDict
 
-            engine_args = AsyncEngineArgs(model=self.enode.model, **CONFIG.vllm)
+            engine_args = AsyncEngineArgs(model=self.model, **CONFIG.vllm)
             engine = AsyncLLMEngine.from_engine_args(engine_args, usage_context=api_server.UsageContext.OPENAI_API_SERVER)
 
             request_logger = api_server.RequestLogger(max_log_len=CONFIG.vllm.get("max_log_len"))
             engine_model_config = asyncio.run(engine.get_model_config())
 
-            served_model_names = [self.enode.model]
+            served_model_names = [self.model]
             openai_serving_chat = api_server.OpenAIServingChat(
                 engine,
                 model_config=engine_model_config,

@@ -27,7 +27,7 @@ interface InstanceType {
     tensor_parallel_size: number
     quantization: null
   }
-  enode_id: string
+  serving_id: string
   deploy_status: string
   create_time: string
 }

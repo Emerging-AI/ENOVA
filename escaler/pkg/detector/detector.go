@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/queue"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/resource"
+	"github.com/Emerging-AI/ENOVA/escaler/pkg/resource/k8s"
 
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/api"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/logger"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/redis"
-	"github.com/Emerging-AI/ENOVA/escaler/pkg/zmq"
 )
 
 type DetectResultManager struct {
@@ -49,44 +52,81 @@ func (t *DetectResultManager) GetHistoricalAnomalyRecommendResult(task meta.Task
 	return ret
 }
 
+type MulticlusterScaler interface {
+	Scale(k8s.Workload) error
+}
+
 type Detector struct {
-	Publisher           zmq.ZmqPublisher
+	Queue               *queue.InnerChanTaskQueue
 	PermCli             PerformanceDetectorCli
 	Client              resource.ClientInterface
 	TaskMap             map[string]*meta.DetectTask
 	DetectResultManager *DetectResultManager
+	stopped             bool
+	MulticlusterScaler  MulticlusterScaler
 }
 
-func NewDetector() *Detector {
-	pub := zmq.ZmqPublisher{
-		Host: config.GetEConfig().Zmq.Host,
-		Port: config.GetEConfig().Zmq.Port,
-	}
-	pub.Init()
+func NewDetector(ch chan meta.TaskSpecInterface) *Detector {
+	// pub := zmq.ZmqPublisher{
+	// 	Host: config.GetEConfig().Zmq.Host,
+	// 	Port: config.GetEConfig().Zmq.Port,
+	// }
+	// pub.Init()
 	return &Detector{
-		Publisher: pub,
-		PermCli:   PerformanceDetectorCli{},
-		TaskMap:   make(map[string]*meta.DetectTask),
-		Client:    resource.NewDockerResourcClient(),
+		Queue: &queue.InnerChanTaskQueue{
+			Ch: ch,
+		},
+		PermCli: PerformanceDetectorCli{},
+		TaskMap: make(map[string]*meta.DetectTask),
+		Client:  resource.NewDockerResourceClient(),
 		DetectResultManager: &DetectResultManager{
 			RedisClient: redis.NewRedisClient(
 				config.GetEConfig().Redis.Addr, config.GetEConfig().Redis.Password, config.GetEConfig().Redis.Db,
 			),
 		},
+		stopped: false,
 	}
 }
 
-func (d *Detector) SendScaleTask(task meta.TaskSpecInterface) {
-	scaleTaskJson, err := json.Marshal(task)
-	if err != nil {
-		logger.Errorf("DetectOnce json Marshal err: %v", err)
-		return
+func NewK8sDetector(ch chan meta.TaskSpecInterface, multiclusterScaler MulticlusterScaler) *Detector {
+	// pub := zmq.ZmqPublisher{
+	// 	Host: config.GetEConfig().Zmq.Host,
+	// 	Port: config.GetEConfig().Zmq.Port,
+	// }
+	// pub.Init()
+	return &Detector{
+		Queue: &queue.InnerChanTaskQueue{
+			Ch: ch,
+		},
+		PermCli: PerformanceDetectorCli{},
+		TaskMap: make(map[string]*meta.DetectTask),
+		Client:  resource.Newk8sResourcClient(),
+		DetectResultManager: &DetectResultManager{
+			RedisClient: redis.NewRedisClient(
+				config.GetEConfig().Redis.Addr, config.GetEConfig().Redis.Password, config.GetEConfig().Redis.Db,
+			),
+		},
+		stopped:            false,
+		MulticlusterScaler: multiclusterScaler,
 	}
+}
 
-	if ok, err := d.Publisher.Send(string(scaleTaskJson)); err != nil {
-		logger.Errorf("DetectOnce Publisher Send err: %v, ok: %v", err, ok)
-		return
-	}
+func (d *Detector) Stop() {
+	d.stopped = true
+}
+
+func (d *Detector) SendScaleTask(task meta.TaskSpecInterface) {
+	d.Queue.Append(task)
+	// scaleTaskJson, err := json.Marshal(task)
+	// if err != nil {
+	// 	logger.Errorf("DetectOnce json Marshal err: %v", err)
+	// 	return
+	// }
+
+	// if ok, err := d.Publisher.Send(string(scaleTaskJson)); err != nil {
+	// 	logger.Errorf("DetectOnce Publisher Send err: %v, ok: %v", err, ok)
+	// 	return
+	// }
 }
 
 func (d *Detector) AnomalyDetect(spec meta.TaskSpecInterface) (bool, error) {
@@ -174,13 +214,22 @@ func (d *Detector) DetectOneTaskSpec(taskName string, taskSpec meta.TaskSpecInte
 }
 
 // DetectOnce Detect anomaly from remote
+// Sync Status to MulticlusterEnovaServing
 func (d *Detector) DetectOnce() {
 	logger.Infof("DetectOnce start detect once")
 	for taskName, task := range d.TaskMap {
-		if d.IsTaskRunning(taskName, task.TaskSpec) {
-			d.DetectOneTaskSpec(taskName, task.TaskSpec)
+		if task.TaskSpec.GetScalingStrategy().Strategy == meta.StrategyAuto {
+			if d.IsTaskRunning(taskName, task.TaskSpec) {
+				d.DetectOneTaskSpec(taskName, task.TaskSpec)
+			}
 		}
 	}
+}
+
+func (d *Detector) IsTaskExisted(task meta.TaskSpecInterface) bool {
+	// check whether deployment is existed
+	t := task.(*meta.TaskSpec)
+	return d.Client.IsTaskExist(*t)
 }
 
 // IsTaskRunning TODO: add GetTaskMap
@@ -190,11 +239,20 @@ func (d *Detector) IsTaskRunning(taskName string, task meta.TaskSpecInterface) b
 		d.TaskMap[taskName].Status = meta.TaskStatusRunning
 		return true
 	}
-	containerInfos := d.Client.GetContainerinfos(*t)
-	for _, containerInfo := range containerInfos {
-		if containerInfo.Status == "exited" {
-			d.TaskMap[taskName].Status = meta.TaskStatusError
-			return false
+	runtimeInfos := d.Client.GetRuntimeInfos(*t)
+	if runtimeInfos.Source == meta.DockerSource {
+		for _, container := range *runtimeInfos.Containers {
+			if container.State.Status == "exited" {
+				d.TaskMap[taskName].Status = meta.TaskStatusError
+				return false
+			}
+		}
+	} else if runtimeInfos.Source == meta.K8sSource {
+		for _, pod := range runtimeInfos.PodList.Items {
+			if pod.Status.Phase == v1.PodFailed {
+				d.TaskMap[taskName].Status = meta.TaskStatusError
+				return false
+			}
 		}
 	}
 	d.TaskMap[taskName].Status = meta.TaskStatusScheduling
@@ -207,8 +265,11 @@ func (d *Detector) UpdateTaskSpec(task meta.TaskSpecInterface, resp api.ConfigRe
 }
 
 func (d *Detector) RunDetector() {
-	ticker := time.NewTicker(time.Duration(time.Duration(config.GetEConfig().Detector.DetectInterval) * time.Second))
+	ticker := time.NewTicker(time.Duration(config.GetEConfig().Detector.DetectInterval) * time.Second)
 	for {
+		if d.stopped {
+			break
+		}
 		select {
 		case <-ticker.C:
 			d.DetectOnce()
@@ -216,14 +277,20 @@ func (d *Detector) RunDetector() {
 	}
 }
 
-// RegisterTask Register Task to taskmap
-func (d *Detector) RegisterTask(task meta.TaskSpec) {
-	if err := d.UpdateEnodeInitialBackendConfigByRemote(&task); err != nil {
-		logger.Errorf("UpdateEnodeInitialBackendConfigByRemote err: %v", err)
-		return
+func (d *Detector) DeployTask(task meta.TaskSpec) {
+	if task.GetScalingStrategy().Strategy == meta.StrategyAuto {
+		if err := d.UpdateServingInitialBackendConfigByRemote(&task); err != nil {
+			logger.Errorf("UpdateServingInitialBackendConfigByRemote err: %v", err)
+			return
+		}
 	}
 
 	d.SendScaleTask(&task)
+	d.RegisterTask(task)
+}
+
+// RegisterTask Register Task to taskmap
+func (d *Detector) RegisterTask(task meta.TaskSpec) {
 	// register at last
 	d.TaskMap[task.Name] = &meta.DetectTask{
 		TaskSpec: &task,
@@ -242,8 +309,8 @@ func (d *Detector) DeleteTask(taskName string) {
 	d.SendScaleTask(task.TaskSpec)
 }
 
-// UpdateEnodeInitialBackendConfigByRemote Get Remote recommending backendCOnfig When first deploy,
-func (d *Detector) UpdateEnodeInitialBackendConfigByRemote(spec meta.TaskSpecInterface) error {
+// UpdateServingngInitialBackendConfigByRemote Get Remote recommending backendCOnfig When first deploy,
+func (d *Detector) UpdateServingInitialBackendConfigByRemote(spec meta.TaskSpecInterface) error {
 	params := api.ConfigRecommendRequest{
 		Llm: spec.GetModelConfig().Llm,
 		Gpu: spec.GetModelConfig().Gpu,
