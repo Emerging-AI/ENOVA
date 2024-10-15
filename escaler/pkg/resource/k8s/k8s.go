@@ -7,6 +7,8 @@ import (
 	"html/template"
 	"strings"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/logger"
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/meta"
 	rscutils "github.com/Emerging-AI/ENOVA/escaler/pkg/resource/utils"
@@ -215,9 +217,7 @@ func (w *Workload) UpdateWorkload() (*v1.Deployment, error) {
 }
 
 func (w *Workload) DeleteWorkload() error {
-	opts := metav1.DeleteOptions{}
-	err := w.K8sCli.K8sClient.AppsV1().Deployments(w.Spec.Namespace).Delete(w.K8sCli.Ctx, w.Spec.Name, opts)
-	if err != nil {
+	if err := w.K8sCli.K8sClient.AppsV1().Deployments(w.Spec.Namespace).Delete(w.K8sCli.Ctx, w.Spec.Name, metav1.DeleteOptions{}); client.IgnoreNotFound(err) != nil {
 		logger.Errorf("Workload DeleteWorkload error: %v", err)
 		return err
 	}
@@ -269,10 +269,7 @@ func (w *Workload) UpdateService() (*corev1.Service, error) {
 }
 
 func (w *Workload) DeleteIngress() error {
-	opts := metav1.DeleteOptions{}
-	ingress := w.buildIngress()
-	err := w.K8sCli.K8sClient.NetworkingV1().Ingresses(w.Spec.Namespace).Delete(w.K8sCli.Ctx, ingress.Name, opts)
-	if err != nil {
+	if err := w.K8sCli.K8sClient.NetworkingV1().Ingresses(w.Spec.Namespace).Delete(w.K8sCli.Ctx, w.buildIngress().Name, metav1.DeleteOptions{}); client.IgnoreNotFound(err) != nil {
 		logger.Errorf("Workload DeleteIngress error: %v", err)
 		return err
 	}
@@ -280,10 +277,7 @@ func (w *Workload) DeleteIngress() error {
 }
 
 func (w *Workload) DeleteService() error {
-	opts := metav1.DeleteOptions{}
-	service := w.buildService()
-	err := w.K8sCli.K8sClient.CoreV1().Services(w.Spec.Namespace).Delete(w.K8sCli.Ctx, service.Name, opts)
-	if err != nil {
+	if err := w.K8sCli.K8sClient.CoreV1().Services(w.Spec.Namespace).Delete(w.K8sCli.Ctx, w.buildService().Name, metav1.DeleteOptions{}); client.IgnoreNotFound(err) != nil {
 		logger.Errorf("Workload DeleteService error: %v", err)
 		return err
 	}
@@ -587,8 +581,10 @@ func (w *Workload) DeleteCollector() error {
 	opts := metav1.DeleteOptions{}
 
 	rsc := w.GetOtCollectorResource()
-	err = rsc.Namespace(w.Spec.Namespace).Delete(w.K8sCli.Ctx, collector.Name, opts)
-	return err
+	if err := rsc.Namespace(w.Spec.Namespace).Delete(w.K8sCli.Ctx, collector.Name, opts); client.IgnoreNotFound(err) != nil {
+		return err
+	}
+	return nil
 }
 
 func (w *Workload) UpdateCollector() (otalpha1.OpenTelemetryCollector, error) {
