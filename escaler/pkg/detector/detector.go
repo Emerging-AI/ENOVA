@@ -216,7 +216,7 @@ func (d *Detector) DetectOneTaskSpec(taskName string, taskSpec meta.TaskSpecInte
 // DetectOnce Detect anomaly from remote
 // Sync Status to MulticlusterEnovaServing
 func (d *Detector) DetectOnce() {
-	logger.Infof("DetectOnce start detect once")
+	logger.Debug("DetectOnce start detect once")
 	for taskName, task := range d.TaskMap {
 		if task.TaskSpec.GetScalingStrategy().Strategy == meta.StrategyAuto {
 			if d.IsTaskRunning(taskName, task.TaskSpec) {
