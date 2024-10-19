@@ -1,8 +1,6 @@
-import os
 import time
 import numpy as np
 import requests
-import abc
 import itertools
 import csv
 import threading
@@ -69,7 +67,6 @@ class VanillaTrafficInjector:
             raise TestStartError("[Traffic Injector] invalid method: method not supported")
 
         dataset_name = str.lower(data)
-        # load from dataset
         dataset_path = f"{get_enova_path()}/template/deployment/docker-compose/traffic-injector/data/{dataset_name}.csv"
         with open(dataset_path) as dataset_in:
             reader = csv.DictReader(dataset_in)
