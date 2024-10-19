@@ -2,8 +2,9 @@ import abc
 import dataclasses
 import uvicorn
 from enova.common.logger import LOGGER
+from enova.server.restful.serializer import EmergingAIBaseModel
 import pandas as pd
-from typing import Dict
+from typing import Literal, Optional
 
 @dataclasses.dataclass
 class BaseBackend(metaclass=abc.ABCMeta):
@@ -51,29 +52,31 @@ class BaseBackend(metaclass=abc.ABCMeta):
             TestStartError,
         )
         from enova.serving.backend.injector import VanillaTrafficInjector
+        class InjectionRequest(EmergingAIBaseModel):
+            distribution: Literal[TrafficDistributionType.GAUSSIAN.value, TrafficDistributionType.POISSON.value]
+            tps_mean: int
+            tps_std: Optional[int] = None
+            duration: int
+            duration_unit: str
+            data_set: str
         @self.app.post("/v1/inject")
-        def stress_test(params: Dict):
+        def stress_test(params: InjectionRequest):
             """
             stress test a served 
             """
 
-            test_info = {
-                "test_spec": params["test_spec"],
-                "data_set": params["data_set"],
-            }
             traffic_injector_path_map = {
                 VllmMode.NORMAL.value: "/generate",
                 # TODO: adapt /v1/chat/completions
                 VllmMode.OPENAI.value: "/v1/completions",
             }
 
-            test_spec = test_info["test_spec"]
-            if test_spec["distribution"] == TrafficDistributionType.GAUSSIAN.value:
-                timer = {"type": Distribution.NORMAL.value, "mean": test_spec["tps_mean"], "std": test_spec["tps_std"]}
-            elif test_spec["distribution"] == TrafficDistributionType.POISSON.value:
-                timer = {"type": Distribution.POISSON.value, "lambda": test_spec["tps_mean"]}
+            if params.distribution == TrafficDistributionType.GAUSSIAN.value:
+                timer = {"type": Distribution.NORMAL.value, "mean": params.tps_mean, "std": params.tps_std}
+            elif params.distribution == TrafficDistributionType.POISSON.value:
+                timer = {"type": Distribution.POISSON.value, "lambda": params.tps_mean}
             else:
-                distribution = test_spec["distribution"]
+                distribution = params.distribution
                 LOGGER.exception(f"distribution {distribution} not allow.")
                 raise NotImplementedError()
 
@@ -87,9 +90,9 @@ class BaseBackend(metaclass=abc.ABCMeta):
                     port=port,
                     path=path,
                     method="post",
-                    duration=int(pd.Timedelta(str(test_spec["duration"])+test_spec["duration_unit"]).total_seconds()),
+                    duration=int(pd.Timedelta(str(params.duration)+params.duration_unit).total_seconds()),
                     timer=timer,
-                    data=test_info["data_set"],
+                    data=params.data_set,
                     headers={"Content-Type":"application/json"},
                     model=self.model,
                 )
