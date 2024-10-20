@@ -52,6 +52,7 @@ class BaseBackend(metaclass=abc.ABCMeta):
             TestStartError,
         )
         from enova.serving.backend.injector import VanillaTrafficInjector
+        from enova.common.config import CONFIG
         class InjectionRequest(EmergingAIBaseModel):
             distribution: Literal[TrafficDistributionType.GAUSSIAN.value, TrafficDistributionType.POISSON.value]
             tps_mean: int
@@ -80,7 +81,7 @@ class BaseBackend(metaclass=abc.ABCMeta):
                 LOGGER.exception(f"distribution {distribution} not allow.")
                 raise NotImplementedError()
 
-            vllm_mode = VllmMode.OPENAI.value # TODO: CONFIG.vllm.get("vllm_mode") has been consumed by vllm at __post_init__
+            vllm_mode = CONFIG.enova_serving_run_args["vllm_mode"]
             path = traffic_injector_path_map[vllm_mode]
 
             try:
