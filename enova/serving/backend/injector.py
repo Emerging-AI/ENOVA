@@ -3,7 +3,7 @@ import numpy as np
 import requests
 import itertools
 import csv
-import threading
+from concurrent.futures import ThreadPoolExecutor
 from enova.common.constant import Distribution
 from enova.common.error import TestStartError
 from enova.common.logger import LOGGER
@@ -23,6 +23,7 @@ class VanillaTrafficInjector:
         api_key="",
         max_tokens = 500,
         temperature = 0.9,
+        threadpool_size=5,
         **kwargs,
     ):
         """
@@ -93,15 +94,14 @@ class VanillaTrafficInjector:
             raise TestStartError(f"VanillaTrafficInjector: argument 'timer' provided is invalid, got {timer} instead")
         def make_request(request_func, url, headers, json_data):
             request_func(url, headers=headers, json=json_data)
-        threads_started = []
-        while True:
-            try:
-                sleep_duration = next(delay_iter)
-            except StopIteration:
-                break
-            thread = threading.Thread(target=make_request, args=(request_method, f"http://{host}:{port}{path}", headers, next(dataset_iter)))
-            thread.start()
-            threads_started.append(thread)
-            time.sleep(sleep_duration)
-        for thread in threads_started:
-            thread.join()
+        futures = []
+        with ThreadPoolExecutor(max_workers=threadpool_size) as executor:
+            while True:
+                try:
+                    sleep_duration = next(delay_iter)
+                except StopIteration:
+                    break
+                futures.append(executor.submit(make_request, request_method, f"http://{host}:{port}{path}", headers, next(dataset_iter)))
+                time.sleep(sleep_duration)
+        for future in futures:
+            future.result()
