@@ -99,5 +99,5 @@ class BaseBackend(metaclass=abc.ABCMeta):
                 )
                 return True
             except TestStartError as e:
-                LOGGER.error(e.message)
+                LOGGER.error(f"{type(e).__name__}: {str(e)}")
                 return False
