@@ -10,7 +10,7 @@ from enova.common.logger import LOGGER
 from enova.common.utils import datetime2timestamp, get_enova_path
 
 
-class VanillaTrafficInjector:
+class ThreadpoolBasedTrafficInjector:
     def run(
         self,
         host,
@@ -91,7 +91,7 @@ class VanillaTrafficInjector:
         elif timer['type'] == Distribution.NORMAL.value:
             delay_iter = iter(np.random.normal(timer["mean"], timer["std"], duration))
         else:
-            raise TestStartError(f"VanillaTrafficInjector: argument 'timer' provided is invalid, got {timer} instead")
+            raise TestStartError(f"ThreadpoolBasedTrafficInjector: argument 'timer' provided is invalid, got {timer} instead")
         def make_request(request_func, url, headers, json_data):
             request_func(url, headers=headers, json=json_data)
         futures = []

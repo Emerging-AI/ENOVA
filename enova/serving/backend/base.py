@@ -51,7 +51,7 @@ class BaseBackend(metaclass=abc.ABCMeta):
         from enova.common.error import (
             TestStartError,
         )
-        from enova.serving.backend.injector import VanillaTrafficInjector
+        from enova.serving.backend.injector import ThreadpoolBasedTrafficInjector
         from enova.common.config import CONFIG
         class InjectionRequest(EmergingAIBaseModel):
             distribution: Literal[TrafficDistributionType.GAUSSIAN.value, TrafficDistributionType.POISSON.value]
@@ -85,7 +85,7 @@ class BaseBackend(metaclass=abc.ABCMeta):
             path = traffic_injector_path_map[vllm_mode]
 
             try:
-                injector = VanillaTrafficInjector()
+                injector = ThreadpoolBasedTrafficInjector()
                 injector.run(
                     host=host,
                     port=port,
