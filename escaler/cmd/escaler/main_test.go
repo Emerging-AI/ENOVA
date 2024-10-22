@@ -75,7 +75,7 @@ func TestK8sEnovaServing(t *testing.T) {
 		Host:                "0.0.0.0",
 		Port:                9199,
 		Backend:             "vllm",
-		Image:               "docker.io/emergingai/enova:v0.0.6",
+		Image:               "docker.io/emergingai/enova:v0.0.7",
 		ExporterEndpoint:    "192.168.3.2:32893",
 		ExporterServiceName: "enova-chatglm-5oQa",
 		ModelConfig: meta.ModelConfig{

@@ -26,5 +26,5 @@ tzlocal
 openai
 packaging
 ray
-enova-instrumentation-llmo==0.0.6
+enova-instrumentation-llmo==0.0.7
 addict
