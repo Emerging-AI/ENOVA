@@ -32,7 +32,7 @@
         "host": "127.0.0.1:8181"
     },
     "serving": {
-        "image": "emergingai/enova:v0.0.6",
+        "image": "emergingai/enova:v0.0.7",
         "start_cmd": [
             "sleep",
             "inf"
