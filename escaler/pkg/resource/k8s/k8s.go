@@ -298,6 +298,16 @@ func (w *Workload) buildDeployment() v1.Deployment {
 		}
 	}
 
+	livenessProbe := corev1.Probe{}
+	readinessProbe := corev1.Probe{}
+	probe := corev1.Probe{ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{Path: "/metrics",
+		Port: intstr.IntOrString{IntVal: int32(w.Spec.Port)}}}, InitialDelaySeconds: 30}
+	if w.Spec.Backend == "vllm" {
+		livenessProbe = probe
+		livenessProbe.FailureThreshold = 600
+		readinessProbe = probe
+	}
+
 	// default mount ~/.cache to host data disk
 	deployment := v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -319,6 +329,8 @@ func (w *Workload) buildDeployment() v1.Deployment {
 							Name:            w.Spec.Name,
 							Command:         cmd[:1],
 							Args:            cmd[1:],
+							LivenessProbe:   &livenessProbe,
+							ReadinessProbe:  &readinessProbe,
 							Ports: []corev1.ContainerPort{
 								{
 									ContainerPort: int32(w.Spec.Port),
