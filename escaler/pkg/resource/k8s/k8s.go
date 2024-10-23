@@ -422,52 +422,6 @@ func formatBrokers(brokers []string) string {
 }
 
 func (w *Workload) buildCollector() otalv1.OpenTelemetryCollector {
-
-	receivers := otalv1.AnyConfig{Object: map[string]interface{}{
-		"otlp": map[string]interface{}{
-			"protocols": map[string]interface{}{
-				"grpc": map[string]interface{}{
-					"endpoint": "0.0.0.0:4317",
-				},
-				"http": map[string]interface{}{
-					"endpoint": "0.0.0.0:4318",
-				},
-			},
-		},
-		"prometheus": map[string]interface{}{
-			"config": map[string]interface{}{
-				"scrape_configs": []interface{}{
-					map[string]interface{}{
-						"job_name":        "enovaserving",
-						"scrape_interval": "5s",
-						"static_configs": []interface{}{
-							map[string]interface{}{
-								"targets": fmt.Sprintf("%s-svc", w.Spec.Name) + ".emergingai.svc.cluster.local:9199",
-							},
-						},
-					},
-				},
-			},
-		},
-	}}
-
-	exporters := otalv1.AnyConfig{
-		Object: map[string]interface{}{
-			"kafka": map[string]interface{}{
-				"brokers":          formatBrokers(w.Spec.Collector.Kafka.Brokers),
-				"topic":            "k8s-common-collector",
-				"protocol_version": "2.0.0",
-				"auth": map[string]interface{}{
-					"sasl": map[string]interface{}{
-						"mechanism": "PLAIN",
-						"username":  w.Spec.Collector.Kafka.Username,
-						"password":  w.Spec.Collector.Kafka.Password,
-					},
-				},
-			},
-		},
-	}
-
 	processors := otalv1.AnyConfig{Object: map[string]interface{}{
 		"batch": map[string]interface{}{},
 		"attributes/metrics": map[string]interface{}{
@@ -514,7 +468,7 @@ func (w *Workload) buildCollector() otalv1.OpenTelemetryCollector {
 	collector := otalv1.OpenTelemetryCollector{
 		Spec: otalv1.OpenTelemetryCollectorSpec{
 			OpenTelemetryCommonFields: otalv1.OpenTelemetryCommonFields{ServiceAccount: collectorServiceAccount},
-			Config:                    otalv1.Config{Receivers: receivers, Exporters: exporters, Processors: &processors, Service: service},
+			Config:                    otalv1.Config{Processors: &processors, Service: service},
 		},
 	}
 	collector.Name = w.Spec.Name
@@ -614,7 +568,53 @@ func (w *Workload) buildCollectorUnstructued(collector otalv1.OpenTelemetryColle
 				"name":      collector.Name,
 				"namespace": collector.Namespace,
 			},
-			"spec": collector.Spec,
+			"spec": map[string]interface{}{
+				"serviceAccount": collector.Spec.ServiceAccount,
+				"config": map[string]interface{}{
+					"receivers": map[string]interface{}{
+						"otlp": map[string]interface{}{
+							"protocols": map[string]interface{}{
+								"grpc": map[string]interface{}{
+									"endpoint": "0.0.0.0:4317",
+								},
+								"http": map[string]interface{}{
+									"endpoint": "0.0.0.0:4318",
+								},
+							},
+						},
+						"prometheus": map[string]interface{}{
+							"config": map[string]interface{}{
+								"scrape_configs": []interface{}{
+									map[string]interface{}{
+										"job_name":        "enovaserving",
+										"scrape_interval": "5s",
+										"static_configs": []interface{}{
+											map[string]interface{}{
+												"targets": []string{fmt.Sprintf("%s-svc", w.Spec.Name) + ".emergingai.svc.cluster.local:9199"}},
+										},
+									},
+								},
+							},
+						},
+					},
+					"exporters": map[string]interface{}{
+						"kafka": map[string]interface{}{
+							"brokers":          w.Spec.Collector.Kafka.Brokers,
+							"topic":            "k8s-common-collector",
+							"protocol_version": "2.0.0",
+							"auth": map[string]interface{}{
+								"sasl": map[string]interface{}{
+									"mechanism": "PLAIN",
+									"username":  w.Spec.Collector.Kafka.Username,
+									"password":  w.Spec.Collector.Kafka.Password,
+								},
+							},
+						},
+					},
+					"processors": collector.Spec.Config.Processors,
+					"service":    collector.Spec.Config.Service,
+				},
+			},
 		},
 	}
 }
