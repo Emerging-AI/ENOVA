@@ -1,11 +1,8 @@
 package k8s
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"html/template"
-	"strings"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -21,7 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/mitchellh/mapstructure"
-	otalpha1 "github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
+	otalv1 "github.com/open-telemetry/opentelemetry-operator/apis/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -29,57 +26,6 @@ import (
 )
 
 var collectorServiceAccount = "otel-collector"
-var collectorConfigTemplate = `
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: "0.0.0.0:4317"
-      http:
-        endpoint: "0.0.0.0:4318"
-  prometheus:
-    config:
-      scrape_configs:
-        - job_name: 'enovaserving'
-          scrape_interval: 5s
-          static_configs:
-          - targets: ['{{ .EnovaServingName }}.emergingai.svc.cluster.local:9199']
-
-exporters:
-  kafka:
-    brokers: {{ .KafkaBrokers }}
-    topic: k8s-common-collector
-    protocol_version: 2.0.0
-    auth:
-      sasl:
-        mechanism: PLAIN
-        username: "{{ .KafkaUsername }}"
-        password: "{{ .KafkaPassword }}"
-processors:
-  batch:
-  attributes/metrics:
-    actions:
-      - key: cluster_id
-        action: insert
-        value: "{{ .ClusterId }}"
-  attributes/http:
-    actions:
-      - action: delete
-        key: "http.server_name"
-      - action: delete
-        key: "http.host"
-service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [kafka]
-    metrics:
-      receivers: [prometheus, otlp]
-      processors: [attributes/metrics, attributes/http, batch]
-      exporters: [kafka]
-
-`
 
 type K8sCli struct {
 	K8sClient     *kubernetes.Clientset
@@ -475,44 +421,59 @@ func formatBrokers(brokers []string) string {
 	return formatted
 }
 
-func (w *Workload) buildCollector() (otalpha1.OpenTelemetryCollector, error) {
-	tmpl, err := template.New("collectorConfig").Parse(collectorConfigTemplate)
-	if err != nil {
-		return otalpha1.OpenTelemetryCollector{}, err
+func (w *Workload) buildCollector() otalv1.OpenTelemetryCollector {
+	processors := otalv1.AnyConfig{Object: map[string]interface{}{
+		"batch": map[string]interface{}{},
+		"attributes/metrics": map[string]interface{}{
+			"actions": []interface{}{
+				map[string]interface{}{
+					"key":    "cluster_id",
+					"action": "insert",
+					"value":  w.Spec.Collector.ClusterId,
+				},
+			},
+		},
+		"attributes/http": map[string]interface{}{
+			"actions": []interface{}{
+				map[string]interface{}{
+					"action": "delete",
+					"key":    "http.server_name",
+				},
+				map[string]interface{}{
+					"action": "delete",
+					"key":    "http.host",
+				},
+			},
+		},
+	},
 	}
 
-	// 创建一个数据结构供模板使用
-	data := struct {
-		EnovaServingName string
-		KafkaBrokers     string
-		KafkaUsername    string
-		KafkaPassword    string
-		ClusterId        string
-	}{
-		EnovaServingName: fmt.Sprintf("%s-svc", w.Spec.Name),
-		KafkaBrokers:     formatBrokers(w.Spec.Collector.Kafka.Brokers),
-		KafkaUsername:    w.Spec.Collector.Kafka.Username,
-		KafkaPassword:    w.Spec.Collector.Kafka.Password,
-		ClusterId:        w.Spec.Collector.ClusterId,
+	service := otalv1.Service{
+		Extensions: nil,
+		Telemetry:  nil,
+		Pipelines: map[string]*otalv1.Pipeline{
+			"traces": {
+				Receivers:  []string{"otlp"},
+				Processors: []string{"batch"},
+				Exporters:  []string{"kafka"},
+			},
+			"metrics": {
+				Receivers:  []string{"prometheus", "otlp"},
+				Processors: []string{"attributes/metrics", "attributes/http", "batch"},
+				Exporters:  []string{"kafka"},
+			},
+		},
 	}
 
-	var tmplBuffer bytes.Buffer
-	err = tmpl.Execute(&tmplBuffer, data)
-	if err != nil {
-		return otalpha1.OpenTelemetryCollector{}, err
-	}
-	collectorConfig := tmplBuffer.String()
-	collectorConfig = strings.ReplaceAll(collectorConfig, "&#34;", "\"")
-
-	collector := otalpha1.OpenTelemetryCollector{
-		Spec: otalpha1.OpenTelemetryCollectorSpec{
-			Config:         collectorConfig,
-			ServiceAccount: collectorServiceAccount,
+	collector := otalv1.OpenTelemetryCollector{
+		Spec: otalv1.OpenTelemetryCollectorSpec{
+			OpenTelemetryCommonFields: otalv1.OpenTelemetryCommonFields{ServiceAccount: collectorServiceAccount},
+			Config:                    otalv1.Config{Processors: &processors, Service: service},
 		},
 	}
 	collector.Name = w.Spec.Name
 	collector.Namespace = w.Spec.Namespace
-	return collector, nil
+	return collector
 }
 
 func (w *Workload) GetDeployment() (*v1.Deployment, error) {
@@ -548,80 +509,60 @@ func (w *Workload) GetIngress() (*networkingv1.Ingress, error) {
 	return ret, nil
 }
 
-func (w *Workload) GetCollector() (otalpha1.OpenTelemetryCollector, error) {
-	collector, err := w.buildCollector()
-	if err != nil {
-		logger.Errorf("GetCollector buildCollector error: %v", err)
-		return collector, err
-	}
-	opts := metav1.GetOptions{}
+func (w *Workload) GetCollector() (otalv1.OpenTelemetryCollector, error) {
+	collector := otalv1.OpenTelemetryCollector{}
 	rsc := w.GetOtCollectorResource()
-	ret, err := rsc.Namespace(w.Spec.Namespace).Get(w.K8sCli.Ctx, collector.Name, opts)
+	ret, err := rsc.Namespace(w.Spec.Namespace).Get(w.K8sCli.Ctx, w.Spec.Name, metav1.GetOptions{})
 	if err != nil {
 		logger.Errorf("GetCollector Get error: %v", err)
 		return collector, err
 	}
-	mapstructure.Decode(ret.Object, &collector)
+	_ = mapstructure.Decode(ret.Object, &collector)
 	return collector, err
 }
 
-func (w *Workload) CreateCollector() (otalpha1.OpenTelemetryCollector, error) {
-	collector, err := w.buildCollector()
-	if err != nil {
-		logger.Errorf("CreateCollector buildCollector error: %v", err)
-		return collector, err
-	}
-	opts := metav1.CreateOptions{}
+func (w *Workload) CreateCollector() (otalv1.OpenTelemetryCollector, error) {
+	collector := w.buildCollector()
+
 	obj := w.buildCollectorUnstructued(collector)
 
 	rsc := w.GetOtCollectorResource()
-	ret, err := rsc.Namespace(w.Spec.Namespace).Create(w.K8sCli.Ctx, &obj, opts)
+	ret, err := rsc.Namespace(w.Spec.Namespace).Create(w.K8sCli.Ctx, &obj, metav1.CreateOptions{})
 	if err != nil {
 		logger.Errorf("CreateCollector Create error: %v", err)
 		return collector, err
 	}
-	mapstructure.Decode(&ret.Object, &collector)
+	_ = mapstructure.Decode(&ret.Object, &collector)
 	return collector, err
 }
 
 func (w *Workload) DeleteCollector() error {
-	collector, err := w.buildCollector()
-	if err != nil {
-		logger.Errorf("DeleteCollector buildCollector error: %v", err)
-		return err
-	}
-	opts := metav1.DeleteOptions{}
-
 	rsc := w.GetOtCollectorResource()
-	if err := rsc.Namespace(w.Spec.Namespace).Delete(w.K8sCli.Ctx, collector.Name, opts); client.IgnoreNotFound(err) != nil {
+	if err := rsc.Namespace(w.Spec.Namespace).Delete(w.K8sCli.Ctx, w.Spec.Name, metav1.DeleteOptions{}); client.IgnoreNotFound(err) != nil {
 		return err
 	}
 	return nil
 }
 
-func (w *Workload) UpdateCollector() (otalpha1.OpenTelemetryCollector, error) {
-	collector, err := w.buildCollector()
-	if err != nil {
-		logger.Errorf("UpdateCollector buildCollector error: %v", err)
-		return collector, err
-	}
-	opts := metav1.UpdateOptions{}
+func (w *Workload) UpdateCollector() (otalv1.OpenTelemetryCollector, error) {
+	collector := w.buildCollector()
+
 	obj := w.buildCollectorUnstructued(collector)
 
 	rsc := w.GetOtCollectorResource()
-	ret, err := rsc.Namespace(w.Spec.Namespace).Update(w.K8sCli.Ctx, &obj, opts)
+	ret, err := rsc.Namespace(w.Spec.Namespace).Update(w.K8sCli.Ctx, &obj, metav1.UpdateOptions{})
 	if err != nil {
 		logger.Errorf("UpdateCollector Update error: %v", err)
 		return collector, err
 	}
-	mapstructure.Decode(&ret.Object, &collector)
+	_ = mapstructure.Decode(&ret.Object, &collector)
 	return collector, err
 }
 
-func (w *Workload) buildCollectorUnstructued(collector otalpha1.OpenTelemetryCollector) unstructured.Unstructured {
+func (w *Workload) buildCollectorUnstructued(collector otalv1.OpenTelemetryCollector) unstructured.Unstructured {
 	return unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "opentelemetry.io/v1alpha1",
+			"apiVersion": "opentelemetry.io/v1beta1",
 			"kind":       "OpenTelemetryCollector",
 			"metadata": map[string]interface{}{
 				"name":      collector.Name,
@@ -629,7 +570,50 @@ func (w *Workload) buildCollectorUnstructued(collector otalpha1.OpenTelemetryCol
 			},
 			"spec": map[string]interface{}{
 				"serviceAccount": collector.Spec.ServiceAccount,
-				"config":         collector.Spec.Config,
+				"config": map[string]interface{}{
+					"receivers": map[string]interface{}{
+						"otlp": map[string]interface{}{
+							"protocols": map[string]interface{}{
+								"grpc": map[string]interface{}{
+									"endpoint": "0.0.0.0:4317",
+								},
+								"http": map[string]interface{}{
+									"endpoint": "0.0.0.0:4318",
+								},
+							},
+						},
+						"prometheus": map[string]interface{}{
+							"config": map[string]interface{}{
+								"scrape_configs": []interface{}{
+									map[string]interface{}{
+										"job_name":        "enovaserving",
+										"scrape_interval": "5s",
+										"static_configs": []interface{}{
+											map[string]interface{}{
+												"targets": []string{fmt.Sprintf("%s-svc", w.Spec.Name) + ".emergingai.svc.cluster.local:9199"}},
+										},
+									},
+								},
+							},
+						},
+					},
+					"exporters": map[string]interface{}{
+						"kafka": map[string]interface{}{
+							"brokers":          w.Spec.Collector.Kafka.Brokers,
+							"topic":            "k8s-common-collector",
+							"protocol_version": "2.0.0",
+							"auth": map[string]interface{}{
+								"sasl": map[string]interface{}{
+									"mechanism": "PLAIN",
+									"username":  w.Spec.Collector.Kafka.Username,
+									"password":  w.Spec.Collector.Kafka.Password,
+								},
+							},
+						},
+					},
+					"processors": collector.Spec.Config.Processors,
+					"service":    collector.Spec.Config.Service,
+				},
 			},
 		},
 	}
@@ -638,7 +622,7 @@ func (w *Workload) buildCollectorUnstructued(collector otalpha1.OpenTelemetryCol
 func (w *Workload) GetOtCollectorResource() dynamic.NamespaceableResourceInterface {
 	gvr := schema.GroupVersionResource{
 		Group:    "opentelemetry.io",
-		Version:  "v1alpha1",
+		Version:  "v1beta1",
 		Resource: "opentelemetrycollectors",
 	}
 	return w.K8sCli.DynamicClient.Resource(gvr)
