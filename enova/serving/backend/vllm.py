@@ -29,6 +29,7 @@ class VllmBackend(BaseBackend):
             engine_model_config = asyncio.run(engine.get_model_config())
             max_model_len = engine_model_config.max_model_len
 
+            api_server.build_async_engine_client(engine_args)
             api_server.served_model = self.model
             api_server.engine = engine
             api_server.max_model_len = max_model_len
