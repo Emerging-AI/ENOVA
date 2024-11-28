@@ -342,6 +342,12 @@ func (w *Workload) buildDeployment() v1.Deployment {
 		Name:      "shm",
 		MountPath: "/dev/shm",
 	})
+	maxUnavailable := intstr.FromString("25%")
+	maxSurge := intstr.FromString("0")
+	deployment.Spec.Strategy = v1.DeploymentStrategy{
+		Type:          v1.RollingUpdateDeploymentStrategyType,
+		RollingUpdate: &v1.RollingUpdateDeployment{MaxUnavailable: &maxUnavailable, MaxSurge: &maxSurge},
+	}
 	deployment.Spec.Template.Spec.Volumes = volumes
 	deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumeMounts
 	if len(w.Spec.NodeSelector) > 0 {
