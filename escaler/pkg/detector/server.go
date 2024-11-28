@@ -102,6 +102,9 @@ func (r DeployResource) Post(c *gin.Context) {
 
 	logger.Infof("Get deployRequest: %v", deployRequest)
 	var taskSpec meta.TaskSpec
+	exporterServiceName := fmt.Sprintf("%s-%s-%s", config.GetEConfig().Serving.Name, deployRequest.ModelConfig.Llm.Framework, deployRequest.ModelConfig.Version)
+
+	var backendConfg meta.BackendConfig
 	if deployRequest.Backend == "vllm" {
 		var vllmConfig meta.VllmBackendConfig
 
@@ -115,31 +118,48 @@ func (r DeployResource) Post(c *gin.Context) {
 			logger.Errorf("encode VllmBackendConfig err: %v", err)
 			return
 		}
-		exporterServiceName := fmt.Sprintf("%s-%s-%s", config.GetEConfig().Serving.Name, deployRequest.ModelConfig.Llm.Framework, deployRequest.ModelConfig.Version)
+		backendConfg = &vllmConfig
 
-		taskSpec = meta.TaskSpec{
-			Name:                deployRequest.Name,
-			Model:               deployRequest.Model,
-			Host:                deployRequest.Host,
-			Port:                deployRequest.Port,
-			Backend:             deployRequest.Backend,
-			ExporterEndpoint:    deployRequest.ExporterEndpoint,
-			ExporterServiceName: exporterServiceName,
-			ModelConfig:         deployRequest.ModelConfig,
-			BackendConfig:       &vllmConfig,
-			BackendExtraConfig:  deployRequest.BackendExtraConfig,
-			Replica:             deployRequest.Replica,
-			Envs:                deployRequest.Envs,
-			Gpus:                "all",
-			Volumes:             deployRequest.Volumes,
-			Namespace:           deployRequest.Namespace,
-			NodeSelector:        deployRequest.NodeSelector,
-			Ingress:             deployRequest.Ingress,
-			Service:             deployRequest.Service,
-			Resources:           deployRequest.Resources,
-			ScalingStrategy:     deployRequest.ScalingStrategy,
-			Collector:           deployRequest.Collector,
+	} else if deployRequest.Backend == "sglang" {
+		var sglangConfig meta.SglangBackendConfig
+
+		resultData, err := json.Marshal(deployRequest.BackendConfig)
+		if err != nil {
+			logger.Errorf("encode deployRequest.BackendConfig err: %v", err)
+			return
 		}
+
+		if err := json.Unmarshal(resultData, &sglangConfig); err != nil {
+			logger.Errorf("encode SglangBackendConfig err: %v", err)
+			return
+		}
+		backendConfg = &sglangConfig
+	} else {
+		r.SetResult(c, "not supported backend")
+		return
+	}
+	taskSpec = meta.TaskSpec{
+		Name:                deployRequest.Name,
+		Model:               deployRequest.Model,
+		Host:                deployRequest.Host,
+		Port:                deployRequest.Port,
+		Backend:             deployRequest.Backend,
+		ExporterEndpoint:    deployRequest.ExporterEndpoint,
+		ExporterServiceName: exporterServiceName,
+		ModelConfig:         deployRequest.ModelConfig,
+		BackendConfig:       backendConfg,
+		BackendExtraConfig:  deployRequest.BackendExtraConfig,
+		Replica:             deployRequest.Replica,
+		Envs:                deployRequest.Envs,
+		Gpus:                "all",
+		Volumes:             deployRequest.Volumes,
+		Namespace:           deployRequest.Namespace,
+		NodeSelector:        deployRequest.NodeSelector,
+		Ingress:             deployRequest.Ingress,
+		Service:             deployRequest.Service,
+		Resources:           deployRequest.Resources,
+		ScalingStrategy:     deployRequest.ScalingStrategy,
+		Collector:           deployRequest.Collector,
 	}
 
 	if deployRequest.Image != "" {

@@ -3,8 +3,10 @@ import dataclasses
 import uvicorn
 from enova.common.logger import LOGGER
 from enova.server.restful.serializer import EmergingAIBaseModel
+from enova.serving.middlewares.cors import WSCORSMiddleware
 import pandas as pd
 from typing import Literal, Optional
+
 
 @dataclasses.dataclass
 class BaseBackend(metaclass=abc.ABCMeta):
@@ -22,6 +24,13 @@ class BaseBackend(metaclass=abc.ABCMeta):
 
     def _init_middlewares(self):
         """"""
+        self.app.add_middleware(
+            WSCORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     def _init_exception_handler(self):
         """"""

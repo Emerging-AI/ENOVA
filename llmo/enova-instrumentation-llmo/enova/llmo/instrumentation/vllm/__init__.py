@@ -6,7 +6,7 @@ from packaging import version
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.trace import get_tracer
-from vllm.model_executor.models import _MODELS
+from vllm.model_executor.models.registry import _VLLM_MODELS
 from wrapt import wrap_function_wrapper
 
 from .wrappers import forward_wrapper, llmengine_init_wrapper, statlogger_init_wrapper
@@ -59,7 +59,7 @@ class EnovaVllmInstrumentor(BaseInstrumentor):
     def _instrument(self, **kwargs):
         tracer = get_tracer(__name__)
 
-        for model_name, (sub_package, obj) in _MODELS.items():
+        for model_name, (sub_package, obj) in _VLLM_MODELS.items():
             package = f"vllm.model_executor.models.{sub_package}"
             wrapper_method = {"package": package, "object": obj, "method": "forward", "span_name": f"{obj}.forward", "wrapper": forward_wrapper}
             self._apply_trace_wrapper(tracer, wrapper_method)

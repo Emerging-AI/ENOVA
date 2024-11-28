@@ -15,5 +15,8 @@ COPY ./requirements-docker.txt /opt/enova/requirements.txt
 COPY ./requirements-docker-no-deps.txt /opt/enova/requirements-docker-no-deps.txt
 
 # RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple && \
-RUN pip install build && \
-    pip install -r /opt/enova/requirements.txt && pip install -r /opt/enova/requirements-docker-no-deps.txt --no-deps
+RUN pip install build --no-cache-dir && \
+    pip install pip setuptools setuptools_scm[toml]==7.1.0 toml poetry && \
+    pip install -r /opt/enova/requirements.txt --no-cache-dir && \
+    pip install flashinfer -i https://flashinfer.ai/whl/cu124/torch2.4 --no-deps --no-cache-dir && \
+    pip install -r /opt/enova/requirements-docker-no-deps.txt --no-deps --no-cache-dir

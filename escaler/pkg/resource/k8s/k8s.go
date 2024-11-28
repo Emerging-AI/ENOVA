@@ -3,12 +3,13 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
+
 	"github.com/Emerging-AI/ENOVA/escaler/pkg/config"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
-	"log"
-	"net/http"
 
 	rscutils "github.com/Emerging-AI/ENOVA/escaler/pkg/resource/utils"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -262,15 +263,18 @@ func (w *Workload) buildDeployment() v1.Deployment {
 	readinessProbe := corev1.Probe{}
 	probe := corev1.Probe{ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{Path: "/health",
 		Port: intstr.IntOrString{IntVal: int32(w.Spec.Port)}}}, InitialDelaySeconds: 30}
-	if w.Spec.Backend == "vllm" && !w.isCustomized() {
-		livenessProbe = probe
-		livenessProbe.FailureThreshold = 3
-		livenessProbe.InitialDelaySeconds = 60
-		livenessProbe.TimeoutSeconds = 5
-		readinessProbe = probe
-		readinessProbe.FailureThreshold = 3
-		readinessProbe.InitialDelaySeconds = 60
-		readinessProbe.TimeoutSeconds = 5
+	switch w.Spec.Backend {
+	case "vllm", "sglang":
+		if !w.isCustomized() {
+			livenessProbe = probe
+			livenessProbe.FailureThreshold = 3
+			livenessProbe.InitialDelaySeconds = 60
+			livenessProbe.TimeoutSeconds = 5
+			readinessProbe = probe
+			readinessProbe.FailureThreshold = 3
+			readinessProbe.InitialDelaySeconds = 60
+			readinessProbe.TimeoutSeconds = 5
+		}
 	}
 
 	// default mount ~/.cache to host data disk
@@ -484,6 +488,39 @@ func (w *Workload) buildCollector() otalv1.OpenTelemetryCollector {
 	},
 	}
 
+	serviceProcessors := []string{"attributes/metrics", "attributes/http", "batch"}
+	if w.Spec.Backend == "sglang" {
+		processors.Object["metricstransform"] = map[string]interface{}{
+			"transforms": []interface{}{
+				map[string]interface{}{
+					"action":     "update",
+					"include":    "^sglang:num_queue_reqs$$",
+					"match_type": "regexp",
+					"new_name":   "sglang:pending_requests",
+				},
+				map[string]interface{}{
+					"action":     "update",
+					"include":    "^sglang:num_running_reqs$$",
+					"match_type": "regexp",
+					"new_name":   "sglang:running_requests",
+				},
+				map[string]interface{}{
+					"action":     "update",
+					"include":    "^sglang:gen_throughput$$",
+					"match_type": "regexp",
+					"new_name":   "sglang:avg_generation_throughput",
+				},
+				map[string]interface{}{
+					"action":     "update",
+					"include":    "^sglang:(.*)$$",
+					"match_type": "regexp",
+					"new_name":   "vllm:$${1}]",
+				},
+			},
+		}
+		serviceProcessors = []string{"attributes/metrics", "attributes/http", "metricstransform", "batch"}
+	}
+
 	service := otalv1.Service{
 		Extensions: nil,
 		Telemetry:  nil,
@@ -495,7 +532,7 @@ func (w *Workload) buildCollector() otalv1.OpenTelemetryCollector {
 			},
 			"metrics": {
 				Receivers:  []string{"prometheus", "otlp"},
-				Processors: []string{"attributes/metrics", "attributes/http", "batch"},
+				Processors: serviceProcessors,
 				Exporters:  []string{"kafka"},
 			},
 		},

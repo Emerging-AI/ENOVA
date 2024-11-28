@@ -43,6 +43,12 @@ type VllmBackendConfig struct {
 	TrustRemoteCode      bool    `json:"trust_remote_code"`
 }
 
+type SglangBackendConfig struct {
+	TensorParallelSize int     `json:"tensor_parallel_size"`
+	MemFractionStatic  float32 `json:"mem_fraction_static"`
+	TrustRemoteCode    bool    `json:"trust_remote_code"`
+}
+
 func (v *VllmBackendConfig) Update(recommendResult api.ConfigRecommendResult) {
 	if v.MaxNumSeqs <= 0 {
 		v.MaxNumSeqs = recommendResult.MaxNumSeqs
@@ -52,6 +58,15 @@ func (v *VllmBackendConfig) Update(recommendResult api.ConfigRecommendResult) {
 	}
 	if v.GpuMemoryUtilization <= 0 {
 		v.GpuMemoryUtilization = recommendResult.GpuMemoryUtilization
+	}
+}
+
+func (v *SglangBackendConfig) Update(recommendResult api.ConfigRecommendResult) {
+	if v.TensorParallelSize <= 0 {
+		v.TensorParallelSize = recommendResult.TensorParallelSize
+	}
+	if v.MemFractionStatic <= 0 {
+		v.MemFractionStatic = recommendResult.GpuMemoryUtilization
 	}
 }
 
@@ -261,6 +276,12 @@ func (t *TaskSpec) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		backendConfig = &vllmConfig
+	case "sglang":
+		var sglangConfig SglangBackendConfig
+		if err := json.Unmarshal(aux.BackendConfig, &sglangConfig); err != nil {
+			return err
+		}
+		backendConfig = &sglangConfig
 	default:
 		return fmt.Errorf("unknown backend type: %s", t.Backend)
 	}

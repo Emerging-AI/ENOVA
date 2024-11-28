@@ -80,13 +80,6 @@ class VllmBackend(BaseBackend):
         LOGGER.info(f"CONFIG.vllm: {CONFIG.vllm}")
 
         self.app = api_server.app
-        self.app.add_middleware(
-            WSCORSMiddleware,
-            allow_origins=["*"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
         cur_app = api_server.app
 
         @cur_app.get("/v1/model/info/args")

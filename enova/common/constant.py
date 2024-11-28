@@ -10,6 +10,7 @@ class Enum(BaseEnum):
 class ServingBackend(Enum):
     HF = "hf"
     VLLM = "vllm"
+    SGLANG = "sglang"
 
 
 class HttpMethod(Enum):

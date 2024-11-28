@@ -3,6 +3,7 @@ from enova.common.constant import ServingBackend
 from enova.common.config import CONFIG
 from enova.serving.backend.transformers import TransformersBackend
 from enova.serving.backend.vllm import VllmBackend
+from enova.serving.backend.sglang import SglangBackend
 
 
 @dataclasses.dataclass
@@ -21,7 +22,10 @@ class EApiServer:
         self.backend_ins = None
 
     def get_backend_ins(self):
-        engine_map = {ServingBackend.HF.value: TransformersBackend, ServingBackend.VLLM.value: VllmBackend}
+        engine_map = {
+            ServingBackend.HF.value: TransformersBackend,
+            ServingBackend.VLLM.value: VllmBackend,
+            ServingBackend.SGLANG.value: SglangBackend}
         if self.backend not in engine_map:
             raise ValueError(f"serving.backend: {CONFIG.serving['backend']} is not in {ServingBackend.values()}")
         return engine_map[self.backend](self.backend, self.model)

@@ -39,30 +39,39 @@ func BuildCmdFromTaskSpec(spec meta.TaskSpec) []string {
 		cmd = append(cmd, "--exporter_endpoint", spec.ExporterEndpoint)
 	}
 
-	vllmBackendConfig, ok := spec.BackendConfig.(*meta.VllmBackendConfig)
+	switch spec.Backend {
+	case "vllm":
+		cmd = UpdateCmdByBackendConfig[*meta.VllmBackendConfig](cmd, spec)
+	case "sglang":
+		cmd = UpdateCmdByBackendConfig[*meta.SglangBackendConfig](cmd, spec)
+	}
+	// Add extra serving params
+	for k, v := range spec.BackendExtraConfig {
+		cmd = append(cmd, []string{fmt.Sprintf("--%s", k), fmt.Sprintf("%v", v)}...)
+	}
+	return cmd
+}
+
+func UpdateCmdByBackendConfig[B interface{}](cmd []string, spec meta.TaskSpec) []string {
+	backendConfig, ok := spec.BackendConfig.(B)
 	if ok {
-		jsonBytes, err := json.Marshal(vllmBackendConfig)
+		jsonBytes, err := json.Marshal(backendConfig)
 		if err != nil {
 
 		} else {
-			var vllmBackendConfigMap map[string]interface{}
-			err = json.Unmarshal(jsonBytes, &vllmBackendConfigMap)
+			var backendConfigMap map[string]interface{}
+			err = json.Unmarshal(jsonBytes, &backendConfigMap)
 			if err != nil {
 
 			} else {
 				// if there is not valid value, dont append to cmd params
-				for k, v := range vllmBackendConfigMap {
+				for k, v := range backendConfigMap {
 					if shouldAppend(v) {
 						cmd = append(cmd, []string{fmt.Sprintf("--%s", k), fmt.Sprintf("%v", v)}...)
 					}
 				}
 			}
-
 		}
-	}
-	// Add extra serving params
-	for k, v := range spec.BackendExtraConfig {
-		cmd = append(cmd, []string{fmt.Sprintf("--%s", k), fmt.Sprintf("%v", v)}...)
 	}
 	return cmd
 }
