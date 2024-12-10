@@ -62,10 +62,8 @@ func (w *Workload) CreateOrUpdate() {
 		if w.Spec.Annotations[annotationRestarted] != "" {
 			annotationsJSON, _ := json.Marshal(w.Spec.Annotations)
 			patchData := []byte(`[{"op": "replace", "path": "/spec/template/metadata/annotations", "value": ` + string(annotationsJSON) + ` }]`)
-			_, err := w.UpdateWorkloadWithPatch(patchData)
-			if err != nil {
-				return
-			}
+			_, _ = w.UpdateWorkloadWithPatch(patchData)
+			return
 		} else {
 			_, err := w.UpdateWorkload(dp)
 			if err != nil {
