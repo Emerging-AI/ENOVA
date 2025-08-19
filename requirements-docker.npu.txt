@@ -5,7 +5,7 @@ vllm-ascend==v0.10.0rc1
 # sglang==0.3.6
 huggingface_hub
 hf-transfer
-transformers==4.51.1
+transformers==4.53.2
 locate
 python-rapidjson
 opentelemetry-api==1.36.0
