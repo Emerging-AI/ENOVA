@@ -1,5 +1,6 @@
 httpx==0.24.1
 fastapi==0.115.0
+torch==2.7.1
 vllm==0.10.0
 vllm-ascend==v0.10.0rc1
 # sglang==0.3.6
