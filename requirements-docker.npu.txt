@@ -1,10 +1,9 @@
-httpx==0.24.1
-fastapi==0.115.0
-vllm==0.10.0
+# httpx==0.24.1
+# fastapi==0.115.0
+# vllm==0.10.0
 # sglang==0.3.6
-huggingface_hub
 hf-transfer
-transformers==4.53.2
+# transformers==4.53.2
 locate
 python-rapidjson
 opentelemetry-api==1.36.0
@@ -27,32 +26,10 @@ pytz
 tzlocal
 openai
 packaging
-ray
 python-multipart
 addict
 orjson
 siphash24
 uvloop
 qwen-vl-utils
-watchfiles
-# msgspec
-# compressed_tensors
-# gguf
-# sentencepiece
-# mistral_common
-
-# filelock
-# lm-format-enforcer==0.10.3
-# ninja
-# nvidia-ml-py
-# outlines
-# pillow
-# prometheus-client
-# prometheus-fastapi-instrumentator
-# psutil
-# sentencepiece
-# tiktoken
-# tokenizers
-# typing-extensions
-# vllm-flash-attn==2.5.9.post1
-# xformers==0.0.27
+swanlab

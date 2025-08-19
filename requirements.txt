@@ -1,13 +1,50 @@
+# httpx==0.24.1
+# fastapi==0.108.0
+# huggingface_hub
+# hf-transfer
+# transformers
+# locate
+# python-rapidjson
+# opentelemetry-api
+# opentelemetry-sdk
+# opentelemetry-exporter-otlp
+# opentelemetry-distro
+# opentelemetry-instrumentation-fastapi
+# streamlit
+# pymysql==1.1.0
+# aiomysql==0.2.0
+# sqlalchemy==2.0.29
+# sqlalchemy-utils
+# aiosqlite
+# greenlet
+# uvicorn
+# ulid-py
+# pyopencl
+# py-cpuinfo
+# pytz
+# tzlocal
+# openai
+# packaging
+# ray
+# enova-instrumentation-llmo==0.1.0
+# addict
+# sglang==0.3.6
+# python-multipart
+# orjson
+# siphash24
+# swanlab
 httpx==0.24.1
-fastapi==0.108.0
+fastapi==0.115.0
+vllm==0.10.0
+# sglang==0.3.6
 huggingface_hub
 hf-transfer
-transformers
+transformers==4.53.2
 locate
 python-rapidjson
-opentelemetry-api
-opentelemetry-sdk
-opentelemetry-exporter-otlp
+opentelemetry-api==1.36.0
+opentelemetry-sdk==1.36.0
+opentelemetry-exporter-otlp==1.36.0
 opentelemetry-distro
 opentelemetry-instrumentation-fastapi
 streamlit
@@ -19,16 +56,18 @@ aiosqlite
 greenlet
 uvicorn
 ulid-py
-pyopencl
-py-cpuinfo
+# pyopencl
+# py-cpuinfo
 pytz
 tzlocal
 openai
 packaging
 ray
-enova-instrumentation-llmo==0.1.0
-addict
-sglang==0.3.6
 python-multipart
+addict
 orjson
 siphash24
+uvloop
+qwen-vl-utils
+watchfiles
+swanlab
