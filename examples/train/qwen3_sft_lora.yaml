@@ -6,13 +6,14 @@ trust_remote_code: true
 stage: sft
 do_train: true
 finetuning_type: lora
-lora_rank: 8
+lora_rank: 4
 lora_target: all
+deepspeed: deepspeed/ds_z3_config.json  # choices: [ds_z0_config.json, ds_z2_config.json, ds_z3_config.json]
 
 ### dataset
 dataset: my_dataset
-template: qwen2
-cutoff_len: 2048
+template: qwen
+cutoff_len: 1024
 max_samples: 1000
 overwrite_cache: true
 preprocessing_num_workers: 8
@@ -24,8 +25,9 @@ logging_steps: 10
 save_steps: 20
 plot_loss: true
 overwrite_output_dir: true
-save_only_model: false
-report_to: swanlab  # <-- 就是这一行，从 none/tensorboard 改成 swanlab
+save_only_model: true
+report_to: tensorboard  # <-- 就是这一行，从 none/tensorboard 改成 swanlab
+logging_dir: saves/tensorboard/qwen3/sft
 
 ### train
 per_device_train_batch_size: 1
@@ -34,10 +36,9 @@ learning_rate: 1.0e-4
 num_train_epochs: 3.0
 lr_scheduler_type: cosine
 warmup_ratio: 0.1
-bf16: true
 ddp_timeout: 180000000
 resume_from_checkpoint: null
-num_train_epochs: 3.0
+bf16: true
 
 ### eval
 # eval_dataset: alpaca_en_demo
