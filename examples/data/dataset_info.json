@@ -1,0 +1,9 @@
+{
+    "my_dataset": {
+        "file_name": "train.jsonl",
+        "columns": {
+            "question": "instruction",
+            "answer": "output"
+        }
+    }
+}

@@ -1,29 +1,25 @@
 # image enova:base
 FROM nvcr.io/nvidia/pytorch:24.07-py3
 
-RUN apt update && apt install -y \
-    net-tools \
-    ocl-icd-libopencl1 \
-    opencl-headers \
-    clinfo
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN mkdir -p /etc/OpenCL/vendors && \
-    echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd && \
-    mkdir -p /opt/enova
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gcc \
+        g++ \
+        cmake \
+        libnuma-dev \
+        wget \
+        git \
+        net-tools \
+        ocl-icd-libopencl1 \
+        opencl-headers \
+        clinfo && \
+    rm -rf /var/lib/apt/lists/*
 
-COPY ./requirements-docker.txt /opt/enova/requirements.txt
-COPY ./requirements-docker-no-deps.txt /opt/enova/requirements-docker-no-deps.txt
+COPY ./requirements-docker.npu.txt /opt/enova/requirements.txt
 
-RUN export https_proxy=http://192.168.3.2:7892 && export http_proxy=http://192.168.3.2:7892 && \
-    pip install flashinfer-python -i https://flashinfer.ai/whl/cu124/torch2.6 --no-deps --no-cache-dir
 RUN pip install build --no-cache-dir && \
-    pip install pip setuptools setuptools_scm[toml]==7.1.0 toml poetry && \
-    pip install -r /opt/enova/requirements.txt --no-cache-dir && \
-    pip install -r /opt/enova/requirements-docker-no-deps.txt --no-deps --no-cache-dir
+    pip install pip setuptools setuptools_scm[toml]==8.3.1 toml poetry && \
+    pip install -r /opt/enova/requirements.txt --no-cache-dir
 
-RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple && \
-    pip install build --no-cache-dir && \
-    pip install pip setuptools setuptools_scm[toml]==7.1.0 toml poetry --index-url https://mirrors.aliyun.com/pypi/simple --trusted-host mirrors.aliyun.com && \
-    pip install -r /opt/enova/requirements.txt --no-cache-dir --index-url https://mirrors.aliyun.com/pypi/simple --trusted-host mirrors.aliyun.com && \
-    pip install -r /opt/enova/requirements-docker-no-deps.txt --no-deps --no-cache-dir --index-url https://mirrors.aliyun.com/pypi/simple --trusted-host mirrors.aliyun.com 
-    
