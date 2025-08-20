@@ -1,0 +1,26 @@
+# image enova:base-npu
+# FROM ascendai/cann:8.2.rc1-910b-ubuntu22.04-py3.11
+FROM quay.io/ascend/vllm-ascend:v0.9.1rc1
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gcc \
+        g++ \
+        cmake \
+        libnuma-dev \
+        wget \
+        git \
+        net-tools \
+        ocl-icd-libopencl1 \
+        opencl-headers \
+        clinfo && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY ./requirements-docker.npu.txt /opt/enova/requirements.txt
+
+RUN pip install build --no-cache-dir && \
+    pip install pip setuptools setuptools_scm[toml]==8.3.1 toml poetry && \
+    pip install -r /opt/enova/requirements.txt --no-cache-dir
+
