@@ -8,7 +8,7 @@ from enova.entry.command.injector import injector_cli
 from enova.entry.command.mon import mon_cli
 from enova.entry.command.pilot import pilot_cli
 from enova.entry.command.webui import webui_cli
-from enova.entry.command.train import train_cli
+from enova.entry.command.model import model_cli
 
 
 @click.version_option(_get_pkg_version(), "--version", "-v")
@@ -39,7 +39,7 @@ def main():
     cli.add_command(injector_cli)
 
     cli.add_command(pilot_cli)  # all in one
-    cli.add_command(train_cli)  # train
+    cli.add_command(model_cli)  # train
     cli()
 
 
