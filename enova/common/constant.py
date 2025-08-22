@@ -87,3 +87,9 @@ class Distribution(Enum):
 class VllmMode(Enum):
     NORMAL = "normal"
     OPENAI = "openai"
+
+
+AUTH_USERID_HEADER = "UserId"
+AUTHORIZATION_HEADER = "Authorization"
+EMERGINGAI_LANGUAGE = "lang"
+AUTH_ORGID_HEADER = "OrgId"

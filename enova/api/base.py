@@ -114,9 +114,7 @@ class ASyncAPI(metaclass=abc.ABCMeta):
         if headers is not None:
             actual_headers.update(headers)
         actual_url = self.url_builder(self.url, params or json_params)
-        LOGGER.info(
-            f"method: {self.method}, actual_url: {actual_url}, params: {params or json_params}, headers: {actual_headers}"
-        )
+        LOGGER.info(f"method: {self.method}, actual_url: {actual_url}, params: {params or json_params}, headers: {actual_headers}")
         response = await async_client.request(
             self.method,
             actual_url,
@@ -184,14 +182,10 @@ class ASyncRestfulAPI:
         return await inno_api(params, files=files, headers=headers, stream=stream, **kwargs)
 
     async def create(self, params, files=None, headers=None, stream=False, specific_resource=False, **kwargs):
-        return await self.request(
-            method=HttpMethod.POST.value, params=params, files=files, headers=headers, stream=stream, **kwargs
-        )
+        return await self.request(method=HttpMethod.POST.value, params=params, files=files, headers=headers, stream=stream, **kwargs)
 
     async def list(self, params, files=None, headers=None, stream=False, specific_resource=False, **kwargs):
-        return await self.request(
-            method=HttpMethod.GET.value, params=params, files=files, headers=headers, stream=stream, **kwargs
-        )
+        return await self.request(method=HttpMethod.GET.value, params=params, files=files, headers=headers, stream=stream, **kwargs)
 
     async def update(self, params, files=None, headers=None, stream=False, specific_resource=False, **kwargs):
         return await self.request(
@@ -229,12 +223,12 @@ class ASyncRestfulAPI:
 
 class ASyncEmergingaiAPI(ASyncAPI):
     def _process_repsonse(self, response):
-        if response.headers.get("content-type") == JSON_RESPONSE_HEADER:
+        if JSON_RESPONSE_HEADER in response.headers.get("content-type"):
             resp = response.json()
             if "code" not in resp:
                 raise EmergingaiAPIResponseError("passthrough api is not enova api")
             if resp["code"] == "0" or resp["code"] == 0:
-                return resp["result"]
+                return resp.get("result") or resp.get("data")
             LOGGER.error(f"api get error code, resp: {resp}")
             raise EmergingaiAPIResponseError(resp["message"], resp["code"])
         raise EmergingaiAPIResponseError("only support json respsonse")

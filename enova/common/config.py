@@ -77,6 +77,7 @@ class Config:
             "default_min_size": 1,
             "termination_grace_period_seconds": 30,
             "databases": {"default": {"database": "enova_database", "data_dir": "/tmp"}},
+            "data_service_host": "http://data-service-svc",
         },
         "logger": {
             "name": "server",

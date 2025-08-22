@@ -33,7 +33,7 @@ logging_dir: saves/tensorboard/qwen3/sft
 per_device_train_batch_size: 1
 gradient_accumulation_steps: 8
 learning_rate: 1.0e-4
-num_train_epochs: 3.0
+num_train_epochs: 1.0
 lr_scheduler_type: cosine
 warmup_ratio: 0.1
 ddp_timeout: 180000000
