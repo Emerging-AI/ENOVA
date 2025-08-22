@@ -27,9 +27,6 @@ DATASET_TYPE_ROW_PROCESS_MAP = {
 }
 
 
-
-
-
 def download_dataset(dataset_id_list: List[str]):
     """ """
     dataset_info = {}

@@ -17,8 +17,10 @@ class EnovaModel:
         from enova.train.finetune import train
 
         train(dataset_id_list, model, output_dir, **kwargs)
+
     def quantize(self):
         from enova.train.quant import quantize
+
         quantize()
 
 
@@ -54,6 +56,7 @@ def train(
         **parse_extra_args(ctx),
     )
 
+
 @model_cli.command(name="quant", context_settings=CONFIG.cli["subcmd_context_settings"])
 @click.option("--model", type=str, required=True)
 @click.option("--output_dir", type=str, required=True)
@@ -62,7 +65,6 @@ def train(
 def quant(
     ctx,
     enova_model,
-    dataset_ids,
     model,
     output_dir,
 ):
