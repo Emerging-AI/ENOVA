@@ -18,6 +18,11 @@ class EnovaModel:
 
         train(dataset_id_list, model, output_dir, **kwargs)
 
+    def quantize(self):
+        from enova.train.quant import quantize
+
+        quantize()
+
 
 @click.group(name="model")
 @click.pass_context
@@ -46,6 +51,24 @@ def train(
 ):
     enova_model.train(
         dataset_id_list=dataset_ids.split(","),
+        model=model,
+        output_dir=output_dir,
+        **parse_extra_args(ctx),
+    )
+
+
+@model_cli.command(name="quant", context_settings=CONFIG.cli["subcmd_context_settings"])
+@click.option("--model", type=str, required=True)
+@click.option("--output_dir", type=str, required=True)
+@pass_enova_model
+@click.pass_context
+def quant(
+    ctx,
+    enova_model,
+    model,
+    output_dir,
+):
+    enova_model.quantize(
         model=model,
         output_dir=output_dir,
         **parse_extra_args(ctx),

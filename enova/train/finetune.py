@@ -6,6 +6,8 @@ import json
 from sqlalchemy import text
 from enova.api.data_api import get_datasets
 from enova.database.relation.transaction.session import db_router, PostgresqlEngine, get_session
+from enova.train.common import setup_deepspeed_config
+from enova.train.serializer import FineTuningConfig
 
 
 def process_qa_data(row):
@@ -23,32 +25,6 @@ def process_qa_data(row):
 DATASET_TYPE_ROW_PROCESS_MAP = {
     "qa": process_qa_data,
 }
-
-
-def setup_deepspeed_config():
-    deepspeed_config = {
-        "train_batch_size": "auto",
-        "train_micro_batch_size_per_gpu": "auto",
-        "gradient_accumulation_steps": "auto",
-        "gradient_clipping": "auto",
-        "zero_allow_untested_optimizer": True,
-        "fp16": {"enabled": "auto", "loss_scale": 0, "loss_scale_window": 1000, "initial_scale_power": 16, "hysteresis": 2, "min_loss_scale": 1},
-        "bf16": {"enabled": "auto"},
-        "zero_optimization": {
-            "stage": 3,
-            "overlap_comm": False,
-            "contiguous_gradients": True,
-            "sub_group_size": 1e9,
-            "reduce_bucket_size": "auto",
-            "stage3_prefetch_bucket_size": "auto",
-            "stage3_param_persistence_threshold": "auto",
-            "stage3_max_live_parameters": 1e9,
-            "stage3_max_reuse_distance": 1e9,
-            "stage3_gather_16bit_weights_on_model_save": True,
-        },
-    }
-    with open("conf/deepspeed_config.json", "w", encoding="utf-8") as f:
-        json.dump(deepspeed_config, f, indent=4, ensure_ascii=False)
 
 
 def download_dataset(dataset_id_list: List[str]):
@@ -76,44 +52,20 @@ def download_dataset(dataset_id_list: List[str]):
 
 
 def setup_train_config(dataset_id_list: List[str], model, output_dir, **kwargs):
-    base_config = {
-        "model_name_or_path": model,
-        "trust_remote_code": True,
-        # method
-        "stage": "sft",
-        "do_train": True,
-        "finetuning_type": "lora",
-        "lora_rank": 4,
-        "lora_target": "all",
-        "deepspeed": "config/deepspeed_config.json",
-        # dataset
-        "dataset": ",".join(dataset_id_list),
-        "template": "qwen",
-        "cutoff_len": 1024,
-        "max_samples": 1000,
-        "overwrite_cache": True,
-        "preprocessing_num_workers": 8,
-        "dataloader_num_workers": 4,
-        # output
-        "output_dir": "saves/lora/sft",
-        "logging_steps": 10,
-        "save_steps": 20,
-        "plot_loss": True,
-        "overwrite_output_dir": True,
-        "save_only_model": True,
-        "report_to": "tensorboard",
-        "logging_dir": "saves/tensorboard/qwen3/sft",
-        # train
-        "per_device_train_batch_size": 1,
-        "gradient_accumulation_steps": 8,
-        "learning_rate": 0.0001,
-        "num_train_epochs": 1.0,
-        "lr_scheduler_type": "cosine",
-        "warmup_ratio": 0.1,
-        "ddp_timeout": 180000000,
-        "resume_from_checkpoint": None,
-        "bf16": True,
-    }
+    base_config = FineTuningConfig(
+        stage="sft",
+        truct_remote_code=True,
+        model_name_or_path=model,
+        dataset=",".join(dataset_id_list),
+        output_dir="saves/lora/sft",
+        logging_steps=10,
+        save_steps=20,
+        plot_loss=True,
+        overwrite_output_dir=True,
+        save_only_model=True,
+        report_to="tensorboard",
+        logging_dir="saves/tensorboard/qwen3/sft",
+    )
     base_config.update(kwargs)
     with open("conf/finetune.yaml", "w") as f:
         yaml_output_str = yaml.dump(base_config, default_flow_style=False)
