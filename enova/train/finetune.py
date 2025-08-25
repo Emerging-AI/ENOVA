@@ -1,3 +1,15 @@
+import sys
+from enova.common.logger import LOGGER
+
+
+def mock_sys_exit(*args, **kwargs):
+    LOGGER.info(f"mock sys.exit called with args: {args}, kwargs: {kwargs}")
+
+
+sys_exit = sys.exit
+sys.exit = mock_sys_exit
+
+
 import os
 from typing import List
 import sys
@@ -85,7 +97,7 @@ def setup_train_config(dataset_id_list: List[str], model, output_dir, **kwargs):
         "finetuning_type": "lora",
         "lora_rank": 4,
         "lora_target": "all",
-        "deepspeed": "config/deepspeed_config.json",
+        "deepspeed": "conf/deepspeed_config.json",
         # dataset
         "dataset": ",".join(dataset_id_list),
         "template": "qwen",
@@ -120,7 +132,7 @@ def setup_train_config(dataset_id_list: List[str], model, output_dir, **kwargs):
         f.write(yaml_output_str)
 
 
-def setup_merge_lora_config(model, output_dir):
+def setup_merge_lora_config(model, output_dir, **kwargs):
     base_config = {
         "model_name_or_path": model,
         "adapter_name_or_path": "saves/lora/sft",
@@ -128,7 +140,7 @@ def setup_merge_lora_config(model, output_dir):
         "trust_remote_code": True,
         "export_dir": output_dir,
         "export_size": 5,
-        "export_device": "auto",
+        "export_device": "cpu",
         "export_legacy_format": False,
     }
     with open("conf/merge_lora.yaml", "w") as f:

@@ -17,7 +17,7 @@ class _DataServiceApi:
 
     def get_headers(self):
         # todo: 从前端获取
-        if CONFIG.api["model_service_token"]:
+        if CONFIG.api.get("model_service_token"):
             return {AUTHORIZATION_HEADER: f"Bearer {CONFIG.api['model_service_token']}"}
         return {}
 
