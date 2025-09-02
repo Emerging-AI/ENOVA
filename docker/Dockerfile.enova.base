@@ -17,7 +17,7 @@ RUN apt-get update && \
         clinfo && \
     rm -rf /var/lib/apt/lists/*
 
-COPY ./requirements-docker.npu.txt /opt/enova/requirements.txt
+COPY ./requirements-docker.txt /opt/enova/requirements.txt
 
 RUN pip install build --no-cache-dir && \
     pip install pip setuptools setuptools_scm[toml]==8.3.1 toml poetry && \

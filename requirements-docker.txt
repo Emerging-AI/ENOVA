@@ -1,7 +1,7 @@
 httpx==0.24.1
-fastapi==0.115.0
-vllm==0.8.5.post1
-sglang==0.3.6
+# fastapi==0.115.0
+vllm==0.10.0
+# sglang==0.3.6
 huggingface_hub
 hf-transfer
 transformers
