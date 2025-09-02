@@ -28,7 +28,7 @@ def process_qa_data(row):
 
     return {
         "question": row["question"],
-        "answer": row["selected_answer"],
+        "answer": row["selected_answer"] or row["answers"][0],
         "history": [],
     }
 
