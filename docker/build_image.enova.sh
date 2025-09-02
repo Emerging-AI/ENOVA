@@ -13,15 +13,15 @@ BASEDIR=$(dirname "$BASEDIR")
 echo "BASEDIR: " ${BASEDIR}
 
 # build front
-cd $BASEDIR/front
-rm $BASEDIR/enova/web_statics -rf
-npm install
-npm run build
+# cd $BASEDIR/front
+# rm $BASEDIR/enova/web_statics -rf
+# npm install
+# npm run build
 # yarn
 # yarn build
 
-echo $BASEDIR/front/dist $BASEDIR/enova/web_statics
-mv $BASEDIR/front/dist $BASEDIR/enova/web_statics
+# echo $BASEDIR/front/dist $BASEDIR/enova/web_statics
+# mv $BASEDIR/front/dist $BASEDIR/enova/web_statics
 
 export HARBOR_PATH=emergingai
 
