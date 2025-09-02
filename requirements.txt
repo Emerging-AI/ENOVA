@@ -70,4 +70,4 @@ siphash24
 uvloop
 qwen-vl-utils
 watchfiles
-
+tokenizer==0.21
