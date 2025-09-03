@@ -1,3 +1,7 @@
 psycopg2-binary
 hjson
 llmcompressor
+loguru
+accelerate==1.10.0
+compressed-tensors==0.11.0
+datasets==4.0.0

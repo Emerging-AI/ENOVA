@@ -1,19 +1,13 @@
 import os
-import sys
-from enova.common.logger import LOGGER
-
-
-def mock_sys_exit(*args, **kwargs):
-    LOGGER.info(f"mock sys.exit called with args: {args}, kwargs: {kwargs}")
-
-
-sys_exit = sys.exit
-sys.exit = mock_sys_exit
-import json
 import yaml
+import json
 from typing import List
+from datasets import Dataset
+from transformers import AutoTokenizer
+from llmcompressor.modifiers.awq import AWQModifier
+from llmcompressor import oneshot
 from sqlalchemy import text
-from enova.train.dataset import download_dataset
+
 from enova.api.data_api import get_datasets
 from enova.database.relation.transaction.session import db_router, PostgresqlEngine, get_session
 
@@ -22,7 +16,12 @@ def process_qa_data(row):
     """
     question, answers, selected_answer
     """
-    return [{"role": "user", "content": row["question"]}, {"role": "assistant", "content": row["selected_answer"] or row["answers"][0]}]
+
+    return {
+        "question": row["question"],
+        "answer": row["selected_answer"] or row["answers"][0],
+        "history": [],
+    }
 
 
 DATASET_TYPE_ROW_PROCESS_MAP = {
@@ -32,23 +31,31 @@ DATASET_TYPE_ROW_PROCESS_MAP = {
 
 def download_dataset(dataset_id_list: List[str]) -> List:
     """ """
-    dataset_filename = "quant_data.jsonl"
+    dataset_filename = "quant_data.json"
     datasets = get_datasets(dataset_id_list)
     data_list = []
-    with open(f"data/{dataset_filename}", "w", encoding="utf-8") as f:
-        for dataset in datasets:
-            data_list = []
-            dataset_id = dataset["dataset_id"]
-            if dataset["dataset_storage"][0]["storage_type"] == "pgsql":
-                pg_engine = PostgresqlEngine(dataset["dataset_storage"][0]["storage_detail_config"])
-                db_router.set_custom_db_engine(dataset_id, pg_engine)
-                table_name = dataset["dataset_storage"][0]["storage_detail_config"]["table_name"]
-                with get_session(dataset_id) as session:
-                    for row in session.execute(text(f'select * from "{table_name}"')):
-                        row_dct = row._mapping
-                        data_list.append(DATASET_TYPE_ROW_PROCESS_MAP[dataset["dataset_type"]](row_dct))
+    if not os.path.exists(f"data/{dataset_filename}"):
+        with open(f"data/{dataset_filename}", "w", encoding="utf-8") as f:
+            for dataset in datasets:
+                data_list = []
+                dataset_id = dataset["dataset_id"]
+                if dataset["dataset_storage"][0]["storage_type"] == "pgsql":
+                    pg_engine = PostgresqlEngine(dataset["dataset_storage"][0]["storage_detail_config"])
+                    db_router.set_custom_db_engine(dataset_id, pg_engine)
+                    table_name = dataset["dataset_storage"][0]["storage_detail_config"]["table_name"]
+                    with get_session(dataset_id) as session:
+                        for row in session.execute(text(f'select * from "{table_name}"')):
+                            row_dct = row._mapping
+                            data_list.append(DATASET_TYPE_ROW_PROCESS_MAP[dataset["dataset_type"]](row_dct))
 
-    return data_list
+        with open(f"data/{dataset_filename}", "w", encoding="utf-8") as f:
+            json.dump(data_list, f, indent=4, ensure_ascii=False)
+    else:
+        with open(f"data/{dataset_filename}", "r", encoding="utf-8") as f:
+            data_list = json.load(f)
+    ds = Dataset.from_list(data_list)
+    ds = ds.shuffle()
+    return ds
 
 
 def setup_train_config(dataset_id_list: List[str], model, output_dir, **kwargs):
@@ -98,29 +105,7 @@ def setup_train_config(dataset_id_list: List[str], model, output_dir, **kwargs):
         f.write(yaml_output_str)
 
 
-def setup_quant_config(model, output_dir, export_quantization_bit, **kwargs):
-
-    base_config = {
-        "model_name_or_path": model,
-        "export_dir": output_dir,
-        "export_quantization_bit": export_quantization_bit,
-        "export_quantization_dataset": "data/quant_data.jsonl" ** kwargs,
-    }
-
-    with open("conf/quant.yaml", "w") as f:
-        yaml_output_str = yaml.dump(base_config, default_flow_style=False)
-        f.write(yaml_output_str)
-
-
-# def export_model_by_llamafactory():
-#     """"""
-#     from llamafactory.cli import main
-
-#     sys.argv = ["llamafactory-cli", "export", "conf/quant.yaml"]
-#     main()
-
-
-def quantize(model, dataset_id_list, output_dir, quantization_bit=4, **kwargs):
+def quantize(model, dataset_id_list, output_dir, quantization_method="awq", **kwargs):
     """ """
     os.makedirs("conf", exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
@@ -128,29 +113,19 @@ def quantize(model, dataset_id_list, output_dir, quantization_bit=4, **kwargs):
     os.makedirs("saves", exist_ok=True)
     dataset = download_dataset(dataset_id_list)
 
-    # quant_config = {"zero_point": True, "q_group_size": 128, "w_bit": quantization_bit, "version": "GEMM"}
-
-    # # 加载模型
-    # model = AutoAWQForCausalLM.from_pretrained(model, device_map="auto", safetensors=True)
     tokenizer = AutoTokenizer.from_pretrained(model)
-    data = []
-    for msg in dataset:
-        text = tokenizer.apply_chat_template(msg, tokenize=False, add_generation_prompt=False)
-        data.append(text.strip())
-    # # 开始量化
-    # model.quantize(tokenizer, quant_config=quant_config, calib_data=data, max_calib_seq_len=256)
-    # # 保存量化后的模型和分词器
-    # model.save_quantized(output_dir, safetensors=True, shard_size="4GB")
 
-    from transformers import AutoTokenizer
+    def preprocess(msg):
+        return {
+            "text": tokenizer.apply_chat_template(
+                [{"role": "user", "content": msg["question"]}, {"role": "assistant", "content": msg["answer"]}],
+                tokenize=False,
+                add_generation_prompt=False,
+            )
+        }
 
-    from llmcompressor.modifiers.awq import AWQModifier
-    from llmcompressor import oneshot
+    dataset = dataset.map(preprocess)
 
-    # Select quantization algorithm. In this case, we:
-    #   * apply SmoothQuant to make the activations easier to quantize
-    #   * quantize the weights to int8 with GPTQ (static per channel)
-    #   * quantize the activations to int8 (dynamic per token)
     recipe = [
         AWQModifier(
             ignore=["lm_head", "re:.*mlp.gate$", "re:.*mlp.shared_expert_gate$"],
@@ -163,8 +138,8 @@ def quantize(model, dataset_id_list, output_dir, quantization_bit=4, **kwargs):
     oneshot(
         model=model,
         output_dir=output_dir,
-        dataset=data,
+        dataset=dataset,
         recipe=recipe,
         max_seq_length=kwargs.get("max_seq_length", 512),
-        num_calibration_samples=kwargs.get("num_calibration_samples", min(512, len(data))),
+        num_calibration_samples=kwargs.get("num_calibration_samples", min(512, dataset.num_rows)),
     )
