@@ -18,10 +18,10 @@ class EnovaModel:
 
         train(dataset_id_list, model, output_dir, **kwargs)
 
-    def quantize(self, dataset_id_list, model, output_dir, export_quantization_bit, **kwargs):
+    def quantize(self, dataset_id_list, model, output_dir, quantization_bit, **kwargs):
         from enova.train.quant import quantize
 
-        quantize(model, dataset_id_list, output_dir, export_quantization_bit, **kwargs)
+        quantize(model, dataset_id_list, output_dir, quantization_bit, **kwargs)
 
 
 @click.group(name="model")
@@ -61,7 +61,7 @@ def train(
 @click.option("--dataset_ids", type=str, help="Comma-separated list of dataset IDs", required=True)
 @click.option("--model", type=str, required=True)
 @click.option("--output_dir", type=str, required=True)
-@click.option("--export_quantization_bit", type=int, required=True)
+@click.option("--quantization_bit", type=int, required=True)
 @pass_enova_model
 @click.pass_context
 def quant(
@@ -70,12 +70,12 @@ def quant(
     dataset_ids,
     model,
     output_dir,
-    export_quantization_bit,
+    quantization_bit,
 ):
     enova_model.quantize(
         dataset_id_list=dataset_ids.split(","),
         model=model,
         output_dir=output_dir,
-        export_quantization_bit=export_quantization_bit,
+        quantization_bit=quantization_bit,
         **parse_extra_args(ctx),
     )

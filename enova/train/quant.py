@@ -13,8 +13,6 @@ import json
 import yaml
 from typing import List
 from sqlalchemy import text
-from autoawq import AutoAWQForCausalLM, AutoTokenizer
-from enova.train.common import setup_deepspeed_config
 from enova.train.dataset import download_dataset
 from enova.api.data_api import get_datasets
 from enova.database.relation.transaction.session import db_router, PostgresqlEngine, get_session
@@ -130,16 +128,43 @@ def quantize(model, dataset_id_list, output_dir, quantization_bit=4, **kwargs):
     os.makedirs("saves", exist_ok=True)
     dataset = download_dataset(dataset_id_list)
 
-    quant_config = {"zero_point": True, "q_group_size": 128, "w_bit": quantization_bit, "version": "GEMM"}
+    # quant_config = {"zero_point": True, "q_group_size": 128, "w_bit": quantization_bit, "version": "GEMM"}
 
-    # 加载模型
-    model = AutoAWQForCausalLM.from_pretrained(model, device_map="auto", safetensors=True)
+    # # 加载模型
+    # model = AutoAWQForCausalLM.from_pretrained(model, device_map="auto", safetensors=True)
     tokenizer = AutoTokenizer.from_pretrained(model)
     data = []
     for msg in dataset:
         text = tokenizer.apply_chat_template(msg, tokenize=False, add_generation_prompt=False)
         data.append(text.strip())
-    # 开始量化
-    model.quantize(tokenizer, quant_config=quant_config, calib_data=data, max_calib_seq_len=256)
-    # 保存量化后的模型和分词器
-    model.save_quantized(output_dir, safetensors=True, shard_size="4GB")
+    # # 开始量化
+    # model.quantize(tokenizer, quant_config=quant_config, calib_data=data, max_calib_seq_len=256)
+    # # 保存量化后的模型和分词器
+    # model.save_quantized(output_dir, safetensors=True, shard_size="4GB")
+
+    from transformers import AutoTokenizer
+
+    from llmcompressor.modifiers.awq import AWQModifier
+    from llmcompressor import oneshot
+
+    # Select quantization algorithm. In this case, we:
+    #   * apply SmoothQuant to make the activations easier to quantize
+    #   * quantize the weights to int8 with GPTQ (static per channel)
+    #   * quantize the activations to int8 (dynamic per token)
+    recipe = [
+        AWQModifier(
+            ignore=["lm_head", "re:.*mlp.gate$", "re:.*mlp.shared_expert_gate$"],
+            scheme="W4A16",
+            targets=["Linear"],
+        ),
+    ]
+
+    # Apply algorithms.
+    oneshot(
+        model=model,
+        output_dir=output_dir,
+        dataset=data,
+        recipe=recipe,
+        max_seq_length=kwargs.get("max_seq_length", 512),
+        num_calibration_samples=kwargs.get("num_calibration_samples", min(512, len(data))),
+    )
