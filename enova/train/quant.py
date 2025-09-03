@@ -127,11 +127,7 @@ def quantize(model, dataset_id_list, output_dir, quantization_method="awq", **kw
     dataset = dataset.map(preprocess)
 
     recipe = [
-        AWQModifier(
-            ignore=["lm_head", "re:.*mlp.gate$", "re:.*mlp.shared_expert_gate$"],
-            scheme="W4A16",
-            targets=["Linear"],
-        ),
+        AWQModifier(ignore=["lm_head"], scheme="W4A16_ASYM", targets=["Linear"]),
     ]
 
     # Apply algorithms.
@@ -140,6 +136,5 @@ def quantize(model, dataset_id_list, output_dir, quantization_method="awq", **kw
         output_dir=output_dir,
         dataset=dataset,
         recipe=recipe,
-        max_seq_length=kwargs.get("max_seq_length", 512),
-        num_calibration_samples=kwargs.get("num_calibration_samples", min(512, dataset.num_rows)),
+        num_calibration_samples=kwargs.get("num_calibration_samples", min(128, dataset.num_rows)),
     )
