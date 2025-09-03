@@ -328,6 +328,33 @@ we also created the corresponding indicator dashboard in Grafana and supported v
 </p>
 
 
+## Finetune
+```
+finetuning_type: lora
+lora_rank: 8
+lora_target: all
+lora_alpha: null
+lora_dropout: 0.0
+learning_rate: 1.0e-4
+num_train_epochs: 3.0
+lr_scheduler_type: cosine  # LINEAR = "linear"
+    COSINE = "cosine"
+    COSINE_WITH_RESTARTS = "cosine_with_restarts"
+    POLYNOMIAL = "polynomial"
+    CONSTANT = "constant"
+    CONSTANT_WITH_WARMUP = "constant_with_warmup"
+    INVERSE_SQRT = "inverse_sqrt"
+    REDUCE_ON_PLATEAU = "reduce_lr_on_plateau"
+    COSINE_WITH_MIN_LR = "cosine_with_min_lr"
+    WARMUP_STABLE_DECAY = "warmup_stable_decay"
+warmup_ratio: 0.1
+bf16: true
+max_length: null
+warmup_steps: 50
+train_batch_size: auto
+```
+
+
 ## 📚 Reference
 
 ```text
