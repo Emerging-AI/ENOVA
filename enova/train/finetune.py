@@ -70,7 +70,7 @@ def setup_train_config(dataset_id_list: List[str], model, output_dir, **kwargs):
         "stage": "sft",
         "do_train": True,
         "finetuning_type": "lora",
-        "lora_rank": 4,
+        "lora_rank": 8,
         "lora_target": "all",
         "deepspeed": "conf/deepspeed_config.json",
         # dataset
@@ -142,7 +142,7 @@ def train(dataset_id_list, model, output_dir, **kwargs):
     os.makedirs("data", exist_ok=True)
     os.makedirs("saves", exist_ok=True)
     download_dataset(dataset_id_list)
-    setup_deepspeed_config()
+    setup_deepspeed_config(**kwargs)
     setup_train_config(dataset_id_list, model, output_dir, **kwargs)
     setup_merge_lora_config(model, output_dir)
     train_by_llamafactory()
