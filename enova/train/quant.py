@@ -11,6 +11,7 @@ from llmcompressor.modifiers.awq import AWQModifier
 from llmcompressor import oneshot
 from sqlalchemy import text
 import torch
+from enova.common.logger import LOGGER
 from enova.api.data_api import get_datasets
 from enova.database.relation.transaction.session import db_router, PostgresqlEngine, get_session
 
@@ -119,7 +120,6 @@ class SafeGenerator:
 
     @staticmethod
     def get_model_from_pretrained(model_path, **kwargs):
-        model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=False)
         try:
             model = AutoModelForCausalLM.from_pretrained(model_path, local_files_only=True, **kwargs)
         except EnvironmentError as env_err:
@@ -138,7 +138,6 @@ class SafeGenerator:
 
     @staticmethod
     def get_tokenizer_from_pretrained(model_path, **kwargs):
-        model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=False)
         try:
             tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True, **kwargs)
         except EnvironmentError as env_err:
@@ -396,18 +395,19 @@ def quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_met
         # return parser.parse_args()
         default_config = {
             "model_path": model,
+            "model_name": None,
             "save_directory": output_dir,
             "part_file_size": None,
             "calib_texts": None,
-            "calib_file": os.path.join(os.path.dirname(os.path.dirname(__file__)), "common", "teacher_qualification.jsonl"),
+            # "calib_file": os.path.join(os.path.dirname(os.path.dirname(__file__)), "common", "teacher_qualification.jsonl"),
             "w_bit": 8,
             "a_bit": 8,
             "disable_names": None,
-            "device_type": "CPU",  # 假设 CPU 是字符串常量
+            "device_type": NPU,
             "fraction": 0.01,
             "act_method": 1,
             "co_sparse": False,
-            "anti_method": "",
+            "anti_method": None,
             "disable_level": "L0",
             "do_smooth": False,
             "use_sigma": False,
@@ -422,7 +422,7 @@ def quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_met
             "open_outlier": True,
             "group_size": 64,
             "is_dynamic": False,
-            "model_type": "qwen2",
+            "model_type": "qwen3",
             "anti_calib_file": None,
             "disable_threshold": 0,
             "pdmix": False,
@@ -430,6 +430,8 @@ def quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_met
             "layer_count": 0,
             "mindie_format": False,
             "w_method": "MinMax",
+            "tokenizer_args": None,
+            "disable_last_linear": True,
         }
         default_config.update(kwargs)
         config = types.SimpleNamespace(**default_config)
@@ -503,7 +505,6 @@ def quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_met
                 is_dynamic=args.is_dynamic,
                 disable_last_linear=args.disable_last_linear,
                 w_method=args.w_method,
-                pdmix=args.pdmix,
             )
 
             if args.use_fa_quant:
@@ -527,22 +528,27 @@ def quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_met
             if tokenized_ant_calib_data is None:
                 tokenized_ant_calib_data = tokenized_data
 
-            if self.anti_outlier_config is not None:
-                if self.model_name == "baichuan":
-                    anti_outlier = AntiOutlier(
-                        self.model, calib_data=tokenized_ant_calib_data, cfg=self.anti_outlier_config, norm_class_name="RMSNorm"
-                    )
-                else:
-                    anti_outlier = AntiOutlier(self.model, calib_data=tokenized_ant_calib_data, cfg=self.anti_outlier_config)
-                anti_outlier.process()
+            # if self.anti_outlier_config is not None:
+            #     if self.model_name == "baichuan":
+            #         anti_outlier = AntiOutlier(
+            #             self.model, calib_data=tokenized_ant_calib_data, cfg=self.anti_outlier_config, norm_class_name="RMSNorm"
+            #         )
+            #     else:
+            #         anti_outlier = AntiOutlier(self.model, calib_data=tokenized_ant_calib_data, cfg=self.anti_outlier_config)
+            #     anti_outlier.process()
+            anti_config = AntiOutlierConfig(anti_method="m3", dev_type="npu", a_bit=16, w_bit=4, dev_id=rank, w_sym=True)
+            anti_outlier = AntiOutlier(self.model, calib_data=tokenized_data, cfg=anti_config)
+            anti_outlier.process()
 
             if not os.path.exists(save_path):
                 os.mkdir(save_path, mode=0o750)
-
             calibrator = Calibrator(self.model, self.quant_config, calib_data=tokenized_data, disable_level=disable_level)
+            LOGGER.info(f"Starting calibration run for {save_path}")
             calibrator.run()
-            save_type = "safe_tensor" if args.mindie_format else "ascendV1"
-            calibrator.save(save_path, save_type=[save_type], part_file_size=part_file_size)
+            LOGGER.info(f"Starting calibration save for {save_path}")
+            # save_type = "safe_tensor" if args.mindie_format else "ascendV1"
+            # calibrator.save(save_path, save_type=[save_type], part_file_size=part_file_size)
+            calibrator.save(save_path, safetensors_name=None, json_name=None, save_type=None, part_file_size=None)
 
     args = parse_arguments()
     checker = SafeGenerator()
@@ -556,32 +562,32 @@ def quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_met
     num_layers = args.layer_count if args.layer_count > 0 else num_layers
 
     anti_outlier_config_val = None
-    if args.anti_method == "m3":
-        anti_outlier_config_val = AntiOutlierConfig(
-            a_bit=args.a_bit, w_bit=args.w_bit, anti_method=args.anti_method, w_sym=args.w_sym, dev_type=args.device_type, dev_id=rank
-        )
-    elif args.anti_method == "m6":
-        keys = [".o_proj"]
-        anti_disable_names = ["model.layers.{}.self_attn.o_proj".format(i) for i in range(num_layers)]
-        if args.model_type == "qwen3":
-            anti_outlier_config_val = AntiOutlierConfig(
-                a_bit=args.a_bit,
-                w_bit=args.w_bit,
-                w_sym=args.w_sym,
-                anti_method=args.anti_method,
-                dev_type=args.device_type,
-                disable_anti_names=anti_disable_names,
-                flex_config={"alpha": 0.4, "beta": 0.325},
-            )
-        else:
-            anti_outlier_config_val = AntiOutlierConfig(
-                anti_method=args.anti_method,
-                dev_type=args.device_type,
-                disable_anti_names=anti_disable_names,
-                flex_config={"alpha": 0.6, "beta": 0.3},
-            )
-    elif args.anti_method:
-        anti_outlier_config_val = AntiOutlierConfig(anti_method=args.anti_method, dev_type=args.device_type)
+    # if args.anti_method == "m3":
+    #     anti_outlier_config_val = AntiOutlierConfig(
+    #         a_bit=args.a_bit, w_bit=args.w_bit, anti_method=args.anti_method, w_sym=args.w_sym, dev_type=args.device_type, dev_id=rank
+    #     )
+    # elif args.anti_method == "m6":
+    #     keys = [".o_proj"]
+    #     anti_disable_names = ["model.layers.{}.self_attn.o_proj".format(i) for i in range(num_layers)]
+    #     if args.model_type == "qwen3":
+    #         anti_outlier_config_val = AntiOutlierConfig(
+    #             a_bit=args.a_bit,
+    #             w_bit=args.w_bit,
+    #             w_sym=args.w_sym,
+    #             anti_method=args.anti_method,
+    #             dev_type=args.device_type,
+    #             disable_anti_names=anti_disable_names,
+    #             flex_config={"alpha": 0.4, "beta": 0.325},
+    #         )
+    #     else:
+    #         anti_outlier_config_val = AntiOutlierConfig(
+    #             anti_method=args.anti_method,
+    #             dev_type=args.device_type,
+    #             disable_anti_names=anti_disable_names,
+    #             flex_config={"alpha": 0.6, "beta": 0.3},
+    #         )
+    # elif args.anti_method:
+    #     anti_outlier_config_val = AntiOutlierConfig(anti_method=args.anti_method, dev_type=args.device_type)
 
     tokenizer_args = parse_tokenizer_args(args.tokenizer_args, default={})
     if tokenizer_args == {} and args.model_type == "qwen1":
@@ -630,7 +636,8 @@ def quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_met
     # else:
     #     calib_texts = args.calib_texts
 
-    calib_texts = list(dataset["text"])
+    num_calibration_samples = kwargs.get("num_calibration_samples", min(128, dataset.num_rows))
+    calib_texts = list(dataset["text"])[:num_calibration_samples]
 
     tokenized_calib_data = quantifier.get_tokenized_data(
         calib_texts,

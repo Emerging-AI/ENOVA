@@ -102,6 +102,7 @@ def setup_train_config(dataset_id_list: List[str], model, output_dir, **kwargs):
         "bf16": True,
     }
     base_config.update(kwargs)
+    os.makedirs(base_config["logging_dir"], exist_ok=True)
     with open("conf/finetune.yaml", "w") as f:
         yaml_output_str = yaml.dump(base_config, default_flow_style=False)
         f.write(yaml_output_str)
