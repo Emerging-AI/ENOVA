@@ -36,6 +36,10 @@ RUN pip install /opt/enova/llmo/enova-instrumentation-llmo/dist/enova_instrument
 
 ARG CACHEBUST=1
 
+RUN apt update && apt install -y mpich libmpich-dev build-essential gfortran && \
+    cd /usr/local/Ascend/ascend-toolkit/latest/tools/hccl_test && \
+    make ASCEND_DIR=/usr/local/Ascend/ascend-toolkit/latest MPI_HOME=/usr/lib/aarch64-linux-gnu/mpich
+
 COPY . /opt/enova 
 
 RUN cd /opt/enova && rm MANIFEST.in && bash ./scripts/pack_whl.enova.sh
@@ -43,4 +47,3 @@ ARG ENOVA_VERSION=0.1.0
 RUN export TORCH_DEVICE_BACKEND_AUTOLOAD=0 && pip install -r /opt/enova/requirements.train.txt --no-deps  --no-cache-dir && \
     pip install /opt/enova/dist/enova-${ENOVA_VERSION}-py3-none-any.whl --no-deps --no-cache-dir && \
     mkdir -p /workspace/model
-
