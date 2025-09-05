@@ -143,6 +143,7 @@ def train(dataset_id_list, model, output_dir, **kwargs):
     os.makedirs("saves", exist_ok=True)
     download_dataset(dataset_id_list)
     setup_deepspeed_config(**kwargs)
+    kwargs.pop("zero_stage", None)
     setup_train_config(dataset_id_list, model, output_dir, **kwargs)
     setup_merge_lora_config(model, output_dir)
     train_by_llamafactory()
