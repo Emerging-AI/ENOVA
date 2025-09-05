@@ -4,8 +4,8 @@ import os
 
 def setup_deepspeed_config(**kwargs):
     os.makedirs("conf", exist_ok=True)
-
-    if kwargs.get("zero_stage", 3) == 3:
+    zero_stage = kwargs.pop("zero_stage", None)
+    if zero_stage == 3:
         deepspeed_config = {
             "train_batch_size": "auto",
             "train_micro_batch_size_per_gpu": "auto",
@@ -27,24 +27,24 @@ def setup_deepspeed_config(**kwargs):
                 "stage3_gather_16bit_weights_on_model_save": True,
             },
         }
-    elif kwargs.get("zero_stage", 3) == 2:
+    elif zero_stage == 2:
         deepspeed_config = {
             "train_batch_size": "auto",
             "train_micro_batch_size_per_gpu": "auto",
             "gradient_accumulation_steps": "auto",
             "gradient_clipping": "auto",
-            "zero_allow_untested_optimizer": true,
+            "zero_allow_untested_optimizer": True,
             "fp16": {"enabled": "auto", "loss_scale": 0, "loss_scale_window": 1000, "initial_scale_power": 16, "hysteresis": 2, "min_loss_scale": 1},
             "bf16": {"enabled": "auto"},
             "zero_optimization": {
                 "stage": 2,
-                "allgather_partitions": true,
+                "allgather_partitions": True,
                 "allgather_bucket_size": 5e8,
-                "overlap_comm": false,
-                "reduce_scatter": true,
+                "overlap_comm": False,
+                "reduce_scatter": True,
                 "reduce_bucket_size": 5e8,
-                "contiguous_gradients": true,
-                "round_robin_gradients": true,
+                "contiguous_gradients": True,
+                "round_robin_gradients": True,
             },
         }
     else:
@@ -53,18 +53,18 @@ def setup_deepspeed_config(**kwargs):
             "train_micro_batch_size_per_gpu": "auto",
             "gradient_accumulation_steps": "auto",
             "gradient_clipping": "auto",
-            "zero_allow_untested_optimizer": true,
+            "zero_allow_untested_optimizer": True,
             "fp16": {"enabled": "auto", "loss_scale": 0, "loss_scale_window": 1000, "initial_scale_power": 16, "hysteresis": 2, "min_loss_scale": 1},
             "bf16": {"enabled": "auto"},
             "zero_optimization": {
                 "stage": 0,
-                "allgather_partitions": true,
+                "allgather_partitions": True,
                 "allgather_bucket_size": 5e8,
-                "overlap_comm": false,
-                "reduce_scatter": true,
+                "overlap_comm": False,
+                "reduce_scatter": True,
                 "reduce_bucket_size": 5e8,
-                "contiguous_gradients": true,
-                "round_robin_gradients": true,
+                "contiguous_gradients": True,
+                "round_robin_gradients": True,
             },
         }
 
