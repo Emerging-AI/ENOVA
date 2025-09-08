@@ -17,6 +17,7 @@ import yaml
 import json
 import numpy as np
 import pandas as pd
+import shutil
 from sqlalchemy import text
 from enova.api.data_api import get_datasets
 from enova.database.relation.transaction.session import db_router, PostgresqlEngine, get_session
@@ -114,7 +115,7 @@ def download_dataset(dataset_id_list: List[str], split_ratio=0.1):
                 "file_name": train_dataset_filename,
                 "columns": {"prompt": "question", "response": "answer", "history": "history"},
             }
-            dataset_info[evaleval_dataset_id_dataset_id] = {
+            dataset_info[eval_dataset_id] = {
                 "file_name": eval_dataset_filename,
                 "columns": {"prompt": "question", "response": "answer", "history": "history"},
             }
@@ -131,7 +132,7 @@ def download_dataset(dataset_id_list: List[str], split_ratio=0.1):
     return train_dataset_id_list, eval_dataset_id_list
 
 
-def setup_train_config(dataset_id_list: List[str], model, output_dir, **kwargs):
+def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[str], model, **kwargs):
     base_config = {
         "model_name_or_path": model,
         "trust_remote_code": True,
@@ -171,10 +172,28 @@ def setup_train_config(dataset_id_list: List[str], model, output_dir, **kwargs):
         "bf16": True,
         "fp16": False,
     }
+
+    if len(eval_dataset_id_list) > 0:
+        base_config.update(
+            {
+                ### dataset
+                "eval_dataset": ",".join(dataset_id_list),
+                "template": "qwen",
+                "overwrite_cache": True,
+                "preprocessing_num_workers": 8,
+                ### output
+                "overwrite_output_dir": True,
+                ### eval
+                "per_device_eval_batch_size": 1,
+                "predict_with_generate": True,
+                "do_predict": True,
+            }
+        )
     for k, v in kwargs.items():
         if k in base_config:
             base_config[k] = v
     os.makedirs(base_config["logging_dir"], exist_ok=True)
+    os.makedirs(base_config["output_dir"], exist_ok=True)
     with open("conf/finetune.yaml", "w") as f:
         yaml_output_str = yaml.dump(base_config, default_flow_style=False)
         f.write(yaml_output_str)
@@ -215,7 +234,7 @@ def setup_eval_config(dataset_id_list: List[str], model, **kwargs):
         "output_dir": "saves/eval/qwen3/sft",
         "overwrite_output_dir": True,
         ### eval
-        "per_device_eval_batch_size": 1,
+        "per_device_eval_batch_size": 8,
         "predict_with_generate": True,
         "ddp_timeout": 180000000,
     }
@@ -228,16 +247,18 @@ def setup_eval_config(dataset_id_list: List[str], model, **kwargs):
         f.write(yaml_output_str)
 
 
-def train_by_llamafactory(with_eval=False):
+def train_by_llamafactory(output_dir, eval_result_path):
     """"""
     from llamafactory.cli import main
+
+    os.environ["FORCE_TORCHRUN"] = "1"
 
     sys.argv = ["llamafactory-cli", "train", "conf/finetune.yaml"]
     main()
 
-    if with_eval:
-        sys.argv = ["llamafactory-cli", "eval", "conf/eval.yaml"]
-        main()
+    LOGGER.info("**** start copying results ****")
+    for filename in ["predict_results.json", "generated_predictions.jsonl", "all_results.json"]:
+        shutil.copyfile(os.path.join(output_dir, filename), os.path.join(eval_result_path, filename))
 
     sys.argv = ["llamafactory-cli", "export", "conf/merge_lora.yaml"]
     main()
@@ -251,7 +272,8 @@ def train(dataset_id_list, model, output_dir, **kwargs):
     os.makedirs("saves", exist_ok=True)
     train_dataset_id_list, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0.1))
     setup_deepspeed_config(**kwargs)
-    setup_eval_config(eval_dataset_id_list, model, **kwargs)
-    setup_train_config(train_dataset_id_list, model, output_dir, **kwargs)
+    # setup_eval_config(eval_dataset_id_list, model, **kwargs)
+    setup_train_config(train_dataset_id_list, eval_dataset_id_list, model, **kwargs)
     setup_merge_lora_config(model, output_dir)
-    train_by_llamafactory(with_eval=len(eval_dataset_id_list) > 0)
+    eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
+    train_by_llamafactory(eval_result_path)
