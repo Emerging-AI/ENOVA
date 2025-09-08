@@ -276,4 +276,4 @@ def train(dataset_id_list, model, output_dir, **kwargs):
     setup_train_config(train_dataset_id_list, eval_dataset_id_list, model, **kwargs)
     setup_merge_lora_config(model, output_dir)
     eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
-    train_by_llamafactory(eval_result_path)
+    train_by_llamafactory(output_dir, eval_result_path)
