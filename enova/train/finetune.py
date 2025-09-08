@@ -270,7 +270,7 @@ def train(dataset_id_list, model, output_dir, **kwargs):
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs("data", exist_ok=True)
     os.makedirs("saves", exist_ok=True)
-    train_dataset_id_list, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0.1))
+    train_dataset_id_list, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0))
     setup_deepspeed_config(**kwargs)
     # setup_eval_config(eval_dataset_id_list, model, **kwargs)
     setup_train_config(train_dataset_id_list, eval_dataset_id_list, model, **kwargs)
