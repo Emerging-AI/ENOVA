@@ -258,8 +258,10 @@ def train_by_llamafactory(output_dir, eval_result_path):
 
     LOGGER.info("**** start copying results ****")
     for filename in ["predict_results.json", "generated_predictions.jsonl", "all_results.json"]:
-        shutil.copyfile(os.path.join(output_dir, filename), os.path.join(eval_result_path, filename))
-
+        try:
+            shutil.copyfile(os.path.join(output_dir, filename), os.path.join(eval_result_path, filename))
+        except Exception as e:
+            LOGGER.exception(f"copying result failed: {str(e)}")
     sys.argv = ["llamafactory-cli", "export", "conf/merge_lora.yaml"]
     main()
 
