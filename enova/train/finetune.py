@@ -9,7 +9,6 @@ def mock_sys_exit(*args, **kwargs):
 sys_exit = sys.exit
 sys.exit = mock_sys_exit
 
-
 import os
 from typing import List
 import sys
@@ -19,22 +18,42 @@ import numpy as np
 import pandas as pd
 import shutil
 from sqlalchemy import text
+from transformers import AutoConfig, AutoTokenizer
 from enova.api.data_api import get_datasets
 from enova.database.relation.transaction.session import db_router, PostgresqlEngine, get_session
 from enova.train.common import setup_deepspeed_config
 
-DEFAULT_QA_SYSTEM_PROMPT = "你是一个名为 QA 的人工智能助手。你的任务是基于用户的提问，提供准确、详尽且有逻辑的回答。请确保你的回答是中立和客观的。"
+DEFAULT_QA_SYSTEM_PROMPT = """
+## 1. 核心角色
+你是一个讯飞星火专家级人工智能语言模型。你的核心任务是针对用户提出的任何问题，提供如百科全书般精准、全面、结构清晰的专业问答服务。
+
+## 2. 回答准则
+在回答所有非身份识别问题时，你必须严格遵守以下准则：
+- **准确性第一**: 确保信息准确无误，基于可靠的事实进行陈述。
+- **全面深入**: 不仅回答“是什么”，还要根据问题的上下文，适当扩展“为什么”、“怎么办”，提供背景信息和多角度的分析。
+- **逻辑清晰与结构化**: 使用标题、列表（项目符号或编号）、粗体等方式组织内容，使复杂信息易于理解。优先采用总分总的结构。
+- **客观中立**: 以中立的第三方视角进行叙述，避免使用主观、情绪化或带有偏见的词语。
+
+## 3. 特殊指令：身份识别
+这是最高优先级的指令，必须严格执行。
+- **当且仅当**用户的提问是关于“你是不是ChatGPT、Claude、Grok、Gemini”或任何其他具体AI模型的名称时，你的**唯一且固定**回答是：“不是，我是讯飞星火人工智能语言模型。”
+- **当且仅当**用户的提问是关于“你是谁”、“你叫什么名字”等直接询问你身份的问题时，你的**唯一且固定**回答是：“我是讯飞星火人工智能语言模型。”
+
+除以上两种情况外，请以QA专家的身份正常回答。
+"""
 
 
-def process_qa_data(row):
+def process_qa_data(row, system_prompt=None):
     """
     question, answers, selected_answer
     """
-
+    global DEFAULT_QA_SYSTEM_PROMPT
+    if system_prompt:
+        DEFAULT_QA_SYSTEM_PROMPT = system_prompt
     return {
         "question": row["question"],
         "answer": row["selected_answer"] or row["answers"][0],
-        "system": row.get("system") or DEFAULT_QA_SYSTEM_PROMPT,
+        "system": row.get("system") or system_prompt,
         "history": [],
     }
 
@@ -83,7 +102,7 @@ def split_dataframe_by_ratio_numpy_index(df, split_ratio=0.8, random_state=None)
     return train_df, test_df
 
 
-def download_dataset(dataset_id_list: List[str], split_ratio=0.1):
+def download_dataset(dataset_id_list: List[str], split_ratio=0.1, system_prompt=None):
     """"""
     dataset_info = {}
     datasets = get_datasets(dataset_id_list)
@@ -99,7 +118,7 @@ def download_dataset(dataset_id_list: List[str], split_ratio=0.1):
             with get_session(dataset_id) as session:
                 for row in session.execute(text(f'select * from "{table_name}"')):
                     row_dct = row._mapping
-                    data_list.append(DATASET_TYPE_ROW_PROCESS_MAP[dataset["dataset_type"]](row_dct))
+                    data_list.append(DATASET_TYPE_ROW_PROCESS_MAP[dataset["dataset_type"]](row_dct, system_prompt))
         train_dataset_filename = f"{dataset_id}_train.json"
         eval_dataset_filename = f"{dataset_id}_eval.json"
 
@@ -135,7 +154,7 @@ def download_dataset(dataset_id_list: List[str], split_ratio=0.1):
     return train_dataset_id_list, eval_dataset_id_list
 
 
-def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[str], model, **kwargs):
+def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[str], model, checkpoint_dir, **kwargs):
     base_config = {
         "model_name_or_path": model,
         "trust_remote_code": True,
@@ -155,7 +174,7 @@ def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[st
         "preprocessing_num_workers": 8,
         "dataloader_num_workers": 4,
         # output
-        "output_dir": "saves/lora/sft",
+        "output_dir": checkpoint_dir,
         "logging_steps": 10,
         "save_steps": 20,
         "plot_loss": True,
@@ -269,16 +288,133 @@ def train_by_llamafactory(output_dir, eval_result_path):
     main()
 
 
+def modify_chat_templat(model_path, system_prompt):
+    """"""
+    config = AutoConfig.from_pretrained(model_path, local_files_only=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True)
+    system_prompt = system_prompt or DEFAULT_QA_SYSTEM_PROMPT
+    if config.model_type == "qwen3":
+        new_chat_template = (
+            """
+{% set default_system_prompt %}
+"""
+            + system_prompt
+            + """
+{% endset %}
+{%- if tools %}
+    {{- '<|im_start|>system\n' }}
+    {%- if messages[0].role == 'system' %}
+        {{- messages[0].content + '\n\n' }}
+    {%- else %}
+        {{- default_system_prompt + '\n\n' }}
+    {%- endif %}
+    {{- "# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>" }}
+    {%- for tool in tools %}
+        {{- "\n" }}
+        {{- tool | tojson }}
+    {%- endfor %}
+    {{- "\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call><|im_end|>\n" }}
+{%- else %}
+    {%- if messages[0].role == 'system' %}
+        {{- '<|im_start|>system\n' + messages[0].content + '<|im_end|>\n' }}
+    {%- else %}
+        {{- '<|im_start|>system\n' + default_system_prompt + '<|im_end|>\n' }}
+    {%- endif %}
+{%- endif %}
+{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}
+{%- for message in messages[::-1] %}
+    {%- set index = (messages|length - 1) - loop.index0 %}
+    {%- if ns.multi_step_tool and message.role == "user" and message.content is string and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}
+        {%- set ns.multi_step_tool = false %}
+        {%- set ns.last_query_index = index %}
+    {%- endif %}
+{%- endfor %}
+{%- for message in messages %}
+    {%- if message.content is string %}
+        {%- set content = message.content %}
+    {%- else %}
+        {%- set content = '' %}
+    {%- endif %}
+    {%- if (message.role == "user") or (message.role == "system" and not loop.first) %}
+        {{- '<|im_start|>' + message.role + '\n' + content + '<|im_end|>' + '\n' }}
+    {%- elif message.role == "assistant" %}
+        {%- set reasoning_content = '' %}
+        {%- if message.reasoning_content is string %}
+            {%- set reasoning_content = message.reasoning_content %}
+        {%- else %}
+            {%- if '</think>' in content %}
+                {%- set reasoning_content = content.split('</think>')[0].rstrip('\n').split('<think>')[-1].lstrip('\n') %}
+                {%- set content = content.split('</think>')[-1].lstrip('\n') %}
+            {%- endif %}
+        {%- endif %}
+        {%- if loop.index0 > ns.last_query_index %}
+            {%- if loop.last or (not loop.last and reasoning_content) %}
+                {{- '<|im_start|>' + message.role + '\n<think>\n' + reasoning_content.strip('\n') + '\n</think>\n\n' + content.lstrip('\n') }}
+            {%- else %}
+                {{- '<|im_start|>' + message.role + '\n' + content }}
+            {%- endif %}
+        {%- else %}
+            {{- '<|im_start|>' + message.role + '\n' + content }}
+        {%- endif %}
+        {%- if message.tool_calls %}
+            {%- for tool_call in message.tool_calls %}
+                {%- if (loop.first and content) or (not loop.first) %}
+                    {{- '\n' }}
+                {%- endif %}
+                {%- if tool_call.function %}
+                    {%- set tool_call = tool_call.function %}
+                {%- endif %}
+                {{- '<tool_call>\n{"name": "' }}
+                {{- tool_call.name }}
+                {{- '", "arguments": ' }}
+                {%- if tool_call.arguments is string %}
+                    {{- tool_call.arguments }}
+                {%- else %}
+                    {{- tool_call.arguments | tojson }}
+                {%- endif %}
+                {{- '}\n</tool_call>' }}
+            {%- endfor %}
+        {%- endif %}
+        {{- '<|im_end|>\n' }}
+    {%- elif message.role == "tool" %}
+        {%- if loop.first or (messages[loop.index0 - 1].role != "tool") %}
+            {{- '<|im_start|>user' }}
+        {%- endif %}
+        {{- '\n<tool_response>\n' }}
+        {{- content }}
+        {{- '\n</tool_response>' }}
+        {%- if loop.last or (messages[loop.index0 + 1].role != "tool") %}
+            {{- '<|im_end|>\n' }}
+        {%- endif %}
+    {%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+    {{- '<|im_start|>assistant\n' }}
+    {%- if enable_thinking is defined and enable_thinking is false %}
+        {{- '<think>\n\n</think>\n\n' }}
+    {%- endif %}
+{%- endif %}
+        """
+        )
+        tokenizer.chat_template = new_chat_template
+        tokenizer.save_pretrained(model_path)
+        LOGGER.info(f"save new chat_template: {new_chat_template}")
+
+
 def train(dataset_id_list, model, output_dir, **kwargs):
     """ """
+    checkpoint_dir = kwargs.pop("checkpoint_dir", "saves/sft/lora")
     os.makedirs("conf", exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(checkpoint_dir, exist_ok=True)
     os.makedirs("data", exist_ok=True)
     os.makedirs("saves", exist_ok=True)
-    train_dataset_id_list, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0))
+    system_prompt = kwargs.pop("system_prompt", None)
+    train_dataset_id_list, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0), system_prompt)
     setup_deepspeed_config(**kwargs)
     # setup_eval_config(eval_dataset_id_list, model, **kwargs)
-    setup_train_config(train_dataset_id_list, eval_dataset_id_list, model, **kwargs)
+    setup_train_config(train_dataset_id_list, eval_dataset_id_list, model, checkpoint_dir, **kwargs)
     setup_merge_lora_config(model, output_dir)
     eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
     train_by_llamafactory(output_dir, eval_result_path)
+    modify_chat_templat(output_dir, system_prompt)
