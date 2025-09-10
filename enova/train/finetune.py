@@ -288,7 +288,7 @@ def train_by_llamafactory(output_dir, eval_result_path):
     main()
 
 
-def modify_chat_templat(model_path, system_prompt):
+def modify_chat_template(model_path, system_prompt):
     """"""
     config = AutoConfig.from_pretrained(model_path, local_files_only=True)
     tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True)
@@ -417,4 +417,4 @@ def train(dataset_id_list, model, output_dir, **kwargs):
     setup_merge_lora_config(model, output_dir)
     eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
     train_by_llamafactory(output_dir, eval_result_path)
-    modify_chat_templat(output_dir, system_prompt)
+    modify_chat_template(output_dir, system_prompt)
