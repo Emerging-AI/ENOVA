@@ -3,26 +3,16 @@ FROM hiyouga/llamafactory:0.9.4-npu-a2
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN bash -c "echo -e 'deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy main restricted \n \
-deb-src http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy main restricted \n \
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-updates main restricted \n \
-deb-src http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-updates main restricted \n \
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy universe \n \
-deb-src http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy universe \n \
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-updates universe \n \
-deb-src http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-updates universe \n \
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy multiverse \n \
-deb-src http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy multiverse \n \
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-updates multiverse \n \
-deb-src http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-updates multiverse \n \
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-backports main restricted universe multiverse \n \
-deb-src http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-backports main restricted universe multiverse \n \
-deb http://mirrors.cloud.aliyuncs.com/ubuntu jammy-security main restricted \n \
-deb-src http://mirrors.cloud.aliyuncs.com/ubuntu jammy-security main restricted \n \
-deb http://mirrors.cloud.aliyuncs.com/ubuntu jammy-security universe \n \
-deb-src http://mirrors.cloud.aliyuncs.com/ubuntu jammy-security universe \n \
-deb http://mirrors.cloud.aliyuncs.com/ubuntu jammy-security multiverse \n \
-deb-src http://mirrors.cloud.aliyuncs.com/ubuntu jammy-security multiverse \n '" > /etc/apt/sources.list
+RUN bash -c "echo -e 'deb http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse \n \
+deb-src http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse \n \
+deb http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted universe multiverse \n \
+deb-src http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted universe multiverse \n \
+deb http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse \n \
+deb-src http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse \n \
+deb http://mirrors.aliyun.com/ubuntu/ jammy-proposed main restricted universe multiverse \n \
+deb-src http://mirrors.aliyun.com/ubuntu/ jammy-proposed main restricted universe multiverse \n \
+deb http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse \n \
+deb-src http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse \n '" > /etc/apt/sources.list
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
