@@ -3,9 +3,9 @@ FROM hiyouga/llamafactory:0.9.4-npu-a2
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN sed -i 's/http:\/\/archive.ubuntu.com/http:\/\/mirrors.tuna.tsinghua.edu.cn\/ubuntu/g' /etc/apt/sources.list
+RUN sed -i 's/http:\/\/ports.ubuntu.com\/ubuntu-ports/http:\/\/mirrors.tuna.tsinghua.edu.cn\/ubuntu/g' /etc/apt/sources.list
 
-RUN apt-get update && \
+RUN apt-get update || \
     apt-get install -y --no-install-recommends \
         gcc \
         g++ \
