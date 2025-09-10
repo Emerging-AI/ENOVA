@@ -23,6 +23,8 @@ from enova.api.data_api import get_datasets
 from enova.database.relation.transaction.session import db_router, PostgresqlEngine, get_session
 from enova.train.common import setup_deepspeed_config
 
+DEFAULT_QA_SYSTEM_PROMPT = "你是一个名为 Qwen 的人工智能助手。你的任务是基于用户的提问，提供准确、详尽且有逻辑的回答。请确保你的回答是中立和客观的。"
+
 
 def process_qa_data(row):
     """
@@ -32,6 +34,7 @@ def process_qa_data(row):
     return {
         "question": row["question"],
         "answer": row["selected_answer"] or row["answers"][0],
+        "system": row.get("system") or DEFAULT_QA_SYSTEM_PROMPT,
         "history": [],
     }
 
