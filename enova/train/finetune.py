@@ -23,7 +23,7 @@ from enova.api.data_api import get_datasets
 from enova.database.relation.transaction.session import db_router, PostgresqlEngine, get_session
 from enova.train.common import setup_deepspeed_config
 
-DEFAULT_QA_SYSTEM_PROMPT = "你是一个名为 Qwen 的人工智能助手。你的任务是基于用户的提问，提供准确、详尽且有逻辑的回答。请确保你的回答是中立和客观的。"
+DEFAULT_QA_SYSTEM_PROMPT = "你是一个名为 QA 的人工智能助手。你的任务是基于用户的提问，提供准确、详尽且有逻辑的回答。请确保你的回答是中立和客观的。"
 
 
 def process_qa_data(row):
@@ -116,18 +116,18 @@ def download_dataset(dataset_id_list: List[str], split_ratio=0.1):
             eval_dataset_id_list.append(eval_dataset_id)
             dataset_info[train_dataset_id] = {
                 "file_name": train_dataset_filename,
-                "columns": {"prompt": "question", "response": "answer", "history": "history"},
+                "columns": {"prompt": "question", "response": "answer", "history": "history", "system": "system"},
             }
             dataset_info[eval_dataset_id] = {
                 "file_name": eval_dataset_filename,
-                "columns": {"prompt": "question", "response": "answer", "history": "history"},
+                "columns": {"prompt": "question", "response": "answer", "history": "history", "system": "system"},
             }
         else:
             pdf.to_json(f"data/{train_dataset_filename}", orient="records", lines=False, force_ascii=False, indent=4)
             train_dataset_id_list.append(dataset_id)
             dataset_info[dataset_id] = {
                 "file_name": train_dataset_filename,
-                "columns": {"prompt": "question", "response": "answer", "history": "history"},
+                "columns": {"prompt": "question", "response": "answer", "history": "history", "system": "system"},
             }
 
     with open("data/dataset_info.json", "w", encoding="utf-8") as f:
