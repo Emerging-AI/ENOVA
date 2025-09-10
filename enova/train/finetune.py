@@ -221,10 +221,10 @@ def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[st
         f.write(yaml_output_str)
 
 
-def setup_merge_lora_config(model, output_dir, **kwargs):
+def setup_merge_lora_config(model, output_dir, checkpoint_dir, **kwargs):
     base_config = {
         "model_name_or_path": model,
-        "adapter_name_or_path": "saves/lora/sft",
+        "adapter_name_or_path": checkpoint_dir,
         "template": "qwen",
         "trust_remote_code": True,
         "export_dir": output_dir,
@@ -414,7 +414,7 @@ def train(dataset_id_list, model, output_dir, **kwargs):
     setup_deepspeed_config(**kwargs)
     # setup_eval_config(eval_dataset_id_list, model, **kwargs)
     setup_train_config(train_dataset_id_list, eval_dataset_id_list, model, checkpoint_dir, **kwargs)
-    setup_merge_lora_config(model, output_dir)
+    setup_merge_lora_config(model, output_dir, checkpoint_dir)
     eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
     train_by_llamafactory(output_dir, eval_result_path)
     modify_chat_template(output_dir, system_prompt)
