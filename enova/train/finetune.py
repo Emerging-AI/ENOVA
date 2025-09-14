@@ -206,7 +206,7 @@ def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[st
                 ### output
                 "overwrite_output_dir": True,
                 ### eval
-                "per_device_eval_batch_size": 8,
+                "per_device_eval_batch_size": 16,
                 "predict_with_generate": True,
                 "do_predict": True,
             }
