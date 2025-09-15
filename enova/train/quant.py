@@ -37,6 +37,7 @@ def download_dataset(dataset_id_list: List[str]) -> List:
     """ """
     dataset_filename = "quant_data.json"
     datasets = get_datasets(dataset_id_list)
+    LOGGER.info(f"{datasets=}")
     data_list = []
     if not os.path.exists(f"data/{dataset_filename}"):
         with open(f"data/{dataset_filename}", "w", encoding="utf-8") as f:
@@ -178,49 +179,49 @@ class SafeGenerator:
     @staticmethod
     def modify_config(model_dir, dest_dir, torch_dtype, quantize_type, args=None):
         src_config_filepath = os.path.join(model_dir, "config.json")
-        data = json_safe_load(src_config_filepath, check_user_stat=False)
+        data = json_safe_load(src_config_filepath)
 
         if args.mindie_format:
             dest_quant_description_filepath = os.path.join(dest_dir, f"quant_model_description_{quantize_type.lower()}.json")
         else:
             dest_quant_description_filepath = os.path.join(dest_dir, f"quant_model_description.json")
-        quant_description_data = json_safe_load(dest_quant_description_filepath, check_user_stat=False)
+        if not os.path.exists(dest_quant_description_filepath):
+            with open(dest_quant_description_filepath, "w", encoding="utf-8") as f:
+                json.dump({}, f, indent=4, ensure_ascii=False)
+        quant_description_data = json_safe_load(dest_quant_description_filepath)
 
         data["torch_dtype"] = str(torch_dtype).split(".")[1]
         if args.mindie_format:
             data["quantize"] = quantize_type
-        if args is not None:
-            quantization_config = {
-                # 当is_lowbit为True，open_outlier为False时，group_size生效
-                "group_size": args.group_size if args.is_lowbit and not args.open_outlier else 0,
-                "kv_quant_type": "C8" if args.use_kvcache_quant else None,
-                "fa_quant_type": "FAQuant" if args.use_fa_quant else None,
-                "w_bit": args.w_bit,
-                "a_bit": args.a_bit,
-                "dev_type": args.device_type,
-                "fraction": args.fraction,
-                "act_method": args.act_method,
-                "co_sparse": args.co_sparse,
-                "anti_method": args.anti_method,
-                "disable_level": args.disable_level,
-                "do_smooth": args.do_smooth,
-                "use_sigma": args.use_sigma,
-                "sigma_factor": args.sigma_factor,
-                "is_lowbit": args.is_lowbit,
-                "mm_tensor": False,
-                "w_sym": args.w_sym,
-                "open_outlier": args.open_outlier,
-                "is_dynamic": args.is_dynamic,
-            }
-            if hasattr(args, "pdmix") and args.pdmix:
-                quantization_config.update({"pdmix": args.pdmix})
-            if args.use_reduce_quant:
-                quantization_config.update({"reduce_quant_type": "per_channel"})
-            quant_description_data.update(quantization_config)
-
-            if args.mindie_format:
-                data["quantization_config"] = quantization_config
-
+        quantization_config = {
+            # 当is_lowbit为True，open_outlier为False时，group_size生效
+            "group_size": args.group_size if args.is_lowbit and not args.open_outlier else 0,
+            "kv_quant_type": "C8" if args.use_kvcache_quant else None,
+            "fa_quant_type": "FAQuant" if args.use_fa_quant else None,
+            "w_bit": args.w_bit,
+            "a_bit": args.a_bit,
+            "dev_type": args.device_type,
+            "fraction": args.fraction,
+            "act_method": args.act_method,
+            "co_sparse": args.co_sparse,
+            "anti_method": args.anti_method,
+            "disable_level": args.disable_level,
+            "do_smooth": args.do_smooth,
+            "use_sigma": args.use_sigma,
+            "sigma_factor": args.sigma_factor,
+            "is_lowbit": args.is_lowbit,
+            "mm_tensor": False,
+            "w_sym": args.w_sym,
+            "open_outlier": args.open_outlier,
+            "is_dynamic": args.is_dynamic,
+        }
+        if hasattr(args, "pdmix") and args.pdmix:
+            quantization_config.update({"pdmix": args.pdmix})
+        if args.use_reduce_quant:
+            quantization_config.update({"reduce_quant_type": "per_channel"})
+        quant_description_data.update(quantization_config)
+        data["quantization_config"] = quantization_config
+        LOGGER.info(f"modified config.json: {data}, dest_dir: {dest_dir}")
         dest_config_filepath = os.path.join(dest_dir, "config.json")
         json_safe_dump(data, dest_config_filepath, 4)
 
@@ -251,7 +252,7 @@ def quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_met
     CPU = "cpu"
     NPU = "npu"
     rank: int = int(os.getenv("RANK", "0"))
-
+    LOGGER.info(f"{dataset_id_list=}")
     dataset = download_dataset(dataset_id_list)
 
     tokenizer = AutoTokenizer.from_pretrained(model)
@@ -330,78 +331,14 @@ def quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_met
         return anti_dataset
 
     def parse_arguments():
-        # parser = ArgumentParser()
-        # parser.add_argument('--model_path', type=str, help="model and tokenizer path")
-        # parser.add_argument('--save_directory', type=str)
-        # parser.add_argument('--part_file_size', type=int, default=None)
-        # parser.add_argument(
-        #     '--calib_texts',
-        #     type=str,
-        #     nargs='+',
-        #     default=None)
-        # parser.add_argument(
-        #     '--calib_file',
-        #     type=str,
-        #     help='A jsonl file contains calibration data.',
-        #     default=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'common', 'teacher_qualification.jsonl'))
-        # parser.add_argument('--w_bit', type=int, default=8)
-        # parser.add_argument('--a_bit', type=int, default=8)
-        # parser.add_argument('--disable_names', type=str, nargs='+', default=None)
-        # parser.add_argument('--device_type', type=str, choices=[CPU, NPU], default=CPU)
-        # parser.add_argument('--fraction', type=float, default=0.01)
-        # parser.add_argument("--act_method", type=int, choices=[1, 2, 3], default=1,
-        #                     help=" 1: MinMax, 2: Histogram, 3: Auto")
-        # parser.add_argument('--co_sparse', type=cmd_bool, default=False)
-        # parser.add_argument('--anti_method', type=str, default='')
-        # parser.add_argument('--disable_level', type=str, default='L0')
-        # parser.add_argument('--do_smooth', type=cmd_bool, default=False)
-        # parser.add_argument('--use_sigma', type=cmd_bool, default=False)
-        # parser.add_argument('--use_reduce_quant', type=cmd_bool, default=False)
-        # parser.add_argument('--tp_size', type=int, default=1)
-        # parser.add_argument('--sigma_factor', type=float, default=3.0)
-        # parser.add_argument('--is_lowbit', type=cmd_bool, default=False)
-        # parser.add_argument('--w_sym', type=cmd_bool, default=True)
-        # parser.add_argument('--use_kvcache_quant', type=cmd_bool, default=False)
-        # parser.add_argument('--use_fa_quant', type=cmd_bool, default=False)
-        # parser.add_argument('--fa_amp', type=int, default=0)
-        # parser.add_argument('--open_outlier', type=cmd_bool, default=True)
-        # parser.add_argument('--group_size', type=int, default=64)
-        # parser.add_argument('--is_dynamic', type=cmd_bool, default=False)
-        # # parser.add_argument('--input_ids_name', type=str, default='input_ids',
-        # #                     validator=StringArgumentValidator(min_length=1, max_length=MAX_KEY_LENGTH))
-        # # parser.add_argument('--attention_mask_name', type=str, default='attention_mask',
-        # #                     validator=StringArgumentValidator(min_length=1, max_length=MAX_KEY_LENGTH))
-        # # parser.add_argument('--tokenizer_args', type=str, default='{}',
-        # #                     validator=StringArgumentValidator(min_length=2, max_length=MAX_JSON_LENGTH))
-        # # parser.add_argument('--disable_last_linear', type=cmd_bool, default=True)
-        # # parser.add_argument('--model_name', type=str, default=None,
-        # #                     validator=StringArgumentValidator(min_length=1, max_length=MAX_KEY_LENGTH, allow_none=True))
-        # parser.add_argument('--model_type', type=str, default='qwen2',
-        #                     choices=['qwen1', 'qwen1.5', 'qwen2', 'qwen2.5', 'qwen3'],
-        #                     help='Specify the type of qwen model (choices: qwen1, qwen1.5, qwen2, qwen2.5, qwen3)')
-        # parser.add_argument('--anti_calib_file', type=str, default=None,
-        #                 help='Path to anti-calibration data file (.json or .jsonl)')
-        # parser.add_argument('--disable_threshold', type=float, default=0,
-        #                 help='Disable threshold when auto select disable names')
-        # parser.add_argument('--pdmix', type=cmd_bool, default=False,
-        #                 help='use pdmix quantization type')
-        # parser.add_argument('--trust_remote_code', type=cmd_bool, default=False)
-        # parser.add_argument('--layer_count', type=int, default=0)
-        # parser.add_argument('--mindie_format', action="store_true", help="Compatible with quantization formats \
-        #                     supported by before B050 version of MindIE")
-        # parser.add_argument('--w_method', type=str, default='MinMax',
-        #                     choices=['MinMax', 'GPTQ', 'HQQ', 'NF'],
-        #                     help='Specify the type of weight quantization method (choices: MinMax, GPTQ, HQQ, NF)')
-        # return parser.parse_args()
         default_config = {
             "model_path": model,
             "model_name": None,
             "save_directory": output_dir,
             "part_file_size": None,
             "calib_texts": None,
-            # "calib_file": os.path.join(os.path.dirname(os.path.dirname(__file__)), "common", "teacher_qualification.jsonl"),
-            "w_bit": 8,
-            "a_bit": 8,
+            "w_bit": 4,
+            "a_bit": 16,
             "disable_names": None,
             "device_type": NPU,
             "fraction": 0.01,
@@ -528,17 +465,9 @@ def quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_met
             if tokenized_ant_calib_data is None:
                 tokenized_ant_calib_data = tokenized_data
 
-            # if self.anti_outlier_config is not None:
-            #     if self.model_name == "baichuan":
-            #         anti_outlier = AntiOutlier(
-            #             self.model, calib_data=tokenized_ant_calib_data, cfg=self.anti_outlier_config, norm_class_name="RMSNorm"
-            #         )
-            #     else:
-            #         anti_outlier = AntiOutlier(self.model, calib_data=tokenized_ant_calib_data, cfg=self.anti_outlier_config)
-            #     anti_outlier.process()
-            anti_config = AntiOutlierConfig(anti_method="m3", dev_type="npu", a_bit=16, w_bit=4, dev_id=rank, w_sym=True)
-            anti_outlier = AntiOutlier(self.model, calib_data=tokenized_data, cfg=anti_config)
-            anti_outlier.process()
+            # anti_config = AntiOutlierConfig(anti_method="m3", dev_type="npu", w_bit=args.w_bit, a_bit=args.a_bit, dev_id=rank, w_sym=True)
+            # anti_outlier = AntiOutlier(self.model, calib_data=tokenized_ant_calib_data, cfg=anti_config)
+            # anti_outlier.process()
 
             if not os.path.exists(save_path):
                 os.mkdir(save_path, mode=0o750)
@@ -547,8 +476,7 @@ def quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_met
             calibrator.run()
             LOGGER.info(f"Starting calibration save for {save_path}")
             # save_type = "safe_tensor" if args.mindie_format else "ascendV1"
-            # calibrator.save(save_path, save_type=[save_type], part_file_size=part_file_size)
-            calibrator.save(save_path, safetensors_name=None, json_name=None, save_type=None, part_file_size=None)
+            calibrator.save(save_path, safetensors_name="model", json_name=None, save_type=["safe_tensor"], part_file_size=4)
 
     args = parse_arguments()
     checker = SafeGenerator()

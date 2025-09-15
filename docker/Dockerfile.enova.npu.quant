@@ -44,4 +44,5 @@ RUN export TORCH_DEVICE_BACKEND_AUTOLOAD=0 && pip install -r /opt/enova/requirem
     pip install /opt/enova/dist/enova-${ENOVA_VERSION}-py3-none-any.whl --no-deps --no-cache-dir && \
     mkdir -p /workspace/model
 RUN git clone https://gitee.com/ascend/msit -b modelslim-VLLM-8.1.RC1.b020_001 && \
-    cd msit/msmodelslim && bash install.sh && pip install accelerate
+    cd msit/msmodelslim && bash install.sh && pip install accelerate && \
+    mv /usr/local/python3.11.13/lib/python3.11/site-packages/example.py /workspace/
