@@ -241,6 +241,12 @@ class SafeGenerator:
 
 def quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_method="awq", **kwargs):
     import sys
+    from msmodelslim.infra import practice_manager
+
+    def mock_confirm_to_continue(*args, **kwargs):
+        LOGGER.warning("Auto confirm to continue.")
+
+    practice_manager.confirm_to_continue = mock_confirm_to_continue
     from msmodelslim.cli.__main__ import main
 
     model_type = kwargs.get("model_type")
