@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM quay.io/ascend/vllm-ascend:v0.10.0rc1
+FROM m.daocloud.io/quay.io/ascend/vllm-ascend:v0.10.1rc1
 
 ENV DEBIAN_FRONTEND=noninteractive
 
