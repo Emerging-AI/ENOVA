@@ -280,6 +280,27 @@ def quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_met
     ]
     main()
 
+    def copy_tokenizer_files(model_dir, dest_dir):
+        filenames = os.listdir(model_dir)
+        max_file_num = 1024
+        if len(filenames) > max_file_num:
+            raise argparse.ArgumentTypeError(f"The file num in dir is {len(filenames)}, " f"which exceeds the limit {max_file_num}.")
+        for filename in filenames:
+            need_move = False
+            file_names = ["chat_template.jinja"]
+            for f in file_names:
+                if f in filename:
+                    need_move = True
+                    break
+            if need_move:
+                src_filepath = os.path.join(model_dir, filename)
+                dest_filepath = os.path.join(dest_dir, filename)
+                shutil.copyfile(src_filepath, dest_filepath)
+                os.chmod(dest_filepath, int("600", 8))
+
+    LOGGER.info("Copy tokenizer files to output_dir.")
+    copy_tokenizer_files(model, output_dir)
+
 
 def quantize_by_llmcompressor(model, dataset_id_list, output_dir, quantization_method="awq", **kwargs):
     """"""
