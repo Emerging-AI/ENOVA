@@ -1,6 +1,6 @@
 # image enova:base-npu
 # FROM ascendai/cann:8.2.rc1-910b-ubuntu22.04-py3.11
-FROM quay.io/ascend/vllm-ascend:v0.10.0rc1
+FROM m.daocloud.io/quay.io/ascend/vllm-ascend:v0.10.1rc1
 
 ENV DEBIAN_FRONTEND=noninteractive
 
