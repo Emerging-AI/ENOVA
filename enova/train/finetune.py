@@ -199,7 +199,7 @@ def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[st
         base_config.update(
             {
                 ### dataset
-                "eval_dataset": ",".join(dataset_id_list),
+                "eval_dataset": ",".join(eval_dataset_id_list),
                 "template": "qwen",
                 "overwrite_cache": True,
                 "preprocessing_num_workers": 8,
