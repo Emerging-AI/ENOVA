@@ -195,6 +195,8 @@ def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[st
         "fp16": False,
     }
 
+    # 如果有数据就 加入 resume_from_checkpoint
+
     if len(eval_dataset_id_list) > 0:
         base_config.update(
             {
@@ -216,6 +218,19 @@ def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[st
             base_config[k] = v
     os.makedirs(base_config["logging_dir"], exist_ok=True)
     os.makedirs(base_config["output_dir"], exist_ok=True)
+
+    if os.path.exists(checkpoint_dir):
+        max_steps = -1
+        max_checkpoint_path = None
+        for filename in os.listdir(checkpoint_dir):
+            if filename.startswith("checkpoint-"):
+                steps = int(filename.split("checkpoint-")[-1])
+                if steps > max_steps:
+                    max_steps = steps
+                    max_checkpoint_path = os.path.join(checkpoint_dir, filename)
+        if max_checkpoint_path:
+            base_config["resume_from_checkpoint"] = max_checkpoint_path
+            LOGGER.info(f"find checkpoint: {base_config['resume_from_checkpoint']}")
     with open("conf/finetune.yaml", "w") as f:
         yaml_output_str = yaml.dump(base_config, default_flow_style=False)
         f.write(yaml_output_str)
