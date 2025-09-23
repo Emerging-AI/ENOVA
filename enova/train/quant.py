@@ -340,5 +340,8 @@ def quantize(model, dataset_id_list, output_dir, quantization_method="awq", **kw
     os.makedirs("data", exist_ok=True)
     os.makedirs("saves", exist_ok=True)
     if hasattr(torch, "npu") and torch.npu.is_available():
-        return quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_method=quantization_method, **kwargs)
-    return quantize_by_llmcompressor(model, dataset_id_list, output_dir, quantization_method=quantization_method, **kwargs)
+        quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_method=quantization_method, **kwargs)
+    else:
+        quantize_by_llmcompressor(model, dataset_id_list, output_dir, quantization_method=quantization_method, **kwargs)
+    with open(os.path.join(output_dir, "quantization_done"), "w", encoding="utf-8") as f:
+        f.write("quantization_done")

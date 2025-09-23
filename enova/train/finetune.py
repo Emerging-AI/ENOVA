@@ -433,3 +433,6 @@ def train(dataset_id_list, model, output_dir, **kwargs):
     eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
     train_by_llamafactory(output_dir, eval_result_path)
     modify_chat_template(output_dir, system_prompt)
+    with open(os.path.join(output_dir, "finetune_done"), "w", encoding="utf-8") as f:
+        f.write("finetune_done")
+    LOGGER.info("**** finetune completed ****")
