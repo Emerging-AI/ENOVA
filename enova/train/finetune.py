@@ -179,7 +179,7 @@ def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[st
         "save_steps": 20,
         "plot_loss": True,
         "overwrite_output_dir": True,
-        "save_only_model": True,
+        "save_only_model": False,
         "report_to": "tensorboard",
         "logging_dir": "saves/tensorboard/qwen3/sft",
         # train
