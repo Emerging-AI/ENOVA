@@ -289,6 +289,10 @@ def train_by_llamafactory(output_dir, eval_result_path):
     from llamafactory.cli import main
 
     os.environ["FORCE_TORCHRUN"] = "1"
+    if os.environ.get("NNODES") and not os.environ.get("MASTER_ADDR"):
+        pod_name = os.environ.get("POD_NAME")
+        pod_name_prefix = pod_name.rsplit("-", 2)[0]
+        os.environ["MASTER_ADDR"] = f"{pod_name_prefix}-0.{os.environ.get('K8S_SERVICE_NAME', f'{pod_name}-svc')}"
 
     sys.argv = ["llamafactory-cli", "train", "conf/finetune.yaml"]
     main()
