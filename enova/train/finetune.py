@@ -229,7 +229,7 @@ def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[st
                     max_steps = steps
                     max_checkpoint_path = os.path.join(checkpoint_dir, filename)
         if max_checkpoint_path:
-            base_config["resume_from_checkpoint"] = checkpoint_dir
+            base_config["resume_from_checkpoint"] = max_checkpoint_path
             LOGGER.info(f"find checkpoint: {base_config['resume_from_checkpoint']}")
     with open("conf/finetune.yaml", "w") as f:
         yaml_output_str = yaml.dump(base_config, default_flow_style=False)
