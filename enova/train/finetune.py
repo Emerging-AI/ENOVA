@@ -201,6 +201,7 @@ def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[st
         base_config.update(
             {
                 ### dataset
+                "task": "mmlu_test",
                 "eval_dataset": ",".join(eval_dataset_id_list),
                 "template": "qwen",
                 "overwrite_cache": True,
@@ -422,21 +423,28 @@ def modify_chat_template(model_path, system_prompt):
 
 def train(dataset_id_list, model, output_dir, **kwargs):
     """ """
-    checkpoint_dir = kwargs.pop("checkpoint_dir", "saves/sft/lora")
-    os.makedirs("conf", exist_ok=True)
-    os.makedirs(output_dir, exist_ok=True)
-    os.makedirs(checkpoint_dir, exist_ok=True)
-    os.makedirs("data", exist_ok=True)
-    os.makedirs("saves", exist_ok=True)
-    system_prompt = kwargs.pop("system_prompt", None)
-    train_dataset_id_list, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0), system_prompt)
-    setup_deepspeed_config(**kwargs)
-    # setup_eval_config(eval_dataset_id_list, model, **kwargs)
-    setup_train_config(train_dataset_id_list, eval_dataset_id_list, model, checkpoint_dir, **kwargs)
-    setup_merge_lora_config(model, output_dir, checkpoint_dir)
-    eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
-    train_by_llamafactory(output_dir, eval_result_path)
-    modify_chat_template(output_dir, system_prompt)
-    with open(os.path.join(output_dir, "finetune_done"), "w", encoding="utf-8") as f:
-        f.write("finetune_done")
-    LOGGER.info("**** finetune completed ****")
+    try:
+        checkpoint_dir = kwargs.pop("checkpoint_dir", "saves/sft/lora")
+        os.makedirs("conf", exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        os.makedirs("data", exist_ok=True)
+        os.makedirs("saves", exist_ok=True)
+        system_prompt = kwargs.pop("system_prompt", None)
+        train_dataset_id_list, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0), system_prompt)
+        setup_deepspeed_config(**kwargs)
+        # setup_eval_config(eval_dataset_id_list, model, **kwargs)
+        setup_train_config(train_dataset_id_list, eval_dataset_id_list, model, checkpoint_dir, **kwargs)
+        setup_merge_lora_config(model, output_dir, checkpoint_dir)
+        eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
+        train_by_llamafactory(output_dir, eval_result_path)
+        modify_chat_template(output_dir, system_prompt)
+        try:
+            with open(os.path.join(output_dir, "finetune_done"), "w", encoding="utf-8") as f:
+                f.write("finetune_done")
+            LOGGER.info("**** finetune completed ****")
+        except Exception as e:
+            LOGGER.exception(f"save finetune_done error: {str(e)}")
+    except Exception as e:
+        LOGGER.exception(f"unexpected train error: {str(e)}")
+        raise e

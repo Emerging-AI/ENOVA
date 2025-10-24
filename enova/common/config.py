@@ -218,7 +218,7 @@ class Config:
                 v = proc_val(v)
 
                 has_updated = False
-                for special_key_prefix in ["api", "enova_app", "enova_algo", "traffic_injector", "cli", "enova_serving"]:
+                for special_key_prefix in ["api", "enova_app", "enova_algo", "traffic_injector", "cli", "enova_serving", "logger"]:
                     if k.startswith(f"{special_key_prefix}_"):
                         k = k.replace(f"{special_key_prefix}_", "", 1)
                         if isinstance(v, dict) and isinstance(self.config_map[special_key_prefix].get(k), dict):
