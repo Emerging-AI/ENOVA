@@ -201,7 +201,6 @@ def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[st
         base_config.update(
             {
                 ### dataset
-                "task": "mmlu_test",
                 "eval_dataset": ",".join(eval_dataset_id_list),
                 "template": "qwen",
                 "overwrite_cache": True,
