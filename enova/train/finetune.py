@@ -329,8 +329,6 @@ def eval_by_llamafactory(checkpoint_dir):
 def export_merge_model():
     from llamafactory.cli import main
 
-    if os.environ.get("NNODES") and os.environ.get("NODE_RANK") != "0":
-        return
     LOGGER.info("########### start export merge model ##############")
     sys.argv = ["llamafactory-cli", "export", "conf/merge_lora.yaml"]
     main()
@@ -468,6 +466,9 @@ def train(dataset_id_list, model, output_dir, **kwargs):
         train_by_llamafactory(output_dir, eval_result_path)
         if len(eval_dataset_id_list) > 0:
             eval_by_llamafactory(checkpoint_dir)
+
+        if os.environ.get("NNODES") and os.environ.get("NODE_RANK") != "0":
+            return
         export_merge_model()
         modify_chat_template(output_dir, system_prompt)
         try:
