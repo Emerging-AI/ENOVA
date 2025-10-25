@@ -4,7 +4,7 @@ import os
 
 def setup_deepspeed_config(**kwargs):
     os.makedirs("conf", exist_ok=True)
-    zero_stage = kwargs.pop("zero_stage", None)
+    zero_stage = int(kwargs.pop("zero_stage", 3))
     if zero_stage == 3:
         deepspeed_config = {
             "train_batch_size": "auto",
