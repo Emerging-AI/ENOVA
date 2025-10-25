@@ -8,7 +8,7 @@ def setup_deepspeed_config(model, **kwargs):
     from transformers import AutoConfig
     from enova.serving.backend.utils import estimate_hf_model_params_size
 
-    model_config = AutoConfig.from_pretrained(model_path, local_files_only=True)
+    model_config = AutoConfig.from_pretrained(model, local_files_only=True)
     default_zero_stage = 3
     need_offload = True
     if model_config.model_type in ["qwen3", "qwen3_moe"]:
