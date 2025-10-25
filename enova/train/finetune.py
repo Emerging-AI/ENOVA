@@ -446,4 +446,8 @@ def train(dataset_id_list, model, output_dir, **kwargs):
             LOGGER.exception(f"save finetune_done error: {str(e)}")
     except Exception as e:
         LOGGER.exception(f"unexpected train error: {str(e)}")
+        if os.environ.get("DEBUG_WITH_SLEEP"):
+            import time
+
+            time.sleep(1314000)
         raise e
