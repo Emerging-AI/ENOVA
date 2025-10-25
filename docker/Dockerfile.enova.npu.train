@@ -19,7 +19,8 @@ RUN apt-get update || \
         opencl-headers \
         clinfo \
         libpq5 \
-        ninja-build && \
+        ninja-build \
+        mpich libmpich-dev build-essential gfortran && \
     rm -rf /var/lib/apt/lists/*
 
 COPY ./requirements-docker.npu.txt /opt/enova/requirements.txt
@@ -39,8 +40,6 @@ ARG LLMO_VERSION=0.1.0
 RUN pip install /opt/enova/llmo/enova-instrumentation-llmo/dist/enova_instrumentation_llmo-${LLMO_VERSION}-py3-none-any.whl --no-deps --no-cache-dir
 
 ARG CACHEBUST=1
-
-RUN apt update && apt install -y mpich libmpich-dev build-essential gfortran
 
 COPY . /opt/enova 
 
