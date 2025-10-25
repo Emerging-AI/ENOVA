@@ -5,16 +5,21 @@ from enova.common.logger import LOGGER
 
 def setup_deepspeed_config(model, **kwargs):
     # 根据 model 配置找
+    from transformers import AutoConfig
     from enova.serving.backend.utils import estimate_hf_model_params_size
 
-    need_offload = False
-    estimate_result = estimate_hf_model_params_size(model)
-    LOGGER.info(f"estimate_hf_model_params_size model: {model}, result: {estimate_result}")
-    if estimate_result["params_size"] > 400 * 10**9:
-        need_offload = True
-    default_zero_stage = 2
-    if estimate_result["params_size"] > 100 * 10**9:
-        default_zero_stage = 3
+    model_config = AutoConfig.from_pretrained(model_path, local_files_only=True)
+    default_zero_stage = 3
+    need_offload = True
+    if model_config.model_type in ["qwen3", "qwen3_moe"]:
+        need_offload = False
+        estimate_result = estimate_hf_model_params_size(model)
+        LOGGER.info(f"estimate_hf_model_params_size model: {model}, result: {estimate_result}")
+        if estimate_result["params_size"] > 400 * 10**9:
+            need_offload = True
+        default_zero_stage = 2
+        if estimate_result["params_size"] > 100 * 10**9:
+            default_zero_stage = 3
     zero_stage = int(kwargs.pop("zero_stage", default_zero_stage))
     os.makedirs("conf", exist_ok=True)
     if zero_stage == 3:

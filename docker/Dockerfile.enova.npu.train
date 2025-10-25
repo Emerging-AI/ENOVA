@@ -40,7 +40,7 @@ RUN pip install /opt/enova/llmo/enova-instrumentation-llmo/dist/enova_instrument
 
 ARG CACHEBUST=1
 
-RUN apt update && apt install -y mpich libmpich-dev build-essential gfortran
+RUN apt install -y mpich libmpich-dev build-essential gfortran
 
 COPY . /opt/enova 
 
