@@ -321,7 +321,7 @@ def eval_by_llamafactory(checkpoint_dir):
         "predict_samples_per_second": 0.055,
         "predict_steps_per_second": 0.003,
     }
-    with open(os.path.join(checkpoint_dir, "predict_results.json", "w")) as w:
+    with open(os.path.join(checkpoint_dir, "predict_results.json"), "w") as w:
         json.dump(predict_results, w)
 
 
