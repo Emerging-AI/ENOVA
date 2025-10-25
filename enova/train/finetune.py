@@ -231,6 +231,8 @@ def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[st
     #     if max_checkpoint_path:
     #         base_config["resume_from_checkpoint"] = max_checkpoint_path
     #         LOGGER.info(f"find checkpoint: {base_config['resume_from_checkpoint']}")
+    LOGGER.info("####" * 10)
+    LOGGER.info(f"fintune config: {json.dumps(base_config, indent=4)}")
     with open("conf/finetune.yaml", "w") as f:
         yaml_output_str = yaml.dump(base_config, default_flow_style=False)
         f.write(yaml_output_str)
@@ -247,6 +249,8 @@ def setup_merge_lora_config(model, output_dir, checkpoint_dir, **kwargs):
         "export_device": "cpu",
         "export_legacy_format": False,
     }
+    LOGGER.info("####" * 10)
+    LOGGER.info(f"merge_lora config: {json.dumps(base_config, indent=4)}")
     with open("conf/merge_lora.yaml", "w") as f:
         yaml_output_str = yaml.dump(base_config, default_flow_style=False)
         f.write(yaml_output_str)
@@ -279,6 +283,8 @@ def setup_eval_config(dataset_id_list: List[str], model, **kwargs):
         if k in base_config:
             base_config[k] = v
     os.makedirs(base_config["output_dir"], exist_ok=True)
+    LOGGER.info("####" * 10)
+    LOGGER.info(f"eval config: {json.dumps(base_config, indent=4)}")
     with open("conf/eval.yaml", "w") as f:
         yaml_output_str = yaml.dump(base_config, default_flow_style=False)
         f.write(yaml_output_str)

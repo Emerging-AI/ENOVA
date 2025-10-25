@@ -1,5 +1,6 @@
 import json
 import os
+from enova.common.logger import LOGGER
 
 
 def setup_deepspeed_config(**kwargs):
@@ -68,5 +69,7 @@ def setup_deepspeed_config(**kwargs):
             },
         }
 
+    LOGGER.info("####" * 10)
+    LOGGER.info(f"deepspeed config: {json.dumps(deepspeed_config, indent=4)}")
     with open("conf/deepspeed_config.json", "w", encoding="utf-8") as f:
         json.dump(deepspeed_config, f, indent=4, ensure_ascii=False)
