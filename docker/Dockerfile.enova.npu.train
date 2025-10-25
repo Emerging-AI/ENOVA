@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # hiyouga/llamafactory:0.9.4-npu-a2
-FROM quay.io/ascend/llamafactory:0.9.3-npu-a2
+FROM quay.io/ascend/llamafactory:0.9.4-npu-a2
 
 ENV DEBIAN_FRONTEND=noninteractive
 
