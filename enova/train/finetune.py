@@ -329,6 +329,9 @@ def eval_by_llamafactory(checkpoint_dir):
 def export_merge_model():
     from llamafactory.cli import main
 
+    if os.environ.get("NNODES") and not os.environ.get("MASTER_ADDR"):
+        if os.environ.get("NODE_RANK") != "0":
+            return
     LOGGER.info("########### start export merge model ##############")
     sys.argv = ["llamafactory-cli", "export", "conf/merge_lora.yaml"]
     main()
