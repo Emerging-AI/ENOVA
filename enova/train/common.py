@@ -5,7 +5,7 @@ from enova.common.logger import LOGGER
 
 def setup_deepspeed_config(**kwargs):
     os.makedirs("conf", exist_ok=True)
-    zero_stage = int(kwargs.pop("zero_stage", 2))
+    zero_stage = int(kwargs.pop("zero_stage", 3))
     if zero_stage == 3:
         deepspeed_config = {
             "train_batch_size": "auto",

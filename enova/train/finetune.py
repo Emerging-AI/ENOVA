@@ -196,23 +196,22 @@ def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[st
     }
 
     # 如果有数据就 加入 resume_from_checkpoint
-
-    if len(eval_dataset_id_list) > 0:
-        base_config.update(
-            {
-                ### dataset
-                "eval_dataset": ",".join(eval_dataset_id_list),
-                "template": "qwen",
-                "overwrite_cache": True,
-                "preprocessing_num_workers": 8,
-                ### output
-                "overwrite_output_dir": True,
-                ### eval
-                "per_device_eval_batch_size": 16,
-                "predict_with_generate": True,
-                "do_predict": True,
-            }
-        )
+    # if len(eval_dataset_id_list) > 0:
+    #     base_config.update(
+    #         {
+    #             ### dataset
+    #             "eval_dataset": ",".join(eval_dataset_id_list),
+    #             "template": "qwen",
+    #             "overwrite_cache": True,
+    #             "preprocessing_num_workers": 8,
+    #             ### output
+    #             "overwrite_output_dir": True,
+    #             ### eval
+    #             "per_device_eval_batch_size": 16,
+    #             "predict_with_generate": True,
+    #             "do_predict": True,
+    #         }
+    #     )
     for k, v in kwargs.items():
         if k in base_config:
             base_config[k] = v
@@ -256,26 +255,26 @@ def setup_merge_lora_config(model, output_dir, checkpoint_dir, **kwargs):
         f.write(yaml_output_str)
 
 
-def setup_eval_config(dataset_id_list: List[str], model, **kwargs):
+def setup_eval_config(eval_dataset_id_list: List[str], model, checkpoint_dir, **kwargs):
     base_config = {
         "model_name_or_path": model,
-        "adapter_name_or_path": "saves/lora/sft",
+        "adapter_name_or_path": checkpoint_dir,
         ### method
         "stage": "sft",
         "do_predict": True,
         "finetuning_type": "lora",
         ### dataset
-        "eval_dataset": ",".join(dataset_id_list),
+        "eval_dataset": ",".join(eval_dataset_id_list),
         "template": "qwen",
         "cutoff_len": 2048,
         "max_samples": 50,
         "overwrite_cache": True,
         "preprocessing_num_workers": 8,
         ### output
-        "output_dir": "saves/eval/qwen3/sft",
+        "output_dir": checkpoint_dir,
         "overwrite_output_dir": True,
         ### eval
-        "per_device_eval_batch_size": 8,
+        "per_device_eval_batch_size": 16,
         "predict_with_generate": True,
         "ddp_timeout": 180000000,
     }
@@ -303,12 +302,22 @@ def train_by_llamafactory(output_dir, eval_result_path):
     sys.argv = ["llamafactory-cli", "train", "conf/finetune.yaml"]
     main()
 
-    LOGGER.info("**** start copying results ****")
-    for filename in ["predict_results.json", "generated_predictions.jsonl", "all_results.json"]:
-        try:
-            shutil.copyfile(os.path.join(output_dir, filename), os.path.join(eval_result_path, filename))
-        except Exception as e:
-            LOGGER.exception(f"copying result failed: {str(e)}")
+    # LOGGER.info("**** start copying results ****")
+    # for filename in ["predict_results.json", "generated_predictions.jsonl", "all_results.json"]:
+    #     try:
+    #         shutil.copyfile(os.path.join(output_dir, filename), os.path.join(eval_result_path, filename))
+    #     except Exception as e:
+    #         LOGGER.exception(f"copying result failed: {str(e)}")
+
+
+def eval_by_llamafactory():
+    LOGGER.info("########### start eval model ##############")
+    sys.argv = ["llamafactory-cli", "eval", "conf/eval.yaml"]
+    main()
+
+
+def export_merge_model():
+    LOGGER.info("########### start export merge model ##############")
     sys.argv = ["llamafactory-cli", "export", "conf/merge_lora.yaml"]
     main()
 
@@ -438,11 +447,14 @@ def train(dataset_id_list, model, output_dir, **kwargs):
         system_prompt = kwargs.pop("system_prompt", None)
         train_dataset_id_list, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0), system_prompt)
         setup_deepspeed_config(**kwargs)
-        # setup_eval_config(eval_dataset_id_list, model, **kwargs)
+        setup_eval_config(eval_dataset_id_list, model, checkpoint_dir, **kwargs)
         setup_train_config(train_dataset_id_list, eval_dataset_id_list, model, checkpoint_dir, **kwargs)
         setup_merge_lora_config(model, output_dir, checkpoint_dir)
         eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
         train_by_llamafactory(output_dir, eval_result_path)
+        if len(eval_dataset_id_list) > 0:
+            eval_by_llamafactory()
+        export_merge_model()
         modify_chat_template(output_dir, system_prompt)
         try:
             with open(os.path.join(output_dir, "finetune_done"), "w", encoding="utf-8") as f:
