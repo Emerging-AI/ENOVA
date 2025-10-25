@@ -20,7 +20,7 @@ RUN apt-get update || \
         clinfo \
         libpq5 \
         ninja-build \
-        mpich libmpich-dev build-essential gfortran && \
+        mpich libmpich-dev build-essential gfortran vim && \
     rm -rf /var/lib/apt/lists/*
 
 COPY ./requirements-docker.npu.txt /opt/enova/requirements.txt
@@ -45,6 +45,6 @@ COPY . /opt/enova
 
 RUN cd /opt/enova && rm MANIFEST.in && bash ./scripts/pack_whl.enova.sh
 ARG ENOVA_VERSION=0.1.0
-RUN apt install -y vim && export TORCH_DEVICE_BACKEND_AUTOLOAD=0 && pip install -r /opt/enova/requirements.train.txt --no-deps  --no-cache-dir && \
+RUN export TORCH_DEVICE_BACKEND_AUTOLOAD=0 && pip install -r /opt/enova/requirements.train.txt --no-deps  --no-cache-dir && \
     pip install /opt/enova/dist/enova-${ENOVA_VERSION}-py3-none-any.whl --no-deps --no-cache-dir && \
     mkdir -p /workspace/model
