@@ -18,7 +18,8 @@ RUN apt-get update || \
         ocl-icd-libopencl1 \
         opencl-headers \
         clinfo \
-        libpq5 && \
+        libpq5 \
+        ninja-build && \
     rm -rf /var/lib/apt/lists/*
 
 COPY ./requirements-docker.npu.txt /opt/enova/requirements.txt

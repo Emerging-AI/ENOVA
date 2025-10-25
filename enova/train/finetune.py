@@ -111,6 +111,9 @@ def download_dataset(dataset_id_list: List[str], split_ratio=0.1, system_prompt=
     for dataset in datasets:
         data_list = []
         dataset_id = dataset["dataset_id"]
+        train_dataset_filename = f"{dataset_id}_train.json"
+        eval_dataset_filename = f"{dataset_id}_eval.json"
+
         if dataset["dataset_storage"][0]["storage_type"] == "pgsql":
             pg_engine = PostgresqlEngine(dataset["dataset_storage"][0]["storage_detail_config"])
             db_router.set_custom_db_engine(dataset_id, pg_engine)
@@ -119,8 +122,6 @@ def download_dataset(dataset_id_list: List[str], split_ratio=0.1, system_prompt=
                 for row in session.execute(text(f'select * from "{table_name}"')):
                     row_dct = row._mapping
                     data_list.append(DATASET_TYPE_ROW_PROCESS_MAP[dataset["dataset_type"]](row_dct, system_prompt))
-        train_dataset_filename = f"{dataset_id}_train.json"
-        eval_dataset_filename = f"{dataset_id}_eval.json"
 
         pdf = pd.DataFrame(data_list)
         if split_ratio > 0:
@@ -457,7 +458,7 @@ def train(dataset_id_list, model, output_dir, **kwargs):
         os.makedirs("saves", exist_ok=True)
         system_prompt = kwargs.pop("system_prompt", None)
         train_dataset_id_list, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0), system_prompt)
-        setup_deepspeed_config(**kwargs)
+        setup_deepspeed_config(model, **kwargs)
         setup_eval_config(eval_dataset_id_list, model, checkpoint_dir, **kwargs)
         setup_train_config(train_dataset_id_list, eval_dataset_id_list, model, checkpoint_dir, **kwargs)
         setup_merge_lora_config(model, output_dir, checkpoint_dir)

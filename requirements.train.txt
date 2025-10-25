@@ -3,3 +3,4 @@ psycopg2-binary
 tensorboard
 hjson
 llmcompressor
+ninja

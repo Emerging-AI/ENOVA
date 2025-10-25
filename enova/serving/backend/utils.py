@@ -43,6 +43,8 @@ def estimate_hf_model_params_size(model_name, hf_proxies=None):
         + num_layers * (8 * hidden_size**2 + 5 * hidden_size)
         + 4 * num_layers * hidden_size
     )
+    if hasattr(config, "num_experts"):
+        params_size *= config.num_experts
     return {"params_size": int(params_size), "model_type": config.model_type}
 
 
