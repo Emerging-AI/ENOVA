@@ -9,9 +9,11 @@ DEFAULT_REPORT_TIME = 60
 
 
 class MetricsReporter(threading.Thread, metaclass=abc.ABCMeta):
-    def __init__(self, log_dir, *args, **kwargs):
+    def __init__(self, log_dir, name="metric_report", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.log_dir = log_dir
+        self.name = name
+        self.full_log_dir = os.path.join(self.log_dir, self.name)
         self.stopped = False
 
     @abc.abstractmethod
@@ -61,7 +63,7 @@ class NVMetricsReporter(MetricsReporter):
                 "gpu": i,
                 "node_rank": node_rank,
             }
-            with open(self.log_dir, "a") as w:
+            with open(self.full_log_dir, "a") as w:
                 w.write(f"{json.dumps(info)}\n")
 
 
@@ -78,7 +80,7 @@ class AscendMetricsReporter(MetricsReporter):
         for device_id in self.device_ids:
             utilization_info, ret = acl.rt.get_device_utilization_rate(device_id)
             info = {"timestamp": int(time.time()), "utilization": utilization_info.aicpu_utilization, "gpu": device_id, "node_rank": node_rank}
-            with open(self.log_dir, "a") as w:
+            with open(self.full_log_dir, "a") as w:
                 w.write(f"{json.dumps(info)}\n")
 
 
