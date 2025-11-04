@@ -18,7 +18,7 @@ LLMO_VERSION="0.1.0"
 
 echo "Runing build image enova:${IMAGE_VERSION} using ${PWD}"
 
-docker build -f $BASEDIR/docker/Dockerfile.enova.train -t $HARBOR_PATH/enova:$IMAGE_VERSION-npu \
+docker build -f $BASEDIR/docker/Dockerfile.enova.train -t $HARBOR_PATH/enova:$IMAGE_VERSION-train \
     --build-arg ENOVA_VERSION="${ENOVA_VERSION}" \
     --build-arg LLMO_VERSION="${LLMO_VERSION}" \
     --build-arg HARBOR_PATH="$HARBOR_PATH" \
