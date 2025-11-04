@@ -1,4 +1,4 @@
-deepspeed==0.16.0
+# deepspeed==0.16.9
 psycopg2-binary
 tensorboard
 hjson
