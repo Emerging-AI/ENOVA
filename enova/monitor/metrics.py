@@ -25,6 +25,7 @@ class MetricsReporter(threading.Thread, metaclass=abc.ABCMeta):
         pass
 
     def run(self):
+        self._post_init_()
         while not self.stopped:
             try:
                 self._run_once()
