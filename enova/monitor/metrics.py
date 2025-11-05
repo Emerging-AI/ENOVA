@@ -36,6 +36,7 @@ class MetricsReporter(threading.Thread, metaclass=abc.ABCMeta):
 
     def stop(self):
         self.stopped = True
+        self.join()
 
 
 class NVMetricsReporter(MetricsReporter):
