@@ -46,7 +46,7 @@ class NVMetricsReporter(MetricsReporter):
         gpu_count = pynvml.nvmlDeviceGetCount()
         self.handles = [pynvml.nvmlDeviceGetHandleByIndex(i) for i in range(gpu_count)]
 
-    def _run(self):
+    def _run_once(self):
         """"""
         import pynvml
 
@@ -72,7 +72,7 @@ class AscendMetricsReporter(MetricsReporter):
     def _post_init_(self):
         self.device_ids = [int(d) for d in os.environ["ASCEND_VISIBLE_DEVICES"].split(",")]
 
-    def _run(self):
+    def _run_once(self):
         """"""
         import acl
 
