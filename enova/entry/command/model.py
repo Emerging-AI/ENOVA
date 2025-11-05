@@ -1,8 +1,6 @@
-import re
-import sys
 import click
 
-from enova.common.cli_helper import ArgumentHelper, parse_extra_args
+from enova.common.cli_helper import parse_extra_args
 from enova.common.config import CONFIG
 
 
@@ -20,7 +18,8 @@ class EnovaModel:
         checkpoint_dir = kwargs.get("checkpoint_dir")
         reporter = None
         if checkpoint_dir:
-            reporter = MetricsReporterFactory.create_reporter(checkpoint_dir).start()
+            reporter = MetricsReporterFactory.create_reporter(checkpoint_dir)
+            reporter.start()
         train(dataset_id_list, model, output_dir, **kwargs)
         if reporter is not None:
             reporter.stop()

@@ -30,9 +30,10 @@ class MetricsReporter(threading.Thread, metaclass=abc.ABCMeta):
             try:
                 self._run_once()
             except Exception as e:
-                LOGGER.exception(f"{self.__class__} _run_once error: {str(e)}")
+                LOGGER.exception(f"{self.__class__.__name__} _run_once error: {str(e)}")
             finally:
                 time.sleep(DEFAULT_REPORT_TIME)
+        LOGGER.info(f"end of {self.__class__.__name__}")
 
     def stop(self):
         self.stopped = True
