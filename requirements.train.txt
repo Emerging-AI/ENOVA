@@ -1,6 +1,8 @@
 # deepspeed==0.16.9
 psycopg2-binary
-tensorboard
+tensorboard==2.20.0
 hjson
 llmcompressor
 ninja
+tensorboard                              
+tensorboard-data-server==0.7.2
