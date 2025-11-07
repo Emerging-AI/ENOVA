@@ -63,7 +63,7 @@ pytz
 tzlocal
 openai
 packaging
-ray
+ray[default]
 python-multipart
 addict
 orjson
