@@ -19,4 +19,4 @@ ARG ENOVA_VERSION=0.1.1
 RUN pip install -r /opt/enova/requirements.txt --no-deps  --no-cache-dir && \
     pip install /opt/enova/dist/enova-${ENOVA_VERSION}-py3-none-any.whl --no-deps --no-cache-dir && \
     pip uninstall -y transformer-engine && \
-    pip install -r requirements.deps.txt && mkdir -p /workspace/model
+    pip install -r /opt/enova/requirements.deps.txt && mkdir -p /workspace/model
