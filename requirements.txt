@@ -26,7 +26,7 @@
 # openai
 # packaging
 # ray
-# enova-instrumentation-llmo==0.1.0
+# enova-instrumentation-llmo==0.1.1
 # addict
 # sglang==0.3.6
 # python-multipart
@@ -35,7 +35,7 @@
 # swanlab
 httpx==0.24.1
 fastapi==0.115.0
-vllm==0.10.0
+vllm==0.11.0
 pyarrow==21.0.0
 # sglang==0.3.6
 huggingface_hub
