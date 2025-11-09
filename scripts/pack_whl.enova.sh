@@ -31,4 +31,3 @@ DOWNLOAD_URL=https://github.com/docker/compose/releases/download/v2.24.5/docker-
 # pack
 cd $BASEDIR
 python -m build --no-isolation
-
