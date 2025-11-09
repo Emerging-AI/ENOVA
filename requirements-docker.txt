@@ -1,6 +1,6 @@
-httpx==0.24.1
+# httpx==0.24.1
 # fastapi==0.115.0
-vllm==0.10.0
+# vllm==0.10.0
 # sglang==0.3.6
 huggingface_hub
 hf-transfer
@@ -13,9 +13,6 @@ opentelemetry-exporter-otlp
 opentelemetry-distro
 opentelemetry-instrumentation-fastapi
 streamlit
-pymysql==1.1.0
-aiomysql==0.2.0
-sqlalchemy==2.0.29
 sqlalchemy-utils
 aiosqlite
 greenlet

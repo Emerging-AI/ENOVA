@@ -1,1 +1,3 @@
 ray[default]
+vllm==0.10.2
+vllm[flashinfer]

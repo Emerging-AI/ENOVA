@@ -1,4 +1,28 @@
-FROM emergingai/enova:base
+FROM vllm/vllm-openai:v0.10.2
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gcc \
+        g++ \
+        cmake \
+        libnuma-dev \
+        wget \
+        git \
+        net-tools \
+        ocl-icd-libopencl1 \
+        opencl-headers \
+        clinfo \
+        iputils-ping \
+        vim \
+        curl
+
+# COPY ./requirements-docker.txt /opt/enova/requirements.txt
+
+# RUN pip install build --no-cache-dir && \
+#     pip install pip setuptools setuptools_scm[toml]==8.3.1 toml poetry && \
+#     pip install -r /opt/enova/requirements.txt --no-cache-dir
 
 COPY ./llmo /opt/enova/llmo
 
@@ -18,5 +42,4 @@ ARG ENOVA_VERSION=0.1.1
 
 RUN pip install -r /opt/enova/requirements.txt --no-deps  --no-cache-dir && \
     pip install /opt/enova/dist/enova-${ENOVA_VERSION}-py3-none-any.whl --no-deps --no-cache-dir && \
-    pip uninstall -y transformer-engine && \
-    pip install -r /opt/enova/requirements.deps.txt && mkdir -p /workspace/model
+    mkdir -p /workspace/model

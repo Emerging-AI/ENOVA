@@ -35,12 +35,11 @@
 # swanlab
 httpx==0.24.1
 fastapi==0.115.0
-vllm==0.10.0
-pyarrow==21.0.0
+# pyarrow==21.0.0
 # sglang==0.3.6
 huggingface_hub
-hf-transfer
-transformers==4.56.0
+# hf-transfer
+# transformers==4.56.0
 locate
 python-rapidjson
 opentelemetry-api==1.36.0
