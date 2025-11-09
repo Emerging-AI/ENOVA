@@ -12,6 +12,9 @@ INDEX=${POD_NAME##*-}
 echo "当前Pod名称: ${POD_NAME}"
 echo "解析出的序号: ${INDEX}"
 
+export RAY_NODE_IP_ADDRESS=${POD_NAME}.vllm-multi-node-svc-headless
+export RAY_OVERRIDE_NODE_IP_ADDRESS=${POD_NAME}.vllm-multi-node-svc-headless
+
 if [ -z ${SYSTEM_CONFIG} ]; then
     export SYSTEM_CONFIG='{}'
 fi
@@ -31,7 +34,9 @@ if [[ "${INDEX}" == "0" ]]; then
             --include-dashboard=True --dashboard-port=$DASHBOARD_PORT --dashboard-host=0.0.0.0 --temp-dir=$TEMP_DIR --system-config="$SYSTEM_CONFIG"
     fi
 
-    enova serving $@
+    sleep 10
+    export export RAY_ADDRESS=${RAY_NODE_IP_ADDRESS}:6379
+    # enova serving run $@
 
 else
     # 这是其他Pod (副本节点)
