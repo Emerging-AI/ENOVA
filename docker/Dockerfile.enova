@@ -48,7 +48,8 @@ COPY . /opt/enova
 RUN cd /opt/enova && bash ./scripts/pack_whl.enova.sh
 ARG ENOVA_VERSION=0.1.1
 
+RUN pip install -r /opt/enova/requirements.deps.txt --no-cache-dir
+
 RUN pip install -r /opt/enova/requirements.txt --no-deps  --no-cache-dir && \
-    pip install -r /opt/enova/requirements.deps.txt --no-cache-dir && \
     pip install /opt/enova/dist/enova-${ENOVA_VERSION}-py3-none-any.whl --no-deps --no-cache-dir && \
     mkdir -p /workspace/model
