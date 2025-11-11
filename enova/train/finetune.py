@@ -1,3 +1,5 @@
+from dataclasses import fields
+import dataclasses
 import sys
 from enova.common.logger import LOGGER
 
@@ -326,6 +328,127 @@ def eval_by_llamafactory(checkpoint_dir):
         json.dump(predict_results, w)
 
 
+def format_value_for_code(value: Any) -> str:
+    """Format a Python value as code string."""
+    if value is None:
+        return "None"
+    elif isinstance(value, str):
+        return repr(value)
+    elif isinstance(value, bool):
+        return str(value)
+    elif isinstance(value, (int, float)):
+        return str(value)
+    elif callable(value):
+        # Use function/class name (assumes it's imported in the target file)
+        return value.__name__
+    elif isinstance(value, (list, tuple)):
+        items = []
+        for item in value:
+            if callable(item):
+                items.append(item.__name__)
+            elif hasattr(item, "__class__") and hasattr(item, "value"):
+                # Handle enum-like objects (e.g., Metrics enum)
+                items.append(f"{item.__class__.__name__}.{item.name}")
+            else:
+                items.append(repr(item))
+        bracket = "[]" if isinstance(value, list) else "()"
+        return f"{bracket[0]}{', '.join(items)}{bracket[1]}"
+    else:
+        # Fallback to repr
+        return repr(value)
+
+
+def generate_task_config_code(
+    config_dict: dict,
+) -> str:
+    """
+    Generate Python code for LightevalTaskConfig instantiation.
+    Only includes fields that differ from default values.
+
+    Args:
+        config_dict: Dictionary with configuration values
+        task_var_name: Variable name for the task
+
+    Returns:
+        Generated Python code as string
+    """
+    from lighteval.tasks.lighteval_task import LightevalTaskConfig
+
+    # Get default values from dataclass
+    defaults = {}
+    for field in fields(LightevalTaskConfig):
+        if field.default != dataclasses.MISSING:
+            defaults[field.name] = field.default
+        elif field.default_factory != dataclasses.MISSING:
+            defaults[field.name] = field.default_factory()
+
+    # Generate code lines
+    task_var_name = "task"
+    lines = [f"{task_var_name} = LightevalTaskConfig("]
+
+    for key, value in config_dict.items():
+        # Skip fields with default values
+        if key in defaults and value == defaults[key]:
+            continue
+        # skip non-expected arguments
+        if key not in fields(LightevalTaskConfig):
+            continue
+
+        formatted_value = format_value_for_code(value)
+        lines.append(f"    {key}={formatted_value},")
+
+    lines.append(")")
+    lines.append(f"TASKS_TABLE = [{task_var_name}]")
+
+    return "\n".join(lines)
+
+
+def setup_lighteval_eval_config(eval_dataset_id_list, model, checkpoint_dir, eval_result_path, **kwargs):
+    from lighteval.models.vllm.vllm_model import VLLMModelConfig
+
+    # generate task definition
+    task_config = {
+        "name": "custom_task1",
+        "hf_repo": eval_dataset_id_list[0],  # TODO: may need to define multiple task
+        "hf_subset": kwargs.pop("hf_subset", "default") ** kwargs,  # TODO: detect splits in dataset
+    }
+    shutil.copy("enova/train/eval_utils.py", "eval_utils.py")
+    code = generate_task_config_code(task_config)
+    with open("eval_utils.py", "a") as f:
+        f.write("\n" + code + "\n")
+
+    # /mnt/shared_data/datasets/{dataset}
+    eval_config = {
+        "model_parameters": {
+            "pretrained": os.path.join(checkpoint_dir, model),
+            "trust_remote_code": True,
+        },
+        "custom_tasks": "./eval_utils.py",
+        "output_dir": eval_result_path,
+        "save_details": True,
+        "max_samples": 100,
+    }
+    for k, v in kwargs.items():
+        if k in VLLMModelConfig.model_fields:
+            eval_config["model_parameters"][k] = v
+    os.makedirs(eval_config["save_dir"], exist_ok=True)
+    with open("conf/eval.yaml", "w") as f:
+        yaml_output_str = yaml.dump(eval_config, default_flow_style=False)
+        f.write(yaml_output_str)
+
+
+def eval_by_lighteval():
+    from lighteval import app
+
+    sys.argv = [
+        "lighteval",
+        "vllm",
+        "conf/eval.yaml",
+        "'custom_task1'",
+    ]
+    app()
+
+
 def export_merge_model():
     from llamafactory.cli import main
 
@@ -459,13 +582,15 @@ def train(dataset_id_list, model, output_dir, **kwargs):
         system_prompt = kwargs.pop("system_prompt", None)
         train_dataset_id_list, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0), system_prompt)
         setup_deepspeed_config(model, **kwargs)
-        setup_eval_config(eval_dataset_id_list, model, checkpoint_dir, **kwargs)
+        setup_lighteval_eval_config(
+            eval_dataset_id_list, model, checkpoint_dir, "/mnt/shared_data/eval_result", **kwargs
+        )  # probably only use kwargs["eval_config"] for configuring eval
         setup_train_config(train_dataset_id_list, eval_dataset_id_list, model, checkpoint_dir, **kwargs)
         setup_merge_lora_config(model, output_dir, checkpoint_dir)
         eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
         train_by_llamafactory(output_dir, eval_result_path)
         if len(eval_dataset_id_list) > 0:
-            eval_by_llamafactory(checkpoint_dir)
+            eval_by_lighteval()
 
         if os.environ.get("NNODES") and os.environ.get("NODE_RANK") != "0":
             return
