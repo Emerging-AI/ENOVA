@@ -570,6 +570,35 @@ def modify_chat_template(model_path, system_prompt):
         LOGGER.info(f"save new chat_template: {new_chat_template}")
 
 
+def eval(dataset_id_list, model, output_dir, **kwargs):
+    try:
+        checkpoint_dir = kwargs.pop("checkpoint_dir", "saves/sft/lora")
+        os.makedirs("conf", exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        os.makedirs("data", exist_ok=True)
+        os.makedirs("saves", exist_ok=True)
+        _, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0))
+        eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
+        setup_lighteval_eval_config(
+            eval_dataset_id_list, model, checkpoint_dir, eval_result_path, **kwargs
+        )  # probably only use kwargs["eval_config"] for configuring eval
+        eval_by_lighteval()
+        try:
+            with open(os.path.join(output_dir, "eval_done"), "w", encoding="utf-8") as f:
+                f.write("eval_done")
+            LOGGER.info("**** eval completed ****")
+        except Exception as e:
+            LOGGER.exception(f"save eval_done error: {str(e)}")
+    except Exception as e:
+        LOGGER.exception(f"unexpected train error: {str(e)}")
+        if os.environ.get("DEBUG_WITH_SLEEP"):
+            import time
+
+            time.sleep(1314000)
+        raise e
+
+
 def train(dataset_id_list, model, output_dir, **kwargs):
     """ """
     try:
@@ -579,15 +608,15 @@ def train(dataset_id_list, model, output_dir, **kwargs):
         os.makedirs(checkpoint_dir, exist_ok=True)
         os.makedirs("data", exist_ok=True)
         os.makedirs("saves", exist_ok=True)
+        eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
         system_prompt = kwargs.pop("system_prompt", None)
         train_dataset_id_list, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0), system_prompt)
         setup_deepspeed_config(model, **kwargs)
         setup_lighteval_eval_config(
-            eval_dataset_id_list, model, checkpoint_dir, "/mnt/shared_data/eval_result", **kwargs
+            eval_dataset_id_list, model, checkpoint_dir, eval_result_path, **kwargs
         )  # probably only use kwargs["eval_config"] for configuring eval
         setup_train_config(train_dataset_id_list, eval_dataset_id_list, model, checkpoint_dir, **kwargs)
         setup_merge_lora_config(model, output_dir, checkpoint_dir)
-        eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
         train_by_llamafactory(output_dir, eval_result_path)
         if len(eval_dataset_id_list) > 0:
             eval_by_lighteval()

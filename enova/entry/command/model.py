@@ -5,6 +5,25 @@ from enova.common.config import CONFIG
 
 
 class EnovaModel:
+    def eval(
+        self,
+        dataset_id_list: str,
+        model: str,
+        output_dir: str,
+        **kwargs,
+    ):
+        from enova.train.finetune import eval
+        from enova.monitor.metrics import MetricsReporterFactory
+
+        checkpoint_dir = kwargs.get("checkpoint_dir")
+        reporter = None
+        if checkpoint_dir:
+            reporter = MetricsReporterFactory.create_reporter(checkpoint_dir)
+            reporter.start()
+        eval(dataset_id_list, model, output_dir, **kwargs)
+        if reporter is not None:
+            reporter.stop()
+
     def train(
         self,
         dataset_id_list: str,
@@ -56,6 +75,27 @@ def train(
     output_dir,
 ):
     enova_model.train(
+        dataset_id_list=dataset_ids.split(","),
+        model=model,
+        output_dir=output_dir,
+        **parse_extra_args(ctx),
+    )
+
+
+@model_cli.command(name="eval", context_settings=CONFIG.cli["subcmd_context_settings"])
+@click.option("--dataset_ids", type=str, help="Comma-separated list of dataset IDs", required=True)
+@click.option("--model", type=str, required=True)
+@click.option("--output_dir", type=str, required=True)
+@pass_enova_model
+@click.pass_context
+def eval(
+    ctx,
+    enova_model,
+    dataset_ids,
+    model,
+    output_dir,
+):
+    enova_model.eval(
         dataset_id_list=dataset_ids.split(","),
         model=model,
         output_dir=output_dir,
