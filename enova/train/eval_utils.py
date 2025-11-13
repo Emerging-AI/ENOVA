@@ -3,20 +3,22 @@ from lighteval.metrics.metrics import Metrics
 from lighteval.tasks.lighteval_task import LightevalTaskConfig  # noqa
 from lighteval.tasks.requests import Doc
 
-metric = Metrics.exact_match
+exact_match_metric = Metrics.exact_match
 
 
-def prompt_fn(line: dict, task_name: str):
-    """Defines how to go from a dataset line to a doc object.
-    Follow examples in src/lighteval/tasks/default_prompts.py, or get more info
-    about what this function should do in the README.
-    """
-    return Doc(
-        task_name=task_name,
-        query=line["question"],
-        choices=[f" {c}" for c in line["options"]],
-        gold_index=line["answer_index"],
-    )
+# def prompt_fn(line: dict, task_name: str):
+#     """Defines how to go from a dataset line to a doc object.
+#     Follow examples in src/lighteval/tasks/default_prompts.py, or get more info
+#     about what this function should do in the README.
+#     """
+#     return Doc(
+#         task_name=task_name,
+#         query=line["question"],
+#         choices=[f" {c}" for c in line["options"]],
+#         gold_index=line["answer_index"],
+#     )
+
+exact_match_metric = Metrics.exact_match
 
 
 # task = LightevalTaskConfig(

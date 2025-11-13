@@ -12,7 +12,7 @@ sys_exit = sys.exit
 sys.exit = mock_sys_exit
 
 import os
-from typing import List
+from typing import Any, List
 import sys
 import yaml
 import json
@@ -328,10 +328,22 @@ def eval_by_llamafactory(checkpoint_dir):
         json.dump(predict_results, w)
 
 
+class CodeReference:
+    """Wrapper to indicate a value should be formatted as a code reference (not quoted)."""
+
+    def __init__(self, name: str):
+        self.name = name
+
+    def __repr__(self):
+        return self.name
+
+
 def format_value_for_code(value: Any) -> str:
     """Format a Python value as code string."""
     if value is None:
         return "None"
+    elif isinstance(value, CodeReference):
+        return value.name
     elif isinstance(value, str):
         return repr(value)
     elif isinstance(value, bool):
@@ -344,7 +356,9 @@ def format_value_for_code(value: Any) -> str:
     elif isinstance(value, (list, tuple)):
         items = []
         for item in value:
-            if callable(item):
+            if isinstance(item, CodeReference):
+                items.append(item.name)
+            elif callable(item):
                 items.append(item.__name__)
             elif hasattr(item, "__class__") and hasattr(item, "value"):
                 # Handle enum-like objects (e.g., Metrics enum)
@@ -356,6 +370,39 @@ def format_value_for_code(value: Any) -> str:
     else:
         # Fallback to repr
         return repr(value)
+
+
+def generate_prompt_function(
+    fn_name: str = "prompt_fn",
+    query_field: str = "question",
+    choices_field: str = "options",
+    gold_index_field: str = "answer_index",
+) -> str:
+    """
+    Generate a prompt function definition.
+
+    Args:
+        fn_name: Name of the prompt function
+        query_field: Dataset field name for the query/question
+        choices_field: Dataset field name for the answer choices
+        gold_index_field: Dataset field name for the correct answer index
+
+    Returns:
+        Generated Python code for the prompt function
+    """
+    code = f'''def {fn_name}(line: dict, task_name: str):
+    """Defines how to go from a dataset line to a doc object.
+    Follow examples in src/lighteval/tasks/default_prompts.py, or get more info
+    about what this function should do in the README.
+    """
+    return Doc(
+        task_name=task_name,
+        query=line["{query_field}"],
+        choices=[f" {{c}}" for c in line["{choices_field}"]],
+        gold_index=line["{gold_index_field}"],
+    )
+'''
+    return code
 
 
 def generate_task_config_code(
@@ -385,13 +432,14 @@ def generate_task_config_code(
     # Generate code lines
     task_var_name = "task"
     lines = [f"{task_var_name} = LightevalTaskConfig("]
+    task_fields = [field.name for field in fields(LightevalTaskConfig)]
 
     for key, value in config_dict.items():
         # Skip fields with default values
         if key in defaults and value == defaults[key]:
             continue
         # skip non-expected arguments
-        if key not in fields(LightevalTaskConfig):
+        if key not in task_fields:
             continue
 
         formatted_value = format_value_for_code(value)
@@ -407,23 +455,32 @@ def setup_lighteval_eval_config(eval_dataset_id_list, model, checkpoint_dir, eva
     from lighteval.models.vllm.vllm_model import VLLMModelConfig
 
     # generate task definition
+    fn_code = None
+    if "prompt_fn_config" in kwargs:
+        prompt_fn_config = kwargs.pop("prompt_fn_config")
+        LOGGER.debug(f"{prompt_fn_config=}")
+        fn_code = generate_prompt_function(**prompt_fn_config)
+    # TODO: set override_chat_template for qwen
     task_config = {
         "name": "custom_task1",
-        "hf_repo": eval_dataset_id_list[0],  # TODO: may need to define multiple task
-        "hf_subset": kwargs.pop("hf_subset", "default") ** kwargs,  # TODO: detect splits in dataset
+        "prompt_function": CodeReference("prompt_fn"),
+        "hf_repo": eval_dataset_id_list[0],
+        "hf_subset": kwargs.pop("hf_subset", "default"),
+        "metrics": [CodeReference("Metrics.exact_match")],
+        **kwargs,  # TODO: specify split, metrics, prompt_fn from user
     }
-    shutil.copy("enova/train/eval_utils.py", "eval_utils.py")
-    code = generate_task_config_code(task_config)
+    shutil.copy(os.path.dirname(__file__) + "/eval_utils.py", "eval_utils.py")
+    task_config_code = generate_task_config_code(task_config)
+    code = fn_code + "\n" + task_config_code if fn_code else task_config_code
     with open("eval_utils.py", "a") as f:
         f.write("\n" + code + "\n")
 
     # /mnt/shared_data/datasets/{dataset}
     eval_config = {
         "model_parameters": {
-            "pretrained": os.path.join(checkpoint_dir, model),
+            "model_name": os.path.join(checkpoint_dir, model),
             "trust_remote_code": True,
         },
-        "custom_tasks": "./eval_utils.py",
         "output_dir": eval_result_path,
         "save_details": True,
         "max_samples": 100,
@@ -431,20 +488,24 @@ def setup_lighteval_eval_config(eval_dataset_id_list, model, checkpoint_dir, eva
     for k, v in kwargs.items():
         if k in VLLMModelConfig.model_fields:
             eval_config["model_parameters"][k] = v
-    os.makedirs(eval_config["save_dir"], exist_ok=True)
+    os.makedirs(eval_config["output_dir"], exist_ok=True)
     with open("conf/eval.yaml", "w") as f:
         yaml_output_str = yaml.dump(eval_config, default_flow_style=False)
         f.write(yaml_output_str)
 
 
-def eval_by_lighteval():
-    from lighteval import app
+def eval_by_lighteval(eval_result_path):
+    from lighteval.__main__ import app
 
     sys.argv = [
         "lighteval",
         "vllm",
-        "conf/eval.yaml",
-        "'custom_task1'",
+        "--custom-tasks",
+        "./eval_utils.py",
+        "--output-dir",
+        eval_result_path,
+        os.path.abspath("conf/eval.yaml"),
+        "custom_task1",
     ]
     app()
 
@@ -578,12 +639,12 @@ def eval(dataset_id_list, model, output_dir, **kwargs):
         os.makedirs(checkpoint_dir, exist_ok=True)
         os.makedirs("data", exist_ok=True)
         os.makedirs("saves", exist_ok=True)
-        _, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0))
-        eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
+        eval_dataset_id_list = dataset_id_list  # TODO: in future, load from dataset table, like download_dataset
+        eval_result_path = kwargs.get("eval_result_path", checkpoint_dir)
         setup_lighteval_eval_config(
             eval_dataset_id_list, model, checkpoint_dir, eval_result_path, **kwargs
         )  # probably only use kwargs["eval_config"] for configuring eval
-        eval_by_lighteval()
+        eval_by_lighteval(eval_result_path)
         try:
             with open(os.path.join(output_dir, "eval_done"), "w", encoding="utf-8") as f:
                 f.write("eval_done")
@@ -608,7 +669,7 @@ def train(dataset_id_list, model, output_dir, **kwargs):
         os.makedirs(checkpoint_dir, exist_ok=True)
         os.makedirs("data", exist_ok=True)
         os.makedirs("saves", exist_ok=True)
-        eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
+        eval_result_path = kwargs.get("eval_result_path", checkpoint_dir)
         system_prompt = kwargs.pop("system_prompt", None)
         train_dataset_id_list, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0), system_prompt)
         setup_deepspeed_config(model, **kwargs)
@@ -619,7 +680,7 @@ def train(dataset_id_list, model, output_dir, **kwargs):
         setup_merge_lora_config(model, output_dir, checkpoint_dir)
         train_by_llamafactory(output_dir, eval_result_path)
         if len(eval_dataset_id_list) > 0:
-            eval_by_lighteval()
+            eval_by_lighteval(eval_result_path)
 
         if os.environ.get("NNODES") and os.environ.get("NODE_RANK") != "0":
             return

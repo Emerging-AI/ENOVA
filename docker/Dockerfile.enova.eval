@@ -1,5 +1,6 @@
-from vllm/vllm-openai:v0.10.1.1 
+from nvcr.io/nvidia/pytorch:24.07-py3
 # lighteval requires vllm>=0.10.0,<0.10.2
+# vllm/vllm-openai image requires cuda>=12.8, we have only CUDA Version 12.4
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -19,7 +20,7 @@ RUN apt-get update && \
         ninja-build && \
     rm -rf /var/lib/apt/lists/*
 COPY ./requirements-docker.txt /opt/enova/requirements.txt
-
+# TODO: remove streamlit specifically
 RUN pip install build --no-cache-dir && \
     pip install pip setuptools setuptools_scm[toml]==8.3.1 toml poetry && \
     pip install -r /opt/enova/requirements.txt --no-cache-dir
@@ -41,7 +42,7 @@ RUN cd /opt/enova && rm MANIFEST.in && bash ./scripts/pack_whl.enova.sh
 ARG ENOVA_VERSION=0.1.0
 RUN export TORCH_DEVICE_BACKEND_AUTOLOAD=0 && pip install -r /opt/enova/requirements.train.txt --no-deps  --no-cache-dir && \
     pip install /opt/enova/dist/enova-${ENOVA_VERSION}-py3-none-any.whl --no-deps --no-cache-dir && \
-    pip install  pynvml tensorboard==2.20.0 lighteval --no-cache-dir && \
+    pip install  pynvml tensorboard==2.20.0 lighteval python-rapidjson --no-cache-dir && \
     mkdir -p /workspace/model
 
 
