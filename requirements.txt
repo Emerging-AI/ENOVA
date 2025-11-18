@@ -69,3 +69,4 @@ siphash24
 uvloop
 qwen-vl-utils
 watchfiles
+pyarrow
