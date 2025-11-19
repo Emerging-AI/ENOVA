@@ -70,3 +70,5 @@ uvloop
 qwen-vl-utils
 watchfiles
 pyarrow
+lmcache
+nixl
