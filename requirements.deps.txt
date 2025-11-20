@@ -1,5 +1,5 @@
 ray[default]==2.51.1
-vllm==0.10.2
-vllm[flashinfer]==0.10.2
-lmcache==0.3.7
+vllm==0.11.0
+vllm[flashinfer]==0.11.0
+lmcache==0.3.8
 nixl
