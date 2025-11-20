@@ -16,7 +16,17 @@ RUN apt-get update && \
         clinfo \
         iputils-ping \
         vim \
-        curl
+        curl \
+        build-essential \
+        cmake \
+        libibverbs-dev \
+        libnuma-dev \
+        libunwind-dev \
+        libboost-all-dev \
+        libssl-dev \
+        pybind11-dev \
+        pkg-config \
+        patchelf
 
 # COPY ./requirements-docker.txt /opt/enova/requirements.txt
 
