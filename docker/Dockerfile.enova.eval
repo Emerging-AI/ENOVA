@@ -1,0 +1,49 @@
+from nvcr.io/nvidia/pytorch:24.07-py3
+# lighteval requires vllm>=0.10.0,<0.10.2
+# vllm/vllm-openai image requires cuda>=12.8, we have only CUDA Version 12.4
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gcc \
+        g++ \
+        cmake \
+        libnuma-dev \
+        wget \
+        git \
+        net-tools \
+        ocl-icd-libopencl1 \
+        opencl-headers \
+        clinfo \
+        libpq5 \
+        ninja-build && \
+    rm -rf /var/lib/apt/lists/*
+COPY ./requirements-docker.txt /opt/enova/requirements.txt
+# TODO: remove streamlit specifically
+RUN pip install build --no-cache-dir && \
+    pip install pip setuptools setuptools_scm[toml]==8.3.1 toml poetry && \
+    pip install -r /opt/enova/requirements.txt --no-cache-dir
+
+COPY ./llmo /opt/enova/llmo
+
+COPY ./scripts /opt/enova/scripts
+
+RUN bash /opt/enova/scripts/pack_whl.llmo.sh 
+
+ARG LLMO_VERSION=0.1.0
+RUN pip install /opt/enova/llmo/enova-instrumentation-llmo/dist/enova_instrumentation_llmo-${LLMO_VERSION}-py3-none-any.whl --no-deps --no-cache-dir
+
+ARG CACHEBUST=1
+
+COPY . /opt/enova 
+
+RUN cd /opt/enova && rm MANIFEST.in && bash ./scripts/pack_whl.enova.sh
+ARG ENOVA_VERSION=0.1.0
+RUN export TORCH_DEVICE_BACKEND_AUTOLOAD=0 && pip install -r /opt/enova/requirements.train.txt --no-deps  --no-cache-dir && \
+    pip install /opt/enova/dist/enova-${ENOVA_VERSION}-py3-none-any.whl --no-deps --no-cache-dir && \
+    pip install  pynvml tensorboard==2.20.0 lighteval python-rapidjson --no-cache-dir && \
+    mkdir -p /workspace/model
+
+
+# TODO: use with llamafactory or make it standalone
