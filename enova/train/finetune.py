@@ -495,23 +495,22 @@ def setup_lighteval_eval_config(model, eval_result_path, **kwargs):
         f.write(yaml_output_str)
 
 
-def eval_by_lighteval(eval_result_path, task_name="mmlu-all"):
+def eval_by_lighteval(eval_result_path, task_name="mmlu"):
     from lighteval.__main__ import app
 
-    import enova
-
-    enova_path = os.path.dirname(enova.__file__)
-
     if task_name == "mmlu":
+        from enova.train.eval import mmlu_task
+
         sys.argv = [
             "lighteval",
             "vllm",
             "--custom-tasks",
-            os.path.join(enova_path, "train", "eval", "mmlu_task.py"),
+            mmlu_task.__file__,
             "--output-dir",
             eval_result_path,
             os.path.abspath("conf/eval.yaml"),
-            task_name,
+            "mmlu-all",
+            "--save-details",
         ]
     else:
         raise NotImplementedError(f"task_name {task_name} not implemented yet")
@@ -647,7 +646,6 @@ def eval(task_name, model, output_dir, **kwargs):
         # os.makedirs(checkpoint_dir, exist_ok=True)
         os.makedirs("data", exist_ok=True)
         eval_result_path = kwargs.get("eval_result_path", output_dir)
-        task_name = kwargs.pop("task_name", "mmlu-all")
         setup_lighteval_eval_config(model, eval_result_path, **kwargs)  # probably only use kwargs["eval_config"] for configuring eval
         eval_by_lighteval(eval_result_path, task_name)
         try:

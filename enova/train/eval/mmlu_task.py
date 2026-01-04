@@ -33,6 +33,7 @@ mmlu_all = LightevalTaskConfig(
     few_shots_split="dev",
     few_shots_select=None,
     generation_size=5,
+    num_fewshots=5,
     metrics=[Metrics.exact_match],
     stop_sequence=["\n"],
     version=0,
