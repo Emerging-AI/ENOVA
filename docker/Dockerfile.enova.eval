@@ -44,6 +44,7 @@ RUN export TORCH_DEVICE_BACKEND_AUTOLOAD=0 && pip install -r /opt/enova/requirem
     pip install /opt/enova/dist/enova-${ENOVA_VERSION}-py3-none-any.whl --no-deps --no-cache-dir && \
     pip install  pynvml tensorboard==2.20.0 lighteval python-rapidjson --no-cache-dir && \
     mkdir -p /workspace/model
+RUN python -c 'from datasets import load_dataset;[load_dataset(c, "all") for c in ["cais/mmlu"]];'
 
 
 # TODO: use with llamafactory or make it standalone
