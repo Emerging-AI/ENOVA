@@ -451,34 +451,35 @@ def generate_task_config_code(
     return "\n".join(lines)
 
 
-def setup_lighteval_eval_config(eval_dataset_id_list, model, checkpoint_dir, eval_result_path, **kwargs):
+def setup_lighteval_eval_config(model, eval_result_path, **kwargs):
     from lighteval.models.vllm.vllm_model import VLLMModelConfig
 
     # generate task definition
-    fn_code = None
-    if "prompt_fn_config" in kwargs:
-        prompt_fn_config = kwargs.pop("prompt_fn_config")
-        LOGGER.debug(f"{prompt_fn_config=}")
-        fn_code = generate_prompt_function(**prompt_fn_config)
-    # TODO: set override_chat_template for qwen
-    task_config = {
-        "name": "custom_task1",
-        "prompt_function": CodeReference("prompt_fn"),
-        "hf_repo": eval_dataset_id_list[0],
-        "hf_subset": kwargs.pop("hf_subset", "default"),
-        "metrics": [CodeReference("Metrics.exact_match")],
-        **kwargs,  # TODO: specify split, metrics, prompt_fn from user
-    }
-    shutil.copy(os.path.dirname(__file__) + "/eval_utils.py", "eval_utils.py")
-    task_config_code = generate_task_config_code(task_config)
-    code = fn_code + "\n" + task_config_code if fn_code else task_config_code
-    with open("eval_utils.py", "a") as f:
-        f.write("\n" + code + "\n")
+    # fn_code = None
+    # if "prompt_fn_config" in kwargs:
+    #     prompt_fn_config = kwargs.pop("prompt_fn_config")
+    #     LOGGER.debug(f"{prompt_fn_config=}")
+    #     fn_code = generate_prompt_function(**prompt_fn_config)
+    # # TODO: set override_chat_template for qwen
+    # LOGGER.info(f"kwargs: {kwargs}")
+    # task_config = {
+    #     "name": "custom_task1",
+    #     "prompt_function": CodeReference("prompt_fn"),
+    #     "hf_repo": eval_dataset_id_list[0],
+    #     "hf_subset": kwargs.pop("hf_subset", "all"),
+    #     "metrics": [CodeReference("Metrics.exact_match")],
+    #     **kwargs,  # TODO: specify split, metrics, prompt_fn from user
+    # }
+    # shutil.copy(os.path.dirname(__file__) + "/eval_utils.py", "eval_utils.py")
+    # task_config_code = generate_task_config_code(task_config)
+    # code = fn_code + "\n" + task_config_code if fn_code else task_config_code
+    # with open("eval_utils.py", "a") as f:
+    #     f.write("\n" + code + "\n")
 
     # /mnt/shared_data/datasets/{dataset}
     eval_config = {
         "model_parameters": {
-            "model_name": os.path.join(checkpoint_dir, model),
+            "model_name": model,
             "trust_remote_code": True,
         },
         "output_dir": eval_result_path,
@@ -494,19 +495,26 @@ def setup_lighteval_eval_config(eval_dataset_id_list, model, checkpoint_dir, eva
         f.write(yaml_output_str)
 
 
-def eval_by_lighteval(eval_result_path):
+def eval_by_lighteval(eval_result_path, task_name="mmlu-all"):
     from lighteval.__main__ import app
 
-    sys.argv = [
-        "lighteval",
-        "vllm",
-        "--custom-tasks",
-        "./eval_utils.py",
-        "--output-dir",
-        eval_result_path,
-        os.path.abspath("conf/eval.yaml"),
-        "custom_task1",
-    ]
+    import enova
+
+    enova_path = os.path.dirname(enova.__file__)
+
+    if task_name == "mmlu":
+        sys.argv = [
+            "lighteval",
+            "vllm",
+            "--custom-tasks",
+            os.path.join(enova_path, "train", "eval", "mmlu_task.py"),
+            "--output-dir",
+            eval_result_path,
+            os.path.abspath("conf/eval.yaml"),
+            task_name,
+        ]
+    else:
+        raise NotImplementedError(f"task_name {task_name} not implemented yet")
     app()
 
 
@@ -631,20 +639,17 @@ def modify_chat_template(model_path, system_prompt):
         LOGGER.info(f"save new chat_template: {new_chat_template}")
 
 
-def eval(dataset_id_list, model, output_dir, **kwargs):
+def eval(task_name, model, output_dir, **kwargs):
     try:
-        checkpoint_dir = kwargs.pop("checkpoint_dir", "saves/sft/lora")
+        # checkpoint_dir = kwargs.pop("checkpoint_dir", "saves/sft/lora")
         os.makedirs("conf", exist_ok=True)
         os.makedirs(output_dir, exist_ok=True)
-        os.makedirs(checkpoint_dir, exist_ok=True)
+        # os.makedirs(checkpoint_dir, exist_ok=True)
         os.makedirs("data", exist_ok=True)
-        os.makedirs("saves", exist_ok=True)
-        eval_dataset_id_list = dataset_id_list  # TODO: in future, load from dataset table, like download_dataset
-        eval_result_path = kwargs.get("eval_result_path", checkpoint_dir)
-        setup_lighteval_eval_config(
-            eval_dataset_id_list, model, checkpoint_dir, eval_result_path, **kwargs
-        )  # probably only use kwargs["eval_config"] for configuring eval
-        eval_by_lighteval(eval_result_path)
+        eval_result_path = kwargs.get("eval_result_path", output_dir)
+        task_name = kwargs.pop("task_name", "mmlu-all")
+        setup_lighteval_eval_config(model, eval_result_path, **kwargs)  # probably only use kwargs["eval_config"] for configuring eval
+        eval_by_lighteval(eval_result_path, task_name)
         try:
             with open(os.path.join(output_dir, "eval_done"), "w", encoding="utf-8") as f:
                 f.write("eval_done")

@@ -7,14 +7,14 @@ from enova.common.config import CONFIG
 class EnovaModel:
     def eval(
         self,
-        dataset_id_list: str,
+        task_name: str,
         model: str,
         output_dir: str,
         **kwargs,
     ):
         from enova.train.finetune import eval
 
-        eval(dataset_id_list, model, output_dir, **kwargs)
+        eval(task_name, model, output_dir, **kwargs)
 
     def train(
         self,
@@ -75,7 +75,7 @@ def train(
 
 
 @model_cli.command(name="eval", context_settings=CONFIG.cli["subcmd_context_settings"])
-@click.option("--dataset_ids", type=str, help="Comma-separated list of dataset IDs", required=True)
+@click.option("--task_name", type=str, help="Task name", required=True)
 @click.option("--model", type=str, required=True)
 @click.option("--output_dir", type=str, required=True)
 @pass_enova_model
@@ -83,12 +83,12 @@ def train(
 def eval(
     ctx,
     enova_model,
-    dataset_ids,
+    task_name,
     model,
     output_dir,
 ):
     enova_model.eval(
-        dataset_id_list=dataset_ids.split(","),
+        task_name=task_name,
         model=model,
         output_dir=output_dir,
         **parse_extra_args(ctx),

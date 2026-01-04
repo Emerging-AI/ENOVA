@@ -3,9 +3,6 @@ from lighteval.metrics.metrics import Metrics
 from lighteval.tasks.lighteval_task import LightevalTaskConfig  # noqa
 from lighteval.tasks.requests import Doc
 
-exact_match_metric = Metrics.exact_match
-
-
 # def prompt_fn(line: dict, task_name: str):
 #     """Defines how to go from a dataset line to a doc object.
 #     Follow examples in src/lighteval/tasks/default_prompts.py, or get more info
@@ -18,8 +15,8 @@ exact_match_metric = Metrics.exact_match
 #         gold_index=line["answer_index"],
 #     )
 
-exact_match_metric = Metrics.exact_match
-
+# exact_match_metric = Metrics.exact_match
+metric = Metrics.response_match
 
 # task = LightevalTaskConfig(
 #     name="custom_task1",
