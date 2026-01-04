@@ -13,16 +13,8 @@ class EnovaModel:
         **kwargs,
     ):
         from enova.train.finetune import eval
-        from enova.monitor.metrics import MetricsReporterFactory
 
-        checkpoint_dir = kwargs.get("checkpoint_dir")
-        reporter = None
-        if checkpoint_dir:
-            reporter = MetricsReporterFactory.create_reporter(checkpoint_dir)
-            reporter.start()
         eval(dataset_id_list, model, output_dir, **kwargs)
-        if reporter is not None:
-            reporter.stop()
 
     def train(
         self,
