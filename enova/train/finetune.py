@@ -18,7 +18,7 @@ import yaml
 import json
 import numpy as np
 import pandas as pd
-import shutil
+import requests
 from sqlalchemy import text
 from transformers import AutoConfig, AutoTokenizer
 from enova.api.data_api import get_datasets
@@ -646,8 +646,21 @@ def eval(task_name, model, output_dir, **kwargs):
         # os.makedirs(checkpoint_dir, exist_ok=True)
         os.makedirs("data", exist_ok=True)
         eval_result_path = kwargs.get("eval_result_path", output_dir)
+        eval_results_callback = kwargs.pop("eval_results_callback", None)
         setup_lighteval_eval_config(model, eval_result_path, **kwargs)  # probably only use kwargs["eval_config"] for configuring eval
         eval_by_lighteval(eval_result_path, task_name)
+
+        if eval_results_callback:
+            actual_result_path = os.path.join(eval_result_path, "details", model)
+            for root, dirs, files in os.walk(actual_result_path):
+                for file in files:
+                    if file.endswith(".json"):
+                        actual_result_file = os.path.join(root, file)
+                        with open(actual_result_file, "r", encoding="utf-8") as f:
+                            results = json.load(f)
+                        resp = requests.post(eval_results_callback, json={"eval_results": results})
+                        LOGGER.info(f"post eval results to {eval_results_callback}, response status: {resp.status_code}, response text: {resp.text}")
+                        break
         try:
             with open(os.path.join(output_dir, "eval_done"), "w", encoding="utf-8") as f:
                 f.write("eval_done")
