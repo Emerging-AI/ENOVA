@@ -648,10 +648,8 @@ def modify_chat_template(model_path, system_prompt):
 
 def eval(task_name, model, output_dir, **kwargs):
     try:
-        # checkpoint_dir = kwargs.pop("checkpoint_dir", "saves/sft/lora")
         os.makedirs("conf", exist_ok=True)
         os.makedirs(output_dir, exist_ok=True)
-        # os.makedirs(checkpoint_dir, exist_ok=True)
         os.makedirs("data", exist_ok=True)
         eval_result_path = kwargs.get("eval_result_path", output_dir)
         eval_results_callback = kwargs.pop("eval_results_callback", None)
@@ -659,7 +657,8 @@ def eval(task_name, model, output_dir, **kwargs):
         eval_by_lighteval(eval_result_path, task_name)
 
         if eval_results_callback:
-            actual_result_path = os.path.join(eval_result_path, "details", model)
+            actual_result_path = os.path.join(eval_result_path, "results") + model
+            LOGGER.info(f"actual_result_path: {actual_result_path}")
             for root, dirs, files in os.walk(actual_result_path):
                 for file in files:
                     if file.endswith(".json"):
