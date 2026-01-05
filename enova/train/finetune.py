@@ -496,6 +496,14 @@ def setup_lighteval_eval_config(model, eval_result_path, **kwargs):
 
 
 def eval_by_lighteval(eval_result_path, task_name="mmlu"):
+    from lighteval.tasks import registry
+
+    def mock_load_from_files(files: list["Path"], module_prefix: str) -> dict[str, "LightevalTaskConfig"]:
+        configs = {}
+        return configs
+
+    registry.Registry._load_from_files = mock_load_from_files
+
     from lighteval.__main__ import app
 
     if task_name == "mmlu":
