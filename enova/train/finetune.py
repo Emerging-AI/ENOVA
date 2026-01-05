@@ -60,8 +60,21 @@ def process_qa_data(row, system_prompt=None):
     }
 
 
+def process_sft_text_generation_data(row, system_prompt=None):
+    """
+    instruction, output
+    """
+    return {
+        "question": row["prompt"],
+        "answer": row["completion"],
+        "system": system_prompt,
+        "history": [],
+    }
+
+
 DATASET_TYPE_ROW_PROCESS_MAP = {
     "qa": process_qa_data,
+    "sft_text_generation": process_sft_text_generation_data,
 }
 
 
