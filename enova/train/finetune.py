@@ -62,19 +62,55 @@ def process_qa_data(row, system_prompt=None):
 
 def process_sft_text_generation_data(row, system_prompt=None):
     """
-    instruction, output
+    prompt, response
     """
     return {
-        "question": row["prompt"],
-        "answer": row["completion"],
-        "system": system_prompt,
-        "history": [],
+        "messages": row["messages"],
     }
 
 
 DATASET_TYPE_ROW_PROCESS_MAP = {
     "qa": process_qa_data,
     "sft_text_generation": process_sft_text_generation_data,
+}
+
+
+def instruction_format(file_name):
+    return {
+        "file_name": file_name,
+        "columns": {"prompt": "question", "response": "answer", "history": "history", "system": "system"},
+    }
+
+
+def sharegpt_format(file_name):
+    return {
+        "file_name": file_name,
+        "formatting": "sharegpt",
+        "columns": {"messages": "messages"},
+        "tags": {"role_tag": "role", "content_tag": "content", "user_tag": "user", "assistant_tag": "assistant", "system_tag": "system"},
+    }
+
+
+DATASET_INFO_PROCESS_MAP = {
+    "qa": instruction_format,
+    "sft_text_generation": sharegpt_format,
+}
+
+
+def to_json(df, file_name):
+    df.to_json(file_name, orient="records", lines=True, force_ascii=False)
+
+
+def to_jsonl(df, file_name):
+    with open(file_name, "w", encoding="utf-8") as f:
+        for _, row in df.iterrows():
+            json_line = json.dumps(row.to_dict(), ensure_ascii=False)
+            f.write(json_line + "\n")
+
+
+DATASET_WRITE_PROCESS_MAP = {
+    "qa": to_json,
+    "sft_text_generation": to_jsonl,
 }
 
 
@@ -141,29 +177,18 @@ def download_dataset(dataset_id_list: List[str], split_ratio=0.1, system_prompt=
         pdf = pd.DataFrame(data_list)
         if split_ratio > 0:
             train_df, eval_df = split_dataframe_by_ratio_numpy_index(pdf, split_ratio)
-            train_df.to_json(f"data/{train_dataset_filename}", orient="records", lines=False, force_ascii=False, indent=4)
-            eval_df.to_json(f"data/{eval_dataset_filename}", orient="records", lines=False, force_ascii=False, indent=4)
-            # with open(f"data/{train_dataset_filename}", "w", encoding="utf-8") as f:
-            #     json.dump(data_list, f, indent=4, ensure_ascii=False)
+            DATASET_WRITE_PROCESS_MAP[dataset["dataset_type"]](train_df, f"data/{train_dataset_filename}")
+            DATASET_WRITE_PROCESS_MAP[dataset["dataset_type"]](eval_df, f"data/{eval_dataset_filename}")
             train_dataset_id = f"{dataset_id}_train"
             eval_dataset_id = f"{dataset_id}_eval"
             train_dataset_id_list.append(train_dataset_id)
             eval_dataset_id_list.append(eval_dataset_id)
-            dataset_info[train_dataset_id] = {
-                "file_name": train_dataset_filename,
-                "columns": {"prompt": "question", "response": "answer", "history": "history", "system": "system"},
-            }
-            dataset_info[eval_dataset_id] = {
-                "file_name": eval_dataset_filename,
-                "columns": {"prompt": "question", "response": "answer", "history": "history", "system": "system"},
-            }
+            dataset_info[train_dataset_id] = DATASET_INFO_PROCESS_MAP[dataset["dataset_type"]](train_dataset_filename)
+            dataset_info[eval_dataset_id] = DATASET_INFO_PROCESS_MAP[dataset["dataset_type"]](eval_dataset_filename)
         else:
-            pdf.to_json(f"data/{train_dataset_filename}", orient="records", lines=False, force_ascii=False, indent=4)
+            DATASET_WRITE_PROCESS_MAP[dataset["dataset_type"]](pdf, f"data/{train_dataset_filename}")
             train_dataset_id_list.append(dataset_id)
-            dataset_info[dataset_id] = {
-                "file_name": train_dataset_filename,
-                "columns": {"prompt": "question", "response": "answer", "history": "history", "system": "system"},
-            }
+            dataset_info[dataset_id] = DATASET_INFO_PROCESS_MAP[dataset["dataset_type"]](train_dataset_filename)
 
     with open("data/dataset_info.json", "w", encoding="utf-8") as f:
         json.dump(dataset_info, f, indent=4, ensure_ascii=False)
