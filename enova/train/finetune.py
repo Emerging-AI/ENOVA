@@ -22,6 +22,7 @@ import requests
 from sqlalchemy import text
 from transformers import AutoConfig, AutoTokenizer
 from enova.api.data_api import get_datasets
+from enova.common.config import CONFIG
 from enova.database.relation.transaction.session import db_router, PostgresqlEngine, get_session
 from enova.train.common import setup_deepspeed_config
 
@@ -746,7 +747,8 @@ def train(dataset_id_list, model, output_dir, **kwargs):
         if os.environ.get("NNODES") and os.environ.get("NODE_RANK") != "0":
             return
         export_merge_model()
-        modify_chat_template(output_dir, system_prompt)
+        if CONFIG.MODIFY_TEMPLATE == "1":
+            modify_chat_template(output_dir, system_prompt)
         try:
             with open(os.path.join(output_dir, "finetune_done"), "w", encoding="utf-8") as f:
                 f.write("finetune_done")
