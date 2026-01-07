@@ -734,14 +734,14 @@ def train(dataset_id_list, model, output_dir, **kwargs):
         system_prompt = kwargs.pop("system_prompt", None)
         train_dataset_id_list, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0), system_prompt)
         setup_deepspeed_config(model, **kwargs)
-        setup_lighteval_eval_config(
-            eval_dataset_id_list, model, checkpoint_dir, eval_result_path, **kwargs
-        )  # probably only use kwargs["eval_config"] for configuring eval
+        # setup_lighteval_eval_config(
+        #     eval_dataset_id_list, model, checkpoint_dir, eval_result_path, **kwargs
+        # )  # probably only use kwargs["eval_config"] for configuring eval
         setup_train_config(train_dataset_id_list, eval_dataset_id_list, model, checkpoint_dir, **kwargs)
         setup_merge_lora_config(model, output_dir, checkpoint_dir)
         train_by_llamafactory(output_dir, eval_result_path)
-        if len(eval_dataset_id_list) > 0:
-            eval_by_lighteval(eval_result_path)
+        # if len(eval_dataset_id_list) > 0:
+        #     eval_by_lighteval(eval_result_path)
 
         if os.environ.get("NNODES") and os.environ.get("NODE_RANK") != "0":
             return
