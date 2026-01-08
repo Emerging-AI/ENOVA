@@ -1,6 +1,6 @@
 import re
 from string import ascii_uppercase
-
+import numpy as np
 from lighteval.metrics.metrics import Metrics, SampleLevelMetric, SamplingMethod
 from lighteval.tasks.lighteval_task import LightevalTaskConfig
 from lighteval.tasks.requests import Doc
@@ -69,6 +69,7 @@ MMLU_CUSTOM_METRIC = SampleLevelMetric(
     higher_is_better=True,
     sample_level_fn=mmlu_parsing_metric,
     category=SamplingMethod.GENERATIVE,
+    corpus_level_fn=np.mean,
 )
 
 
