@@ -1,9 +1,10 @@
 import re
 from string import ascii_uppercase
 import numpy as np
-from lighteval.metrics.metrics import Metrics, SampleLevelMetric, SamplingMethod
+from lighteval.metrics.metrics import SampleLevelMetric, SamplingMethod
 from lighteval.tasks.lighteval_task import LightevalTaskConfig
 from lighteval.tasks.requests import Doc
+from lighteval.metrics.metrics_sample import SampleLevelComputation
 
 
 def mmlu_prompt(line, task_name: str = None):
@@ -64,10 +65,17 @@ def mmlu_parsing_metric(doc: Doc, model_response: "ModelResponse") -> bool:
     return parsed_pred == doc.choices[doc.gold_index]
 
 
+class MMLUComputation(SampleLevelComputation):
+    """ """
+
+    def compute(self, doc: Doc, model_response: "ModelResponse") -> bool:
+        return mmlu_parsing_metric(doc, model_response)
+
+
 MMLU_CUSTOM_METRIC = SampleLevelMetric(
     metric_name="mmlu_robust_accuracy",
     higher_is_better=True,
-    sample_level_fn=mmlu_parsing_metric,
+    sample_level_fn=MMLUComputation(),
     category=SamplingMethod.GENERATIVE,
     corpus_level_fn=np.mean,
 )
