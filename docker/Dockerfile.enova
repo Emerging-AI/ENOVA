@@ -42,15 +42,6 @@ RUN pip install build --no-cache-dir && \
     # && \
     # pip install -r /opt/enova/requirements.txt --no-cache-dir
 
-COPY ./llmo /opt/enova/llmo
-
-COPY ./scripts /opt/enova/scripts
-
-RUN bash /opt/enova/scripts/pack_whl.llmo.sh 
-
-ARG LLMO_VERSION=0.1.1
-RUN pip install /opt/enova/llmo/enova-instrumentation-llmo/dist/enova_instrumentation_llmo-${LLMO_VERSION}-py3-none-any.whl --no-deps --no-cache-dir
-
 ARG CACHEBUST=1
 
 COPY . /opt/enova
@@ -63,3 +54,4 @@ RUN pip install -r /opt/enova/requirements.deps.txt --no-cache-dir
 RUN pip install -r /opt/enova/requirements.txt --no-deps  --no-cache-dir && \
     pip install /opt/enova/dist/enova-${ENOVA_VERSION}-py3-none-any.whl --no-deps --no-cache-dir && \
     mkdir -p /workspace/model
+WORKDIR /workspace

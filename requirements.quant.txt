@@ -8,3 +8,4 @@ datasets==4.0.0
 multiprocess==0.70.17
 xxhash
 frozendict
+fastapi

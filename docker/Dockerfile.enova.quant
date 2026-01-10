@@ -28,7 +28,7 @@ RUN apt-get update && \
         pkg-config \
         patchelf
 
-# COPY ./requirements-docker.txt /opt/enova/requirements.txt
+COPY ./requirements-docker.txt /opt/enova/requirements.txt
 
 RUN cd /tmp && \
     curl -O https://repo.anaconda.com/miniconda/Miniconda3-py312_25.9.1-3-Linux-x86_64.sh && \
@@ -38,7 +38,8 @@ RUN cd /tmp && \
 ENV PATH="/root/miniconda3/bin:${PATH}"
 
 RUN pip install build --no-cache-dir && \
-    pip install pip setuptools setuptools_scm[toml]==8.3.1 toml poetry 
+    pip install pip setuptools setuptools_scm[toml]==8.3.1 toml poetry && \\
+    pip install -r /opt/enova/requirements.txt --no-cache-dir
 
 ARG CACHEBUST=1
 
@@ -47,6 +48,7 @@ COPY . /opt/enova
 RUN cd /opt/enova && bash ./scripts/pack_whl.enova.sh
 ARG ENOVA_VERSION=0.1.1
 
-RUN pip install -r /opt/enova/requirements.quant.txt --no-deps  --no-cache-dir && \
+RUN pip install -r /opt/enova/requirements.quant.txt --no-cache-dir && \
     pip install /opt/enova/dist/enova-${ENOVA_VERSION}-py3-none-any.whl --no-deps --no-cache-dir && \
-    mkdir -p /workspace/model
+    mkdir -p /workspace
+WORKDIR /workspace

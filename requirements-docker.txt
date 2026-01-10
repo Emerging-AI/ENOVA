@@ -46,7 +46,7 @@ siphash24
 # pillow
 # prometheus-client
 # prometheus-fastapi-instrumentator
-# psutil
+psutil
 # sentencepiece
 # tiktoken
 # tokenizers
