@@ -38,7 +38,7 @@ RUN cd /tmp && \
 ENV PATH="/root/miniconda3/bin:${PATH}"
 
 RUN pip install build --no-cache-dir && \
-    pip install pip setuptools setuptools_scm[toml]==8.3.1 toml poetry && \\
+    pip install pip setuptools setuptools_scm[toml]==8.3.1 toml poetry && \
     pip install -r /opt/enova/requirements.txt --no-cache-dir
 
 ARG CACHEBUST=1
