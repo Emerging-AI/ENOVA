@@ -16,24 +16,14 @@ RUN apt-get update && \
         clinfo \
         iputils-ping \
         vim \
-        curl \
-        build-essential \
-        cmake \
-        libibverbs-dev \
-        libnuma-dev \
-        libunwind-dev \
-        libboost-all-dev \
-        libssl-dev \
-        pybind11-dev \
-        pkg-config \
-        patchelf
+        curl
 
 # COPY ./requirements-docker.txt /opt/enova/requirements.txt
 
 RUN cd /tmp && \
-    curl -O https://repo.anaconda.com/miniconda/Miniconda3-py312_25.9.1-3-Linux-x86_64.sh && \
-    bash /tmp/Miniconda3-py312_25.9.1-3-Linux-x86_64.sh -b && \
-    rm /tmp/Miniconda3-py312_25.9.1-3-Linux-x86_64.sh && \
+    curl -O https://repo.anaconda.com/miniconda/Miniconda3-py311_25.9.1-1-Linux-x86_64.sh && \
+    bash /tmp/Miniconda3-py311_25.9.1-1-Linux-x86_64.sh -b && \
+    rm /tmp/Miniconda3-py311_25.9.1-1-Linux-x86_64.sh && \
     echo "export PATH=$HOME/miniconda3/bin:$PATH" >> ~/.bashrc
 ENV PATH="/root/miniconda3/bin:${PATH}"
 
@@ -58,7 +48,7 @@ COPY . /opt/enova
 RUN cd /opt/enova && bash ./scripts/pack_whl.enova.sh
 ARG ENOVA_VERSION=0.1.1
 
-RUN pip install -r /opt/enova/requirements.deps.txt --no-cache-dir
+RUN pip install sglang --no-cache-dir
 
 RUN pip install -r /opt/enova/requirements.txt --no-deps  --no-cache-dir && \
     pip install /opt/enova/dist/enova-${ENOVA_VERSION}-py3-none-any.whl --no-deps --no-cache-dir && \
