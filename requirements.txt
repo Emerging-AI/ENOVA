@@ -26,7 +26,6 @@
 # openai
 # packaging
 # ray
-# enova-instrumentation-llmo==0.1.0
 # addict
 # sglang==0.3.6
 # python-multipart
