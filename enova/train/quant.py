@@ -76,6 +76,7 @@ def download_dataset(dataset_id_list: List[str]) -> List:
     datasets = get_datasets(dataset_id_list)
     LOGGER.info(f"{datasets=}")
     data_list = []
+    dataset_type = ""
     if not os.path.exists(f"data/{dataset_filename}"):
         with open(f"data/{dataset_filename}", "w", encoding="utf-8") as f:
             for dataset in datasets:
@@ -85,19 +86,26 @@ def download_dataset(dataset_id_list: List[str]) -> List:
                     pg_engine = PostgresqlEngine(dataset["dataset_storage"][0]["storage_detail_config"])
                     db_router.set_custom_db_engine(dataset_id, pg_engine)
                     table_name = dataset["dataset_storage"][0]["storage_detail_config"]["table_name"]
+                    dataset_type = dataset["dataset_type"]
                     with get_session(dataset_id) as session:
                         for row in session.execute(text(f'select * from "{table_name}"')):
                             row_dct = row._mapping
-                            data_list.append(DATASET_TYPE_ROW_PROCESS_MAP[dataset["dataset_type"]](row_dct))
+                            data_list.append(DATASET_TYPE_ROW_PROCESS_MAP[dataset_type](row_dct))
 
         with open(f"data/{dataset_filename}", "w", encoding="utf-8") as f:
-            json.dump(data_list, f, indent=4, ensure_ascii=False)
+            dataset_item = {
+                "data_list": data_list,
+                "dataset_type": dataset_type,
+            }
+            json.dump(dataset_item, f, indent=4, ensure_ascii=False)
     else:
         with open(f"data/{dataset_filename}", "r", encoding="utf-8") as f:
-            data_list = json.load(f)
+            dataset_item = json.load(f)
+            data_list = dataset_item["data_list"]
+            dataset_type = dataset_item["dataset_type"]
     ds = Dataset.from_list(data_list)
     ds = ds.shuffle()
-    return ds
+    return ds, dataset_type
 
 
 def json_safe_dump(obj, path, indent=None, extensions="json", check_user_stat=True):
@@ -341,7 +349,7 @@ def quantize_by_msmodelslim(model, dataset_id_list, output_dir, quantization_met
 
 def quantize_by_llmcompressor(model, dataset_id_list, output_dir, quantization_method="awq", **kwargs):
     """"""
-    dataset = download_dataset(dataset_id_list)
+    dataset, dataset_type = download_dataset(dataset_id_list)
 
     tokenizer = AutoTokenizer.from_pretrained(model)
 
