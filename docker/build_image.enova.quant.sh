@@ -14,7 +14,7 @@ export HARBOR_PATH=emergingai
 cd $BASEDIR
 IMAGE_VERSION=v`cat VERSION`
 ENOVA_VERSION=`cat VERSION`
-LLMO_VERSION="0.1.0"
+LLMO_VERSION="0.1.1"
 
 echo "Runing build image enova:${IMAGE_VERSION} using ${PWD}"
 
