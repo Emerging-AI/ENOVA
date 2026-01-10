@@ -4,6 +4,7 @@ import json
 import stat
 import argparse
 import types
+from functools import partial
 from typing import List
 from datasets import Dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
@@ -28,8 +29,44 @@ def process_qa_data(row):
     }
 
 
+def process_sft_text_generation_data(row, system_prompt=None):
+    """
+    prompt, response
+    """
+    return {
+        "messages": row["messages"],
+    }
+
+
 DATASET_TYPE_ROW_PROCESS_MAP = {
     "qa": process_qa_data,
+    "sft_text_generation": process_sft_text_generation_data,
+}
+
+
+def qa_preprocess(msg, tokenizer):
+    return {
+        "text": tokenizer.apply_chat_template(
+            [{"role": "user", "content": msg["question"]}, {"role": "assistant", "content": msg["answer"]}],
+            tokenize=False,
+            add_generation_prompt=False,
+        )
+    }
+
+
+def sft_text_generation_preprocess(msg, tokenizer):
+    return {
+        "text": tokenizer.apply_chat_template(
+            msg["messages"],
+            tokenize=False,
+            add_generation_prompt=False,
+        )
+    }
+
+
+DATASET_TYPE_HF_DATASET_PROCESS_MAP = {
+    "qa": qa_preprocess,
+    "sft_text_generation": sft_text_generation_preprocess,
 }
 
 
@@ -308,16 +345,9 @@ def quantize_by_llmcompressor(model, dataset_id_list, output_dir, quantization_m
 
     tokenizer = AutoTokenizer.from_pretrained(model)
 
-    def preprocess(msg):
-        return {
-            "text": tokenizer.apply_chat_template(
-                [{"role": "user", "content": msg["question"]}, {"role": "assistant", "content": msg["answer"]}],
-                tokenize=False,
-                add_generation_prompt=False,
-            )
-        }
+    base_preprocess = DATASET_TYPE_HF_DATASET_PROCESS_MAP[dataset_type]
 
-    dataset = dataset.map(preprocess)
+    dataset = dataset.map(partial(base_preprocess, tokenizer=tokenizer))
 
     recipe = [
         AWQModifier(ignore=["lm_head"], scheme="W4A16_ASYM", targets=["Linear"]),

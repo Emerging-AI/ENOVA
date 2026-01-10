@@ -12,7 +12,10 @@ opentelemetry-sdk
 opentelemetry-exporter-otlp
 opentelemetry-distro
 opentelemetry-instrumentation-fastapi
-streamlit
+streamlit>=1.51.0
+pymysql==1.1.0
+aiomysql==0.2.0
+sqlalchemy==2.0.29
 sqlalchemy-utils
 aiosqlite
 greenlet

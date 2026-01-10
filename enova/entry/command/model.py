@@ -5,6 +5,17 @@ from enova.common.config import CONFIG
 
 
 class EnovaModel:
+    def eval(
+        self,
+        task_name: str,
+        model: str,
+        output_dir: str,
+        **kwargs,
+    ):
+        from enova.train.finetune import eval
+
+        eval(task_name, model, output_dir, **kwargs)
+
     def train(
         self,
         dataset_id_list: str,
@@ -57,6 +68,27 @@ def train(
 ):
     enova_model.train(
         dataset_id_list=dataset_ids.split(","),
+        model=model,
+        output_dir=output_dir,
+        **parse_extra_args(ctx),
+    )
+
+
+@model_cli.command(name="eval", context_settings=CONFIG.cli["subcmd_context_settings"])
+@click.option("--task_name", type=str, help="Task name", required=True)
+@click.option("--model", type=str, required=True)
+@click.option("--output_dir", type=str, required=True)
+@pass_enova_model
+@click.pass_context
+def eval(
+    ctx,
+    enova_model,
+    task_name,
+    model,
+    output_dir,
+):
+    enova_model.eval(
+        task_name=task_name,
         model=model,
         output_dir=output_dir,
         **parse_extra_args(ctx),

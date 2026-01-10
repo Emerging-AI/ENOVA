@@ -1,3 +1,5 @@
+from dataclasses import fields
+import dataclasses
 import sys
 from enova.common.logger import LOGGER
 
@@ -10,16 +12,17 @@ sys_exit = sys.exit
 sys.exit = mock_sys_exit
 
 import os
-from typing import List
+from typing import Any, List
 import sys
 import yaml
 import json
 import numpy as np
 import pandas as pd
-import shutil
+import requests
 from sqlalchemy import text
 from transformers import AutoConfig, AutoTokenizer
 from enova.api.data_api import get_datasets
+from enova.common.config import CONFIG
 from enova.database.relation.transaction.session import db_router, PostgresqlEngine, get_session
 from enova.train.common import setup_deepspeed_config
 
@@ -58,8 +61,57 @@ def process_qa_data(row, system_prompt=None):
     }
 
 
+def process_sft_text_generation_data(row, system_prompt=None):
+    """
+    prompt, response
+    """
+    return {
+        "messages": row["messages"],
+    }
+
+
 DATASET_TYPE_ROW_PROCESS_MAP = {
     "qa": process_qa_data,
+    "sft_text_generation": process_sft_text_generation_data,
+}
+
+
+def instruction_format(file_name):
+    return {
+        "file_name": file_name,
+        "columns": {"prompt": "question", "response": "answer", "history": "history", "system": "system"},
+    }
+
+
+def sharegpt_format(file_name):
+    return {
+        "file_name": file_name,
+        "formatting": "sharegpt",
+        "columns": {"messages": "messages"},
+        "tags": {"role_tag": "role", "content_tag": "content", "user_tag": "user", "assistant_tag": "assistant", "system_tag": "system"},
+    }
+
+
+DATASET_INFO_PROCESS_MAP = {
+    "qa": instruction_format,
+    "sft_text_generation": sharegpt_format,
+}
+
+
+def to_json(df, file_name):
+    df.to_json(file_name, orient="records", lines=True, force_ascii=False)
+
+
+def to_jsonl(df, file_name):
+    with open(file_name, "w", encoding="utf-8") as f:
+        for _, row in df.iterrows():
+            json_line = json.dumps(row.to_dict(), ensure_ascii=False)
+            f.write(json_line + "\n")
+
+
+DATASET_WRITE_PROCESS_MAP = {
+    "qa": to_json,
+    "sft_text_generation": to_jsonl,
 }
 
 
@@ -126,29 +178,18 @@ def download_dataset(dataset_id_list: List[str], split_ratio=0.1, system_prompt=
         pdf = pd.DataFrame(data_list)
         if split_ratio > 0:
             train_df, eval_df = split_dataframe_by_ratio_numpy_index(pdf, split_ratio)
-            train_df.to_json(f"data/{train_dataset_filename}", orient="records", lines=False, force_ascii=False, indent=4)
-            eval_df.to_json(f"data/{eval_dataset_filename}", orient="records", lines=False, force_ascii=False, indent=4)
-            # with open(f"data/{train_dataset_filename}", "w", encoding="utf-8") as f:
-            #     json.dump(data_list, f, indent=4, ensure_ascii=False)
+            DATASET_WRITE_PROCESS_MAP[dataset["dataset_type"]](train_df, f"data/{train_dataset_filename}")
+            DATASET_WRITE_PROCESS_MAP[dataset["dataset_type"]](eval_df, f"data/{eval_dataset_filename}")
             train_dataset_id = f"{dataset_id}_train"
             eval_dataset_id = f"{dataset_id}_eval"
             train_dataset_id_list.append(train_dataset_id)
             eval_dataset_id_list.append(eval_dataset_id)
-            dataset_info[train_dataset_id] = {
-                "file_name": train_dataset_filename,
-                "columns": {"prompt": "question", "response": "answer", "history": "history", "system": "system"},
-            }
-            dataset_info[eval_dataset_id] = {
-                "file_name": eval_dataset_filename,
-                "columns": {"prompt": "question", "response": "answer", "history": "history", "system": "system"},
-            }
+            dataset_info[train_dataset_id] = DATASET_INFO_PROCESS_MAP[dataset["dataset_type"]](train_dataset_filename)
+            dataset_info[eval_dataset_id] = DATASET_INFO_PROCESS_MAP[dataset["dataset_type"]](eval_dataset_filename)
         else:
-            pdf.to_json(f"data/{train_dataset_filename}", orient="records", lines=False, force_ascii=False, indent=4)
+            DATASET_WRITE_PROCESS_MAP[dataset["dataset_type"]](pdf, f"data/{train_dataset_filename}")
             train_dataset_id_list.append(dataset_id)
-            dataset_info[dataset_id] = {
-                "file_name": train_dataset_filename,
-                "columns": {"prompt": "question", "response": "answer", "history": "history", "system": "system"},
-            }
+            dataset_info[dataset_id] = DATASET_INFO_PROCESS_MAP[dataset["dataset_type"]](train_dataset_filename)
 
     with open("data/dataset_info.json", "w", encoding="utf-8") as f:
         json.dump(dataset_info, f, indent=4, ensure_ascii=False)
@@ -326,6 +367,203 @@ def eval_by_llamafactory(checkpoint_dir):
         json.dump(predict_results, w)
 
 
+class CodeReference:
+    """Wrapper to indicate a value should be formatted as a code reference (not quoted)."""
+
+    def __init__(self, name: str):
+        self.name = name
+
+    def __repr__(self):
+        return self.name
+
+
+def format_value_for_code(value: Any) -> str:
+    """Format a Python value as code string."""
+    if value is None:
+        return "None"
+    elif isinstance(value, CodeReference):
+        return value.name
+    elif isinstance(value, str):
+        return repr(value)
+    elif isinstance(value, bool):
+        return str(value)
+    elif isinstance(value, (int, float)):
+        return str(value)
+    elif callable(value):
+        # Use function/class name (assumes it's imported in the target file)
+        return value.__name__
+    elif isinstance(value, (list, tuple)):
+        items = []
+        for item in value:
+            if isinstance(item, CodeReference):
+                items.append(item.name)
+            elif callable(item):
+                items.append(item.__name__)
+            elif hasattr(item, "__class__") and hasattr(item, "value"):
+                # Handle enum-like objects (e.g., Metrics enum)
+                items.append(f"{item.__class__.__name__}.{item.name}")
+            else:
+                items.append(repr(item))
+        bracket = "[]" if isinstance(value, list) else "()"
+        return f"{bracket[0]}{', '.join(items)}{bracket[1]}"
+    else:
+        # Fallback to repr
+        return repr(value)
+
+
+def generate_prompt_function(
+    fn_name: str = "prompt_fn",
+    query_field: str = "question",
+    choices_field: str = "options",
+    gold_index_field: str = "answer_index",
+) -> str:
+    """
+    Generate a prompt function definition.
+
+    Args:
+        fn_name: Name of the prompt function
+        query_field: Dataset field name for the query/question
+        choices_field: Dataset field name for the answer choices
+        gold_index_field: Dataset field name for the correct answer index
+
+    Returns:
+        Generated Python code for the prompt function
+    """
+    code = f'''def {fn_name}(line: dict, task_name: str):
+    """Defines how to go from a dataset line to a doc object.
+    Follow examples in src/lighteval/tasks/default_prompts.py, or get more info
+    about what this function should do in the README.
+    """
+    return Doc(
+        task_name=task_name,
+        query=line["{query_field}"],
+        choices=[f" {{c}}" for c in line["{choices_field}"]],
+        gold_index=line["{gold_index_field}"],
+    )
+'''
+    return code
+
+
+def generate_task_config_code(
+    config_dict: dict,
+) -> str:
+    """
+    Generate Python code for LightevalTaskConfig instantiation.
+    Only includes fields that differ from default values.
+
+    Args:
+        config_dict: Dictionary with configuration values
+        task_var_name: Variable name for the task
+
+    Returns:
+        Generated Python code as string
+    """
+    from lighteval.tasks.lighteval_task import LightevalTaskConfig
+
+    # Get default values from dataclass
+    defaults = {}
+    for field in fields(LightevalTaskConfig):
+        if field.default != dataclasses.MISSING:
+            defaults[field.name] = field.default
+        elif field.default_factory != dataclasses.MISSING:
+            defaults[field.name] = field.default_factory()
+
+    # Generate code lines
+    task_var_name = "task"
+    lines = [f"{task_var_name} = LightevalTaskConfig("]
+    task_fields = [field.name for field in fields(LightevalTaskConfig)]
+
+    for key, value in config_dict.items():
+        # Skip fields with default values
+        if key in defaults and value == defaults[key]:
+            continue
+        # skip non-expected arguments
+        if key not in task_fields:
+            continue
+
+        formatted_value = format_value_for_code(value)
+        lines.append(f"    {key}={formatted_value},")
+
+    lines.append(")")
+    lines.append(f"TASKS_TABLE = [{task_var_name}]")
+
+    return "\n".join(lines)
+
+
+def setup_lighteval_eval_config(model, eval_result_path, **kwargs):
+    from lighteval.models.vllm.vllm_model import VLLMModelConfig
+
+    # generate task definition
+    # fn_code = None
+    # if "prompt_fn_config" in kwargs:
+    #     prompt_fn_config = kwargs.pop("prompt_fn_config")
+    #     LOGGER.debug(f"{prompt_fn_config=}")
+    #     fn_code = generate_prompt_function(**prompt_fn_config)
+    # # TODO: set override_chat_template for qwen
+    # LOGGER.info(f"kwargs: {kwargs}")
+    # task_config = {
+    #     "name": "custom_task1",
+    #     "prompt_function": CodeReference("prompt_fn"),
+    #     "hf_repo": eval_dataset_id_list[0],
+    #     "hf_subset": kwargs.pop("hf_subset", "all"),
+    #     "metrics": [CodeReference("Metrics.exact_match")],
+    #     **kwargs,  # TODO: specify split, metrics, prompt_fn from user
+    # }
+    # shutil.copy(os.path.dirname(__file__) + "/eval_utils.py", "eval_utils.py")
+    # task_config_code = generate_task_config_code(task_config)
+    # code = fn_code + "\n" + task_config_code if fn_code else task_config_code
+    # with open("eval_utils.py", "a") as f:
+    #     f.write("\n" + code + "\n")
+
+    # /mnt/shared_data/datasets/{dataset}
+    eval_config = {
+        "model_parameters": {
+            "model_name": model,
+            "trust_remote_code": True,
+        },
+        "output_dir": eval_result_path,
+        "save_details": True,
+        "max_samples": 100,
+    }
+    for k, v in kwargs.items():
+        if k in VLLMModelConfig.model_fields:
+            eval_config["model_parameters"][k] = v
+    os.makedirs(eval_config["output_dir"], exist_ok=True)
+    with open("conf/eval.yaml", "w") as f:
+        yaml_output_str = yaml.dump(eval_config, default_flow_style=False)
+        f.write(yaml_output_str)
+
+
+def eval_by_lighteval(eval_result_path, task_name="mmlu"):
+    from lighteval.tasks import registry
+
+    def mock_load_from_files(files: list["Path"], module_prefix: str) -> dict[str, "LightevalTaskConfig"]:
+        configs = {}
+        return configs
+
+    registry.Registry._load_from_files = mock_load_from_files
+
+    from lighteval.__main__ import app
+
+    if task_name == "mmlu":
+        from enova.train.eval import mmlu_task
+
+        sys.argv = [
+            "lighteval",
+            "vllm",
+            "--custom-tasks",
+            mmlu_task.__file__,
+            "--output-dir",
+            eval_result_path,
+            os.path.abspath("conf/eval.yaml"),
+            "mmlu-all",
+            "--save-details",
+        ]
+    else:
+        raise NotImplementedError(f"task_name {task_name} not implemented yet")
+    app()
+
+
 def export_merge_model():
     from llamafactory.cli import main
 
@@ -447,6 +685,43 @@ def modify_chat_template(model_path, system_prompt):
         LOGGER.info(f"save new chat_template: {new_chat_template}")
 
 
+def eval(task_name, model, output_dir, **kwargs):
+    try:
+        os.makedirs("conf", exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs("data", exist_ok=True)
+        eval_result_path = kwargs.get("eval_result_path", output_dir)
+        eval_results_callback = kwargs.pop("eval_results_callback", None)
+        setup_lighteval_eval_config(model, eval_result_path, **kwargs)  # probably only use kwargs["eval_config"] for configuring eval
+        eval_by_lighteval(eval_result_path, task_name)
+
+        if eval_results_callback:
+            actual_result_path = os.path.join(eval_result_path, "results") + model
+            LOGGER.info(f"actual_result_path: {actual_result_path}")
+            for root, dirs, files in os.walk(actual_result_path):
+                for file in files:
+                    if file.endswith(".json"):
+                        actual_result_file = os.path.join(root, file)
+                        with open(actual_result_file, "r", encoding="utf-8") as f:
+                            results = json.load(f)
+                        resp = requests.post(eval_results_callback, json={"eval_results": results})
+                        LOGGER.info(f"post eval results to {eval_results_callback}, response status: {resp.status_code}, response text: {resp.text}")
+                        break
+        try:
+            with open(os.path.join(output_dir, "eval_done"), "w", encoding="utf-8") as f:
+                f.write("eval_done")
+            LOGGER.info("**** eval completed ****")
+        except Exception as e:
+            LOGGER.exception(f"save eval_done error: {str(e)}")
+    except Exception as e:
+        LOGGER.exception(f"unexpected train error: {str(e)}")
+        if os.environ.get("DEBUG_WITH_SLEEP"):
+            import time
+
+            time.sleep(1314000)
+        raise e
+
+
 def train(dataset_id_list, model, output_dir, **kwargs):
     """ """
     try:
@@ -456,21 +731,24 @@ def train(dataset_id_list, model, output_dir, **kwargs):
         os.makedirs(checkpoint_dir, exist_ok=True)
         os.makedirs("data", exist_ok=True)
         os.makedirs("saves", exist_ok=True)
+        eval_result_path = kwargs.get("eval_result_path", checkpoint_dir)
         system_prompt = kwargs.pop("system_prompt", None)
         train_dataset_id_list, eval_dataset_id_list = download_dataset(dataset_id_list, kwargs.get("split_ratio", 0), system_prompt)
         setup_deepspeed_config(model, **kwargs)
-        setup_eval_config(eval_dataset_id_list, model, checkpoint_dir, **kwargs)
+        # setup_lighteval_eval_config(
+        #     eval_dataset_id_list, model, checkpoint_dir, eval_result_path, **kwargs
+        # )  # probably only use kwargs["eval_config"] for configuring eval
         setup_train_config(train_dataset_id_list, eval_dataset_id_list, model, checkpoint_dir, **kwargs)
         setup_merge_lora_config(model, output_dir, checkpoint_dir)
-        eval_result_path = kwargs.get("eval_result_path", "saves/eval/")
         train_by_llamafactory(output_dir, eval_result_path)
-        if len(eval_dataset_id_list) > 0:
-            eval_by_llamafactory(checkpoint_dir)
+        # if len(eval_dataset_id_list) > 0:
+        #     eval_by_lighteval(eval_result_path)
 
         if os.environ.get("NNODES") and os.environ.get("NODE_RANK") != "0":
             return
         export_merge_model()
-        modify_chat_template(output_dir, system_prompt)
+        if CONFIG.MODIFY_TEMPLATE == "1":
+            modify_chat_template(output_dir, system_prompt)
         try:
             with open(os.path.join(output_dir, "finetune_done"), "w", encoding="utf-8") as f:
                 f.write("finetune_done")
