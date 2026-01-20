@@ -42,5 +42,5 @@ RUN cd /opt/enova && rm MANIFEST.in && bash ./scripts/pack_whl.enova.sh
 ARG ENOVA_VERSION=0.1.1
 RUN export TORCH_DEVICE_BACKEND_AUTOLOAD=0 && pip install -r /opt/enova/requirements.train.txt --no-deps  --no-cache-dir && \
     pip install /opt/enova/dist/enova-${ENOVA_VERSION}-py3-none-any.whl --no-deps --no-cache-dir && \
-    pip install pynvml tensorboard==2.20.0 --no-cache-dir && \
+    pip install pynvml tensorboard==2.20.0 s3fs --no-cache-dir && \
     mkdir -p /workspace/model
