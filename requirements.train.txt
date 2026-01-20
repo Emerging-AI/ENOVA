@@ -3,4 +3,3 @@ psycopg2-binary
 hjson
 llmcompressor
 ninja
-s3fs
