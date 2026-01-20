@@ -257,7 +257,8 @@ def setup_train_config(dataset_id_list: List[str], eval_dataset_id_list: List[st
     for k, v in kwargs.items():
         if k in base_config:
             base_config[k] = v
-    os.makedirs(base_config["logging_dir"], exist_ok=True)
+    if not base_config["logging_dir"].startswith("s3://"):
+        os.makedirs(base_config["logging_dir"], exist_ok=True)
     os.makedirs(base_config["output_dir"], exist_ok=True)
 
     # if os.path.exists(checkpoint_dir):
